@@ -1,0 +1,620 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  woreda_admin
+  hibret_admin
+  family_admin
+  member
+}
+
+enum UserStatus {
+  pending_setup
+  active
+  suspended
+  inactive
+}
+
+enum RecordStatus {
+  draft
+  published
+  closed
+}
+
+enum ResponseStatus {
+  draft
+  submitted
+  approved
+  rejected
+  changes_requested
+}
+
+enum AttendanceStatus {
+  attended
+  not_attended
+  excused
+}
+
+enum ApprovalStatus {
+  pending
+  approved
+  rejected
+}
+
+enum JobStatus {
+  draft
+  pending_approval
+  approved
+  rejected
+  processing
+  completed
+  failed
+}
+
+enum SourceType {
+  woreda
+  hibret
+  family
+}
+
+enum FormFieldType {
+  short_text
+  long_text
+  number
+  date
+  dropdown
+  checkbox
+  radio
+  file
+}
+
+enum SubmissionStatus {
+  draft
+  submitted
+}
+
+model User {
+  id           String     @id @default(cuid())
+  email        String     @unique
+  passwordHash String?
+  role         UserRole
+  status       UserStatus @default(pending_setup)
+  privileges   String[]   @default([])
+
+  hibretId     String?
+  familyId     String?
+  memberId     String?
+
+  lastLoginAt  DateTime?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@index([role])
+  @@index([status])
+  @@index([hibretId])
+  @@index([familyId])
+  @@index([memberId])
+}
+
+model SetupToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+}
+
+model Hibret {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Family {
+  id                String   @id @default(cuid())
+  name              String
+  hibretId          String
+  familyAdminUserId String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@unique([name, hibretId])
+  @@index([hibretId])
+  @@index([familyAdminUserId])
+}
+
+model Member {
+  id                  String   @id @default(cuid())
+  memberCode          String?  @unique
+  fanId               String?  @unique
+  ppId                String?  @unique
+
+  firstName           String
+  fatherName          String
+  grandfatherName     String?
+  gender              String
+
+  dateOfBirth         DateTime?
+  phone               String?
+  email               String?
+
+  hibretId            String
+  familyId            String?
+
+  membershipStatus    String?
+  registrationType    String?
+  membershipYear      Int?
+  partyRole           String?
+
+  educationLevel      String?
+  fieldOfStudy        String?
+  workplace           String?
+  workType            String?
+  workExperienceYears Int?
+
+  zone                String?
+  kebele              String?
+  ethnicity           String?
+  healthStatus        String?
+
+  photoFileId         String?
+  profileCompletion   Int?
+
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([hibretId])
+  @@index([familyId])
+  @@index([gender])
+  @@index([membershipStatus])
+}
+
+model FileAsset {
+  id               String    @id @default(cuid())
+  originalName     String
+  fileName         String
+  mimeType         String
+  size             Int
+  path             String
+  uploadedByUserId String
+  createdAt        DateTime  @default(now())
+  deletedAt        DateTime?
+
+  @@index([uploadedByUserId])
+}
+
+model Announcement {
+  id              String       @id @default(cuid())
+  title           String
+  description     String
+  type            String
+  status          RecordStatus @default(draft)
+  deadline        DateTime?
+  allowAttendance Boolean      @default(false)
+  createdByUserId String
+  publishedAt     DateTime?
+  closedAt        DateTime?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@index([status])
+  @@index([type])
+  @@index([deadline])
+}
+
+model AnnouncementTarget {
+  id             String   @id @default(cuid())
+  announcementId String
+  hibretId       String
+  createdAt      DateTime @default(now())
+
+  @@unique([announcementId, hibretId])
+  @@index([announcementId])
+  @@index([hibretId])
+}
+
+model AnnouncementAttachment {
+  id             String   @id @default(cuid())
+  announcementId String
+  fileAssetId    String
+  createdAt      DateTime @default(now())
+
+  @@index([announcementId])
+}
+
+model HibretResponse {
+  id               String         @id @default(cuid())
+  announcementId   String
+  hibretId         String
+  title            String?
+  body             String
+  summary          String?
+  challenges       String?
+  status           ResponseStatus @default(draft)
+  submittedAt      DateTime?
+  reviewedAt       DateTime?
+  reviewedByUserId String?
+  reviewNote       String?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  @@unique([announcementId, hibretId])
+  @@index([announcementId])
+  @@index([hibretId])
+  @@index([status])
+}
+
+model HibretResponseAttachment {
+  id               String   @id @default(cuid())
+  hibretResponseId String
+  fileAssetId      String
+  createdAt        DateTime @default(now())
+
+  @@index([hibretResponseId])
+}
+
+model HibretAttendance {
+  id               String           @id @default(cuid())
+  announcementId   String
+  hibretId         String
+  memberId         String
+  status           AttendanceStatus
+  note             String?
+  recordedByUserId String
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  @@unique([announcementId, hibretId, memberId])
+  @@index([announcementId])
+  @@index([hibretId])
+  @@index([memberId])
+}
+
+model FamilyAssignment {
+  id              String       @id @default(cuid())
+  hibretId        String
+  familyId        String
+  title           String
+  description     String
+  type            String
+  status          RecordStatus @default(draft)
+  deadline        DateTime?
+  allowAttendance Boolean      @default(false)
+  createdByUserId String
+  publishedAt     DateTime?
+  closedAt        DateTime?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@index([hibretId])
+  @@index([familyId])
+  @@index([status])
+}
+
+model FamilyAssignmentAttachment {
+  id                 String   @id @default(cuid())
+  familyAssignmentId String
+  fileAssetId        String
+  createdAt          DateTime @default(now())
+
+  @@index([familyAssignmentId])
+}
+
+model FamilyResponse {
+  id                 String           @id @default(cuid())
+  familyAssignmentId String
+  familyId           String
+  body               String
+  summary            String?
+  challenges         String?
+  status             SubmissionStatus @default(draft)
+  submittedAt        DateTime?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  @@unique([familyAssignmentId, familyId])
+  @@index([familyAssignmentId])
+  @@index([familyId])
+  @@index([status])
+}
+
+model FamilyResponseAttachment {
+  id               String   @id @default(cuid())
+  familyResponseId String
+  fileAssetId      String
+  createdAt        DateTime @default(now())
+
+  @@index([familyResponseId])
+}
+
+model FamilyAttendance {
+  id                 String           @id @default(cuid())
+  familyAssignmentId String
+  familyId           String
+  memberId           String
+  status             AttendanceStatus
+  note               String?
+  recordedByUserId   String
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  @@unique([familyAssignmentId, familyId, memberId])
+  @@index([familyAssignmentId])
+  @@index([familyId])
+  @@index([memberId])
+}
+
+model Resource {
+  id              String    @id @default(cuid())
+  title           String
+  description     String?
+  sourceType      SourceType
+  hibretId        String?
+  fileAssetId     String
+  createdByUserId String
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime?
+
+  @@index([sourceType])
+  @@index([hibretId])
+}
+
+model GalleryItem {
+  id                 String    @id @default(cuid())
+  title              String
+  description        String?
+  mediaType          String
+  fileAssetId        String
+  sourceType         SourceType
+  hibretId           String?
+  familyId           String?
+  announcementId     String?
+  hibretResponseId   String?
+  familyAssignmentId String?
+  familyResponseId   String?
+  createdByUserId    String
+  createdAt          DateTime  @default(now())
+  deletedAt          DateTime?
+
+  @@index([hibretId])
+  @@index([familyId])
+  @@index([mediaType])
+}
+
+model Broadcast {
+  id              String       @id @default(cuid())
+  title           String
+  body            String
+  sourceType      SourceType
+  hibretId        String?
+  status          RecordStatus @default(draft)
+  targetType      String       @default("all")
+  createdByUserId String
+  publishedAt     DateTime?
+  archivedAt      DateTime?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@index([sourceType])
+  @@index([hibretId])
+  @@index([status])
+}
+
+model BroadcastTarget {
+  id          String   @id @default(cuid())
+  broadcastId String
+  hibretId    String?
+  familyId    String?
+  memberId    String?
+  createdAt   DateTime @default(now())
+
+  @@index([broadcastId])
+  @@index([hibretId])
+  @@index([familyId])
+  @@index([memberId])
+}
+
+model BroadcastAttachment {
+  id          String   @id @default(cuid())
+  broadcastId String
+  fileAssetId String
+  createdAt   DateTime @default(now())
+
+  @@index([broadcastId])
+}
+
+model Form {
+  id              String       @id @default(cuid())
+  title           String
+  description     String?
+  sourceType      SourceType
+  hibretId        String?
+  status          RecordStatus @default(draft)
+  deadline        DateTime?
+  createdByUserId String
+  publishedAt     DateTime?
+  closedAt        DateTime?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@index([sourceType])
+  @@index([hibretId])
+  @@index([status])
+}
+
+model FormField {
+  id       String        @id @default(cuid())
+  formId   String
+  label    String
+  type     FormFieldType
+  required Boolean       @default(false)
+  options  Json?
+  order    Int           @default(0)
+
+  @@index([formId])
+}
+
+model FormTarget {
+  id         String   @id @default(cuid())
+  formId     String
+  targetType String
+  role       String?
+  hibretId   String?
+  familyId   String?
+  memberId   String?
+
+  @@index([formId])
+  @@index([hibretId])
+  @@index([familyId])
+  @@index([memberId])
+}
+
+model FormSubmission {
+  id                String           @id @default(cuid())
+  formId            String
+  submittedByUserId String
+  memberId          String?
+  familyId          String?
+  status            SubmissionStatus @default(draft)
+  submittedAt       DateTime?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@index([formId])
+  @@index([submittedByUserId])
+  @@index([memberId])
+  @@index([familyId])
+  @@index([status])
+}
+
+model FormAnswer {
+  id           String  @id @default(cuid())
+  submissionId String
+  fieldId      String
+  value        Json?
+  fileAssetId  String?
+
+  @@index([submissionId])
+  @@index([fieldId])
+}
+
+model ChatThread {
+  id              String   @id @default(cuid())
+  title           String?
+  createdByUserId String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model ChatParticipant {
+  id         String    @id @default(cuid())
+  threadId   String
+  userId     String
+  lastReadAt DateTime?
+
+  @@unique([threadId, userId])
+  @@index([threadId])
+  @@index([userId])
+}
+
+model ChatMessage {
+  id           String   @id @default(cuid())
+  threadId     String
+  senderUserId String
+  body         String
+  fileAssetId  String?
+  createdAt    DateTime @default(now())
+
+  @@index([threadId])
+  @@index([senderUserId])
+}
+
+model ActivityLog {
+  id          String   @id @default(cuid())
+  actorUserId String?
+  actorEmail  String?
+  actorRole   String?
+  operation   String
+  targetType  String
+  targetId    String?
+  description String
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  @@index([actorUserId])
+  @@index([operation])
+  @@index([targetType])
+  @@index([createdAt])
+}
+
+model ApprovalRequest {
+  id                String         @id @default(cuid())
+  requestedByUserId String
+  type              String
+  status            ApprovalStatus @default(pending)
+  targetType        String?
+  targetId          String?
+  payload           Json
+  reviewNote        String?
+  reviewedByUserId  String?
+  reviewedAt        DateTime?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  @@index([requestedByUserId])
+  @@index([status])
+  @@index([type])
+}
+
+model ImportJob {
+  id                String    @id @default(cuid())
+  type              String
+  status            JobStatus @default(draft)
+  requestedByUserId String
+  approvedByUserId  String?
+  fileId            String?
+  summary           Json?
+  errors            Json?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([requestedByUserId])
+  @@index([status])
+}
+
+model ExportJob {
+  id                String    @id @default(cuid())
+  type              String
+  status            JobStatus @default(pending_approval)
+  requestedByUserId String
+  approvedByUserId  String?
+  filters           Json?
+  fileId            String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([requestedByUserId])
+  @@index([status])
+}
