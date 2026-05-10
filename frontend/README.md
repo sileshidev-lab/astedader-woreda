@@ -71,3 +71,22 @@ export default defineConfig([
   },
 ])
 ```
+
+## Development Login Bypass
+
+For local development only, you can enable a mock login flow that lets the existing sign-in button create a local session without calling the backend.
+
+Create `frontend/.env.local` with:
+
+```env
+VITE_DEV_BYPASS_LOGIN=true
+VITE_DEV_MOCK_DATA=true
+```
+
+Notes:
+
+- This only works in Vite development mode.
+- Production builds ignore the bypass.
+- The login page shows a development-only role selector for `WOREDA_ADMIN`, `HIBRET_ADMIN`, and `MEMBER`.
+- The email field is still used for display, so you can type any local test email before clicking `Sign in`.
+- Mock data is also enabled locally so Hibret and Member pages stay populated when the backend is unavailable.

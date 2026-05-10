@@ -1,12 +1,12 @@
-import { PublishedBroadcastsPage } from "../../shared/content/PublishedBroadcastsPage";
+import { RoleBroadcastsShell } from "../../shared/content/RoleBroadcastsShell";
 
 export function MemberBroadcastsPage() {
   return (
-    <section className="aw-design-page aw-mobile-page flex min-h-0 flex-1 flex-col">
-      <PublishedBroadcastsPage
+    <RoleBroadcastsShell
+      eyebrow="Member Articles"
       title="Broadcasts"
+      description="Read official Woreda communication posts in the same article shell and content structure used across the admin system."
       subtitle="Read official Woreda communication posts published for members."
     />
-    </section>
   );
 }

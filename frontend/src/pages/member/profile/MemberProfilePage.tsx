@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import type { FormEvent } from "react";
+import type { FormEvent, ReactNode } from "react";
+import { Link } from "react-router-dom";
 import {
+  ArrowLeft,
   BriefcaseBusiness,
   CalendarDays,
   CheckCircle2,
@@ -169,74 +171,80 @@ export function MemberProfilePage() {
 
   if (isLoading) {
     return (
-      <section className="aw-design-page border border-woreda-border bg-woreda-surface p-6">
-        <p className="text-sm font-semibold text-woreda-textMuted">Loading member profile...</p>
+      <section className="aw-design-page member-detail-redesign flex min-h-0 flex-1 flex-col">
+        <div className="member-detail-loading">Loading member profile.</div>
       </section>
     );
   }
 
   return (
-    <section className="aw-design-page member-profile-page flex min-h-0 flex-1 flex-col gap-5">
-      {error ? (
-        <div className="border border-woreda-danger bg-woreda-dangerBg px-4 py-3 text-sm font-semibold text-woreda-danger">
-          {error}
-        </div>
-      ) : null}
+    <section className="aw-design-page member-detail-redesign flex min-h-0 flex-1 flex-col gap-5">
+      {error ? <div className="aw-error-banner">{error}</div> : null}
 
       {message ? (
-        <div className="border border-woreda-success/20 bg-woreda-successBg px-4 py-3 text-sm font-semibold text-woreda-success">
+        <div className="rounded-2xl border border-[var(--aw-success)] bg-[var(--aw-success-bg)] px-4 py-3 text-sm font-semibold text-[var(--aw-success)]">
           {message}
         </div>
       ) : null}
 
-      <div className="member-profile-hero border border-woreda-border bg-woreda-surface">
-        <div className="flex flex-col gap-5 px-6 py-6 xl:flex-row xl:items-start xl:justify-between">
-          <div className="flex min-w-0 items-start gap-4">
-            <div className="flex h-20 w-20 shrink-0 items-center justify-center border border-woreda-primary bg-woreda-primary text-2xl font-black text-white">
-              {profileInitials(member)}
-            </div>
+      <div className="member-profile-header-card">
+        <div className="member-profile-header-top">
+          <div className="member-profile-title-area">
+            <Link to="/member/profile" className="member-back-link">
+              <ArrowLeft size={15} />
+              My Profile
+            </Link>
 
-            <div className="min-w-0">
-              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-woreda-primary">
-                Member profile
-              </p>
-              <h1 className="mt-1 break-words text-3xl font-black leading-tight text-woreda-text">
-                {fullName}
-              </h1>
-              <p className="mt-2 text-sm font-semibold text-woreda-textMuted">
-                {member?.hibretName || "No Hibret"} · {member?.familyName || "No family assigned"}
-              </p>
+            <div className="member-profile-identity-row">
+              <div className="member-profile-avatar">
+                <span>{profileInitials(member)}</span>
+              </div>
 
-              <div className="mt-4 flex flex-wrap gap-2">
-                <StatusBadge label={member?.membershipStatus || "Unknown status"} tone="success" />
-                <StatusBadge label={user?.status || "Account status"} tone="primary" />
-                <StatusBadge label={member?.partyRole || "No party role"} tone="muted" />
+              <div className="min-w-0">
+                <p className="member-profile-eyebrow">Member profile</p>
+                <h1>{fullName}</h1>
+                <p className="mt-2 text-sm font-semibold text-[var(--aw-muted)]">
+                  {member?.hibretName || "No Hibret"} · {member?.familyName || "No family assigned"}
+                </p>
+
+                <div className="member-profile-status-row">
+                  <StatusBadge label={member?.membershipStatus || "Unknown status"} tone="success" />
+                  <StatusBadge label={user?.status || "Account status"} tone="primary" />
+                  <StatusBadge label={member?.partyRole || "No party role"} tone="muted" />
+                </div>
               </div>
             </div>
           </div>
 
-          <div className="flex shrink-0 flex-wrap gap-2">
-          
-            <button
-              type="button"
-              onClick={openEdit}
-              className="inline-flex min-h-10 items-center justify-center gap-2 border border-woreda-primary bg-woreda-primary px-4 py-2 text-sm font-black text-white hover:bg-woreda-sidebar"
-            >
-              <Edit3 size={16} />
-              Edit Profile
-            </button>
-</div>
+          <button
+            type="button"
+            onClick={openEdit}
+            className="member-profile-primary-action inline-flex items-center justify-center gap-2"
+          >
+            <Edit3 size={16} />
+            Edit Profile
+          </button>
         </div>
 
-        <div className="grid border-t border-woreda-border bg-woreda-surfaceLow md:grid-cols-3">
-          <HeroMetric label="Profile completeness" value={`${profileCompletion}%`} />
-          <HeroMetric label="Member code" value={member?.memberCode || "-"} />
-          <HeroMetric label="PP ID" value={member?.ppId || "-"} />
+        <div className="member-profile-summary-bar">
+          <div className="member-profile-progress-card">
+            <div className="member-summary-label-row">
+              <span>Profile completion</span>
+              <strong>{profileCompletion}%</strong>
+            </div>
+            <div className="member-profile-progress-track">
+              <div style={{ width: `${Math.min(100, Math.max(0, profileCompletion))}%` }} />
+            </div>
+          </div>
+
+          <SummaryItem label="Member code" value={member?.memberCode || "-"} />
+          <SummaryItem label="PP ID" value={member?.ppId || "-"} />
+          <SummaryItem label="Hibret" value={member?.hibretName || "-"} />
         </div>
       </div>
 
-      <div className="detail-layout">
-        <div className="space-y-5">
+      <div className="member-detail-layout">
+        <main className="member-detail-main space-y-5">
           <ProfileCompletenessCard completion={profileCompletion} missingFields={missingFields} />
 
           <ProfileSection title="Identity" icon={<IdCard size={18} />}>
@@ -274,9 +282,9 @@ export function MemberProfilePage() {
             <Detail label="Ethnicity" value={member?.ethnicity} />
             <Detail label="Health status" value={member?.healthStatus} />
           </ProfileSection>
-        </div>
+        </main>
 
-        <aside className="space-y-5">
+        <aside className="member-detail-side space-y-5">
           <ProfileSection title="Contact" icon={<Phone size={18} />} compact>
             <Detail label="Phone" value={member?.phone} strong />
             <Detail label="Email" value={member?.email || user?.email} />
@@ -290,13 +298,17 @@ export function MemberProfilePage() {
 
           <ProfileSection title="Recent attendance" icon={<CalendarDays size={18} />} compact>
             {member?.attendance?.length ? (
-              <div className="space-y-2">
+              <div className="member-attendance-list">
                 {member.attendance.slice(0, 6).map((record) => (
-                  <div key={record.id} className="border border-woreda-border bg-woreda-surfaceLow px-3 py-2">
-                    <p className="text-sm font-black text-woreda-text">{record.announcementTitle}</p>
-                    <p className="mt-1 text-xs font-semibold text-woreda-textMuted">
-                      {record.status} · {formatDate(record.recordedAt)}
-                    </p>
+                  <div key={record.id} className="member-attendance-row">
+                    <div>
+                      <strong>{record.announcementTitle}</strong>
+                      <span>{record.status}</span>
+                    </div>
+                    <div>
+                      <StatusBadge label={record.status} tone={attendanceTone(record.status)} />
+                      <small>{formatDate(record.recordedAt)}</small>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -323,15 +335,15 @@ export function MemberProfilePage() {
         <div className="fixed inset-0 z-50 flex justify-end bg-[var(--overlay-scrim)]">
           <form
             onSubmit={handleSaveProfile}
-            className="flex h-full w-full max-w-3xl flex-col border-l border-woreda-border bg-woreda-surface text-woreda-text"
+            className="flex h-full w-full max-w-3xl flex-col border-l border-[var(--aw-border-soft)] bg-[var(--aw-surface)] text-[var(--aw-text)]"
           >
-            <div className="flex items-start justify-between gap-4 border-b border-woreda-border bg-woreda-surfaceLow px-6 py-5">
+            <div className="flex items-start justify-between gap-4 border-b border-[var(--aw-border-soft)] bg-[var(--aw-surface-muted)] px-6 py-5">
               <div>
-                <p className="text-[11px] font-black uppercase tracking-[0.18em] text-woreda-primary">
+                <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[var(--aw-primary)]">
                   Member profile
                 </p>
-                <h2 className="mt-1 text-2xl font-black text-woreda-text">Edit Profile</h2>
-                <p className="mt-1 text-sm font-semibold text-woreda-textMuted">
+                <h2 className="mt-1 text-2xl font-black text-[var(--aw-text)]">Edit Profile</h2>
+                <p className="mt-1 text-sm font-semibold text-[var(--aw-muted)]">
                   Update contact, education, work, and profile information.
                 </p>
               </div>
@@ -339,7 +351,7 @@ export function MemberProfilePage() {
               <button
                 type="button"
                 onClick={() => setIsEditOpen(false)}
-                className="inline-flex h-10 w-10 items-center justify-center border border-woreda-border bg-woreda-surface text-woreda-text hover:border-woreda-primary hover:text-woreda-primary"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-[var(--aw-border-soft)] bg-[var(--aw-surface)] text-[var(--aw-text)] hover:border-[var(--aw-primary)] hover:text-[var(--aw-primary)]"
               >
                 <X size={18} />
               </button>
@@ -353,11 +365,11 @@ export function MemberProfilePage() {
                   <EditInput label="Grandfather name" value={editForm.grandfatherName} onChange={(value) => updateField("grandfatherName", value)} />
 
                   <label>
-                    <span className="text-sm font-black text-woreda-text">Gender</span>
+                    <span className="text-sm font-black text-[var(--aw-text)]">Gender</span>
                     <select
                       value={inputValue(editForm.gender)}
                       onChange={(event) => updateField("gender", event.target.value)}
-                      className="mt-2 min-h-11 w-full border border-woreda-border bg-woreda-surface px-3 py-2 text-sm outline-none focus:border-woreda-primary"
+                      className="mt-2 min-h-11 w-full rounded-2xl border border-[var(--aw-border-soft)] bg-[var(--aw-surface)] px-3 py-2 text-sm outline-none focus:border-[var(--aw-primary)]"
                     >
                       <option value="">Select gender</option>
                       <option value="male">Male</option>
@@ -400,11 +412,11 @@ export function MemberProfilePage() {
               </div>
             </div>
 
-            <div className="flex justify-end gap-3 border-t border-woreda-border bg-woreda-surfaceLow px-6 py-4">
+            <div className="flex justify-end gap-3 border-t border-[var(--aw-border-soft)] bg-[var(--aw-surface-muted)] px-6 py-4">
               <button
                 type="button"
                 onClick={() => setIsEditOpen(false)}
-                className="min-h-10 border border-woreda-border bg-woreda-surface px-5 py-2 text-sm font-black text-woreda-text hover:border-woreda-primary hover:text-woreda-primary"
+                className="min-h-10 rounded-2xl border border-[var(--aw-border-soft)] bg-[var(--aw-surface)] px-5 py-2 text-sm font-black text-[var(--aw-text)] hover:border-[var(--aw-primary)] hover:text-[var(--aw-primary)]"
               >
                 Cancel
               </button>
@@ -412,7 +424,7 @@ export function MemberProfilePage() {
               <button
                 type="submit"
                 disabled={isSaving}
-                className="inline-flex min-h-10 items-center justify-center gap-2 border border-woreda-primary bg-woreda-primary px-5 py-2 text-sm font-black text-white hover:bg-woreda-sidebar disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl bg-[var(--aw-primary)] px-5 py-2 text-sm font-black text-white hover:bg-[var(--aw-primary-dark)] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <Save size={16} />
                 {isSaving ? "Saving..." : "Save Profile"}
@@ -425,17 +437,18 @@ export function MemberProfilePage() {
   );
 }
 
-function EditGroup({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
+function attendanceTone(status?: string | null): "primary" | "success" | "muted" {
+  const value = String(status || "").toLowerCase();
+  if (value === "present") return "success";
+  if (value === "excused") return "primary";
+  return "muted";
+}
+
+function EditGroup({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="border border-woreda-border bg-woreda-surface">
-      <div className="border-b border-woreda-border bg-woreda-surfaceLow px-4 py-3">
-        <h3 className="text-sm font-black text-woreda-text">{title}</h3>
+    <section className="rounded-3xl border border-[var(--aw-border-soft)] bg-[var(--aw-surface)]">
+      <div className="border-b border-[var(--aw-border-soft)] bg-[var(--aw-surface-muted)] px-4 py-3">
+        <h3 className="text-sm font-black text-[var(--aw-text)]">{title}</h3>
       </div>
       <div className="form-grid p-4">{children}</div>
     </section>
@@ -445,15 +458,13 @@ function EditGroup({
 function ReadOnlyInput({ label, value }: { label: string; value: unknown }) {
   return (
     <label>
-      <span className="text-sm font-black text-woreda-text">{label}</span>
+      <span className="text-sm font-black text-[var(--aw-text)]">{label}</span>
       <input
         value={inputValue(value) || "-"}
         disabled
-        className="mt-2 min-h-11 w-full border border-woreda-border bg-woreda-surfaceLow px-3 py-2 text-sm font-semibold text-woreda-textMuted outline-none"
+        className="mt-2 min-h-11 w-full rounded-2xl border border-[var(--aw-border-soft)] bg-[var(--aw-surface-muted)] px-3 py-2 text-sm font-semibold text-[var(--aw-muted)] outline-none"
       />
-      <p className="mt-1 text-xs font-semibold text-woreda-textMuted">
-        Managed by administration.
-      </p>
+      <p className="mt-1 text-xs font-semibold text-[var(--aw-muted)]">Managed by administration.</p>
     </label>
   );
 }
@@ -471,25 +482,14 @@ function EditInput({
 }) {
   return (
     <label>
-      <span className="text-sm font-black text-woreda-text">{label}</span>
+      <span className="text-sm font-black text-[var(--aw-text)]">{label}</span>
       <input
         type={type}
         value={inputValue(value)}
         onChange={(event) => onChange(event.target.value)}
-        className="mt-2 min-h-11 w-full border border-woreda-border bg-woreda-surface px-3 py-2 text-sm outline-none focus:border-woreda-primary"
+        className="mt-2 min-h-11 w-full rounded-2xl border border-[var(--aw-border-soft)] bg-[var(--aw-surface)] px-3 py-2 text-sm outline-none focus:border-[var(--aw-primary)]"
       />
     </label>
-  );
-}
-
-function HeroMetric({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="border-r border-woreda-border px-6 py-4 last:border-r-0">
-      <p className="text-[11px] font-black uppercase tracking-[0.12em] text-woreda-textMuted">
-        {label}
-      </p>
-      <p className="mt-1 break-words text-xl font-black text-woreda-text">{value}</p>
-    </div>
   );
 }
 
@@ -502,15 +502,24 @@ function StatusBadge({
 }) {
   const classes =
     tone === "primary"
-      ? "border-woreda-primary/25 bg-woreda-primarySoft text-woreda-primary"
+      ? "border-[var(--aw-primary)]/25 bg-[var(--aw-primary-soft)] text-[var(--aw-primary)]"
       : tone === "success"
-        ? "border-woreda-success/25 bg-woreda-successBg text-woreda-success"
-        : "border-woreda-border bg-woreda-surfaceLow text-woreda-textMuted";
+        ? "border-[var(--aw-success)]/25 bg-[var(--aw-success-bg)] text-[var(--aw-success)]"
+        : "border-[var(--aw-border-soft)] bg-[var(--aw-surface-muted)] text-[var(--aw-muted)]";
 
   return (
-    <span className={`border px-2.5 py-1 text-xs font-black uppercase tracking-[0.06em] ${classes}`}>
+    <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-black ${classes}`}>
       {label}
     </span>
+  );
+}
+
+function SummaryItem({ label, value }: { label: string; value: unknown }) {
+  return (
+    <div className="member-summary-item">
+      <span>{label}</span>
+      <strong>{valueText(value)}</strong>
+    </div>
   );
 }
 
@@ -522,38 +531,38 @@ function ProfileCompletenessCard({
   missingFields: string[];
 }) {
   return (
-    <section className="border border-woreda-border bg-woreda-surface">
-      <div className="flex items-start justify-between gap-4 border-b border-woreda-border bg-woreda-surfaceLow px-5 py-4">
+    <section className="member-detail-section">
+      <div className="member-detail-section-header">
         <div>
-          <div className="flex items-center gap-2">
-            <CheckCircle2 size={18} className="text-woreda-primary" />
-            <h2 className="text-base font-black text-woreda-text">Profile completeness</h2>
-          </div>
-          <p className="mt-1 text-sm font-semibold text-woreda-textMuted">
-            Use this as a quick check for missing profile information.
-          </p>
+          <h2>
+            <span>
+              <CheckCircle2 size={18} />
+            </span>
+            Profile completeness
+          </h2>
+          <p>Use this as a quick check for missing profile information.</p>
         </div>
-        <p className="text-2xl font-black text-woreda-primary">{completion}%</p>
       </div>
 
       <div className="p-5">
-        <div className="h-3 border border-woreda-border bg-woreda-surfaceLow">
-          <div
-            className="h-full bg-woreda-primary"
-            style={{ width: `${Math.min(100, Math.max(0, completion))}%` }}
-          />
+        <div className="member-summary-label-row">
+          <span>Completion</span>
+          <strong>{completion}%</strong>
+        </div>
+        <div className="member-profile-progress-track mt-3">
+          <div style={{ width: `${Math.min(100, Math.max(0, completion))}%` }} />
         </div>
 
         {missingFields.length ? (
           <div className="mt-4">
-            <p className="text-[11px] font-black uppercase tracking-[0.12em] text-woreda-textMuted">
+            <p className="text-[11px] font-black uppercase tracking-[0.12em] text-[var(--aw-muted)]">
               Missing information
             </p>
             <div className="mt-2 flex flex-wrap gap-2">
               {missingFields.map((field) => (
                 <span
                   key={field}
-                  className="border border-woreda-border bg-woreda-surfaceLow px-2.5 py-1 text-xs font-bold text-woreda-textMuted"
+                  className="inline-flex rounded-full border border-[var(--aw-border-soft)] bg-[var(--aw-surface-muted)] px-3 py-1 text-xs font-black text-[var(--aw-muted)]"
                 >
                   {field}
                 </span>
@@ -561,7 +570,7 @@ function ProfileCompletenessCard({
             </div>
           </div>
         ) : (
-          <p className="mt-4 text-sm font-semibold text-woreda-success">
+          <p className="mt-4 text-sm font-semibold text-[var(--aw-success)]">
             Profile information is complete.
           </p>
         )}
@@ -577,19 +586,21 @@ function ProfileSection({
   compact = false,
 }: {
   title: string;
-  icon?: React.ReactNode;
-  children: React.ReactNode;
+  icon?: ReactNode;
+  children: ReactNode;
   compact?: boolean;
 }) {
   return (
-    <section className="member-profile-card border border-woreda-border bg-woreda-surface">
-      <div className="flex items-center gap-2 border-b border-woreda-border bg-woreda-surfaceLow px-5 py-3">
-        {icon ? <span className="text-woreda-primary">{icon}</span> : null}
-        <h2 className="text-base font-black text-woreda-text">{title}</h2>
+    <section className="member-detail-section">
+      <div className="member-detail-section-header">
+        <div>
+          <h2>
+            {icon ? <span>{icon}</span> : null}
+            {title}
+          </h2>
+        </div>
       </div>
-      <div className={compact ? "form-grid p-5" : "form-grid p-5"}>
-        {children}
-      </div>
+      <div className={compact ? "member-detail-fields is-compact" : "member-detail-fields"}>{children}</div>
     </section>
   );
 }
@@ -606,28 +617,20 @@ function Detail({
   const missing = isMissing(value);
 
   return (
-    <div className={missing ? "member-detail-item is-empty" : "member-detail-item"}>
-      <p className="text-[11px] font-black uppercase tracking-[0.08em] text-woreda-textMuted">
-        {label}
-      </p>
-      <p
-        className={[
-          "mt-1 break-words text-sm leading-6",
-          strong ? "font-black text-woreda-text" : "font-semibold text-woreda-text",
-          missing ? "italic text-woreda-textMuted" : "",
-        ].join(" ")}
-      >
+    <div className={missing ? "member-detail-pair is-empty" : "member-detail-pair"}>
+      <span>{label}</span>
+      <strong className={strong ? "is-strong" : ""}>
         {missing ? "Not recorded" : valueText(value)}
-      </p>
+      </strong>
     </div>
   );
 }
 
 function EmptyHint({ title, description }: { title: string; description: string }) {
   return (
-    <div className="border border-dashed border-woreda-border bg-woreda-surfaceLow px-4 py-5">
-      <p className="text-sm font-black text-woreda-text">{title}</p>
-      <p className="mt-1 text-sm font-semibold leading-6 text-woreda-textMuted">{description}</p>
+    <div className="member-detail-empty">
+      <h3>{title}</h3>
+      <p>{description}</p>
     </div>
   );
 }

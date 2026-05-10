@@ -1,12 +1,12 @@
-import { PublishedBroadcastsPage } from "../../shared/content/PublishedBroadcastsPage";
+import { RoleBroadcastsShell } from "../../shared/content/RoleBroadcastsShell";
 
 export function HibretBroadcastsPage() {
   return (
-    <section className="aw-design-page aw-mobile-page flex min-h-0 flex-1 flex-col">
-      <PublishedBroadcastsPage
-        title="Broadcasts"
-        subtitle="Read official Woreda communication posts published for Hibret administrators."
-      />
-    </section>
+    <RoleBroadcastsShell
+      eyebrow="Hibret Articles"
+      title="Broadcasts"
+      description="Read official Woreda communication posts published for Hibret administration in the same article layout used by the admin portal."
+      subtitle="Read official Woreda communication posts published for Hibret administrators."
+    />
   );
 }

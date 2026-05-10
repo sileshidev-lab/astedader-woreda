@@ -1,4 +1,6 @@
 import { apiClient } from "./apiClient";
+import { isDevMockDataEnabled } from "./runtimeConfig";
+import { getMockAnnouncementById, getMockAnnouncements, getMockAttendance } from "./devMockData";
 import type { Announcement } from "../types/announcement";
 import type { PaginationMeta } from "./announcementService";
 
@@ -102,21 +104,35 @@ export async function getHibretAnnouncements(params: {
   type?: string;
   status?: string;
 } = {}) {
-  const response = await apiClient.get<{
-    announcements: Announcement[];
-    pagination: PaginationMeta;
-    summary: HibretAnnouncementsSummary;
-  }>("/hibret/announcements", { params });
+  try {
+    const response = await apiClient.get<{
+      announcements: Announcement[];
+      pagination: PaginationMeta;
+      summary: HibretAnnouncementsSummary;
+    }>("/hibret/announcements", { params });
 
-  return response.data;
+    return response.data;
+  } catch (error) {
+    if (isDevMockDataEnabled()) {
+      return getMockAnnouncements(params);
+    }
+    throw error;
+  }
 }
 
 export async function getHibretAnnouncement(announcementId: string) {
-  const response = await apiClient.get<{ announcement: Announcement }>(
-    `/hibret/announcements/${announcementId}`
-  );
+  try {
+    const response = await apiClient.get<{ announcement: Announcement }>(
+      `/hibret/announcements/${announcementId}`
+    );
 
-  return response.data.announcement;
+    return response.data.announcement;
+  } catch (error) {
+    if (isDevMockDataEnabled()) {
+      return getMockAnnouncementById(announcementId);
+    }
+    throw error;
+  }
 }
 
 export async function getHibretReports() {
@@ -211,11 +227,18 @@ export async function uploadReportFile(file: File) {
 }
 
 export async function getHibretAttendance(announcementId: string) {
-  const response = await apiClient.get<{ attendance: HibretAttendance }>(
-    `/hibret/announcements/${announcementId}/attendance`
-  );
+  try {
+    const response = await apiClient.get<{ attendance: HibretAttendance }>(
+      `/hibret/announcements/${announcementId}/attendance`
+    );
 
-  return response.data.attendance;
+    return response.data.attendance;
+  } catch (error) {
+    if (isDevMockDataEnabled()) {
+      return getMockAttendance();
+    }
+    throw error;
+  }
 }
 
 export async function saveHibretAttendance(

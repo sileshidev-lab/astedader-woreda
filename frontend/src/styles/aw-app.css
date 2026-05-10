@@ -45,6 +45,147 @@
   min-width: 0;
 }
 
+/* Legacy text utility normalization.
+   Some role pages still use older `text-woreda-*` classes while admin pages use `--aw-*` tokens.
+   Keep the rendered text palette identical across roles while those pages continue to be unified. */
+.text-woreda-text {
+  color: var(--aw-text) !important;
+}
+
+.text-woreda-textMuted {
+  color: var(--aw-muted) !important;
+}
+
+.text-woreda-primary {
+  color: var(--aw-primary) !important;
+}
+
+.text-woreda-primaryDark,
+.text-woreda-primaryStrong {
+  color: var(--aw-primary-dark) !important;
+}
+
+.text-woreda-success {
+  color: var(--aw-success) !important;
+}
+
+.text-woreda-danger {
+  color: var(--aw-danger) !important;
+}
+
+.text-woreda-yellowText {
+  color: var(--aw-warning) !important;
+}
+
+.text-woreda-magenta {
+  color: var(--aw-magenta) !important;
+}
+
+.hover\:text-woreda-primary:hover {
+  color: var(--aw-primary) !important;
+}
+
+.hover\:text-woreda-text:hover {
+  color: var(--aw-text) !important;
+}
+
+.bg-woreda-surface {
+  background-color: var(--aw-surface) !important;
+}
+
+.bg-woreda-surfaceLow,
+.bg-woreda-surfaceContainer {
+  background-color: var(--aw-surface-muted) !important;
+}
+
+.bg-woreda-primary {
+  background-color: var(--aw-primary) !important;
+}
+
+.bg-woreda-primarySoft {
+  background-color: var(--aw-primary-soft) !important;
+}
+
+.bg-woreda-sidebar,
+.bg-woreda-primaryStrong {
+  background-color: var(--aw-primary-dark) !important;
+}
+
+.bg-woreda-success {
+  background-color: var(--aw-success) !important;
+}
+
+.bg-woreda-successBg {
+  background-color: var(--aw-success-bg) !important;
+}
+
+.bg-woreda-danger {
+  background-color: var(--aw-danger) !important;
+}
+
+.bg-woreda-dangerBg {
+  background-color: var(--aw-danger-bg) !important;
+}
+
+.bg-woreda-yellow {
+  background-color: var(--aw-yellow) !important;
+}
+
+.bg-woreda-yellowBg {
+  background-color: var(--aw-yellow-bg) !important;
+}
+
+.bg-woreda-magentaBg {
+  background-color: var(--aw-magenta-bg) !important;
+}
+
+.border-woreda-border,
+.border-woreda-borderLight,
+.border-woreda-borderCard {
+  border-color: var(--aw-border-soft) !important;
+}
+
+.border-woreda-primary {
+  border-color: var(--aw-primary) !important;
+}
+
+.border-woreda-success {
+  border-color: var(--aw-success) !important;
+}
+
+.border-woreda-danger {
+  border-color: var(--aw-danger) !important;
+}
+
+.border-woreda-yellow {
+  border-color: var(--aw-yellow) !important;
+}
+
+.border-woreda-surface {
+  border-color: var(--aw-surface) !important;
+}
+
+.hover\:bg-woreda-primarySoft:hover {
+  background-color: var(--aw-primary-soft) !important;
+}
+
+.hover\:bg-woreda-dangerBg:hover {
+  background-color: var(--aw-danger-bg) !important;
+}
+
+.hover\:bg-woreda-sidebar:hover,
+.hover\:bg-woreda-primaryStrong:hover {
+  background-color: var(--aw-primary-dark) !important;
+}
+
+.hover\:border-woreda-primary:hover {
+  border-color: var(--aw-primary) !important;
+}
+
+.hover\:border-woreda-border:hover {
+  border-color: var(--aw-border-soft) !important;
+}
+
 /* Reusable cards */
 .aw-panel,
 .aw-card,
@@ -442,11 +583,28 @@ th {
   font-weight: 650;
 }
 
+.aw-auth-field select {
+  width: 100%;
+  min-height: 46px;
+  border: 1px solid var(--aw-border);
+  background: var(--aw-surface);
+  color: var(--aw-text);
+  padding: 0 0.85rem;
+  outline: none;
+  font-size: 0.94rem;
+  font-weight: 650;
+}
+
 .aw-auth-field input::placeholder {
   color: color-mix(in srgb, var(--aw-muted) 58%, transparent);
 }
 
 .aw-auth-field input:focus {
+  border-color: var(--aw-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--aw-primary) 16%, transparent);
+}
+
+.aw-auth-field select:focus {
   border-color: var(--aw-primary);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--aw-primary) 16%, transparent);
 }

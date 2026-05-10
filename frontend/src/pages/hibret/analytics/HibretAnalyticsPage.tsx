@@ -1,8 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
-import { BarChart3, CheckCircle2, ClipboardList, Users } from "lucide-react";
+import { BarChart3, Users } from "lucide-react";
 import { useAuthStore } from "../../../store/authStore";
 import { getMyHibretPortalDetail } from "../../../services/hibretPortalService";
 import type { HibretPortalDetail } from "../../../services/hibretPortalService";
+import {
+  AdminEmptyState,
+  AdminMetricCard,
+  AdminSectionPanel,
+} from "../../../components/ui/AdminPagePrimitives";
 
 function percent(value: number, total: number) {
   if (!total) return 0;
@@ -66,22 +71,24 @@ export function HibretAnalyticsPage() {
   }, [detail?.directives]);
 
   return (
-    <section className="aw-design-page space-y-5">
+    <section className="aw-design-page aw-mobile-page flex min-h-0 flex-1 flex-col gap-5">
       {error ? (
         <div className="rounded border border-woreda-danger bg-woreda-dangerBg px-4 py-3 text-sm font-semibold text-woreda-danger">{error}</div>
       ) : null}
 
-      
-
-      <div className="stat-grid">
-        <Metric icon={ClipboardList} label="Assigned directives" value={analytics.directives} />
-        <Metric icon={CheckCircle2} label="Submitted reports" value={analytics.submittedReports} tone="primary" />
-        <Metric icon={Users} label="Members" value={analytics.members} />
-        <Metric icon={Users} label="Families" value={analytics.families} tone="success" />
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        <AdminMetricCard label="Assigned directives" value={analytics.directives} note="Current directives in this Hibret" />
+        <AdminMetricCard label="Submitted reports" value={analytics.submittedReports} note="Reports sent for review" tone="success" />
+        <AdminMetricCard label="Members" value={analytics.members} note="Registered Hibret members" />
+        <AdminMetricCard label="Families" value={analytics.families} note="Family structures in this Hibret" tone="warning" />
       </div>
 
-      <div className="chart-grid">
-        <section className="rounded border border-woreda-border/70 bg-woreda-surface p-5 shadow-none">
+      <div className="grid gap-5 xl:grid-cols-2">
+        <AdminSectionPanel
+          title="Report performance"
+          description="Submission and review progress for directives assigned to this Hibret."
+        >
+          <div className="p-5">
           <h2 className="flex items-center gap-2 text-lg font-black text-woreda-text">
             <BarChart3 size={18} />
             Report performance
@@ -97,9 +104,14 @@ export function HibretAnalyticsPage() {
             <SmallStat label="Approved reports" value={analytics.approvedReports} />
             <SmallStat label="Total reports" value={analytics.reports} />
           </div>
-        </section>
+          </div>
+        </AdminSectionPanel>
 
-        <section className="rounded border border-woreda-border/70 bg-woreda-surface p-5 shadow-none">
+        <AdminSectionPanel
+          title="Family structure"
+          description="Household organization and member assignment inside the Hibret."
+        >
+          <div className="p-5">
           <h2 className="flex items-center gap-2 text-lg font-black text-woreda-text">
             <Users size={18} />
             Family structure
@@ -114,16 +126,17 @@ export function HibretAnalyticsPage() {
           <div className="mt-5">
             <Progress label="Members assigned to families" value={percent(analytics.membersInFamilies, analytics.members)} />
           </div>
-        </section>
+          </div>
+        </AdminSectionPanel>
       </div>
 
-      <section className="rounded border border-woreda-border/70 bg-woreda-surface p-5 shadow-none">
-        <h2 className="text-lg font-black text-woreda-text">Directive type breakdown</h2>
-
+      <AdminSectionPanel
+        title="Directive type breakdown"
+        description="A quick look at the kinds of directives currently assigned."
+      >
+        <div className="p-5">
         {directiveBreakdown.length === 0 ? (
-          <p className="mt-4 rounded border border-dashed border-woreda-border bg-woreda-surfaceLow px-4 py-8 text-center text-sm font-semibold text-woreda-textMuted">
-            No assigned directives found.
-          </p>
+          <AdminEmptyState title="No assigned directives found" description="Directive analytics will appear here as work is assigned." />
         ) : (
           <div className="stat-grid mt-4">
             {directiveBreakdown.map(([type, count]) => (
@@ -131,21 +144,9 @@ export function HibretAnalyticsPage() {
             ))}
           </div>
         )}
-      </section>
+        </div>
+      </AdminSectionPanel>
     </section>
-  );
-}
-
-function Metric({ icon: Icon, label, value, tone = "default" }: { icon: any; label: string; value: number; tone?: "default" | "primary" | "success" }) {
-  const valueClass = tone === "primary" ? "text-woreda-primary" : tone === "success" ? "text-woreda-success" : "text-woreda-text";
-  return (
-    <div className="stat-card rounded">
-      <div className="flex items-center justify-between">
-        <p className="stat-label">{label}</p>
-        <Icon size={18} className="text-woreda-textMuted" />
-      </div>
-      <p className={`mt-2 text-3xl font-black ${valueClass}`}>{value}</p>
-    </div>
   );
 }
 

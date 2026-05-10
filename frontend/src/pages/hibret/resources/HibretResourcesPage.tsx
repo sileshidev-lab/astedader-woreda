@@ -1,8 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
-import { ChevronDown, ChevronUp, Download, ExternalLink, FileText, FolderOpen, Search } from "lucide-react";
+import { ChevronDown, ChevronUp, Download, ExternalLink, FileText, Search } from "lucide-react";
 import { getHibretResources } from "../../../services/hibretPortalService";
 import type { ResourceItem } from "../../../services/contentService";
 import { getFileDownloadUrl } from "../../../services/announcementService";
+import {
+  AdminMetricCard,
+  AdminSectionPanel,
+  AdminStatusPill,
+  AdminEmptyState,
+} from "../../../components/ui/AdminPagePrimitives";
 
 function formatDate(value?: string | null) {
   if (!value) return "-";
@@ -56,10 +62,17 @@ export function HibretResourcesPage() {
         <div className="rounded border border-woreda-danger bg-woreda-dangerBg px-4 py-3 text-sm font-semibold text-woreda-danger">{error}</div>
       ) : null}
 
-      <div className="rounded border border-woreda-border/70 bg-woreda-surfaceLow p-5 shadow-none">
-        
+      <div className="stat-grid shrink-0">
+        <AdminMetricCard label="Available resources" value={resources.length} note="Published files for Hibret work" />
+        <AdminMetricCard label="Categories" value={categories.length} note="Library groupings" />
+        <AdminMetricCard label="Matching results" value={filteredResources.length} note="Filtered for your current search" tone="success" />
+      </div>
 
-        <div className="aw-toolbar aw-toolbar-mobile-controls mt-4">
+      <AdminSectionPanel
+        title="Resource Library"
+        description="Published operational documents and references for Hibret administration."
+        actions={
+          <div className="aw-toolbar aw-toolbar-mobile-controls mt-0">
           <div className="flex min-h-10 border border-woreda-border bg-woreda-surface">
             <span className="flex items-center px-3 text-woreda-textMuted"><Search size={15} /></span>
             <input value={searchText} onChange={(event) => setSearchText(event.target.value)} placeholder="Search resources" className="w-full bg-transparent px-2 py-2 text-sm outline-none" />
@@ -90,26 +103,22 @@ export function HibretResourcesPage() {
               Clear
             </button>
           </div>
-        </div>
-      </div>
+          </div>
+        }
+      >
 
       <div className="min-h-0 flex-1 overflow-auto">
         {filteredResources.length === 0 ? (
-          <div className="rounded border border-dashed border-woreda-border bg-woreda-surface px-4 py-14 text-center text-sm font-semibold text-woreda-textMuted shadow-none">
-            <FolderOpen size={34} className="mx-auto mb-2" />
-            No published resources found.
-          </div>
+          <AdminEmptyState title="No published resources found" description="Try a different category or search query." />
         ) : (
           <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
             {filteredResources.map((resource) => (
-              <article key={resource.id} className="rounded border border-woreda-border/70 bg-woreda-surface p-5 shadow-none">
+              <article key={resource.id} className="rounded-3xl border border-[var(--aw-border-soft)] bg-[var(--aw-surface)] p-5 shadow-sm">
                 <div className="flex items-start justify-between gap-3">
-                  <div className="flex h-12 w-12 items-center justify-center rounded border border-woreda-primary/20 bg-woreda-primarySoft text-woreda-primary">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-woreda-primary/20 bg-woreda-primarySoft text-woreda-primary">
                     <FileText size={22} />
                   </div>
-                  <span className="rounded border border-woreda-success/20 bg-woreda-successBg px-2.5 py-1 text-xs font-bold text-woreda-success">
-                    published
-                  </span>
+                  <AdminStatusPill label="Published" tone="success" />
                 </div>
 
                 <h2 className="mt-4 line-clamp-2 text-xl font-black text-woreda-text">{resource.title}</h2>
@@ -138,6 +147,7 @@ export function HibretResourcesPage() {
           </div>
         )}
       </div>
+      </AdminSectionPanel>
     </section>
   );
 }

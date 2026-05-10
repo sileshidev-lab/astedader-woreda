@@ -6,6 +6,11 @@ import {
   updateManagedUserStatus,
   type ManagedUser,
 } from "../../../services/userService";
+import {
+  AdminMetricCard,
+  AdminSectionPanel,
+  AdminStatusPill,
+} from "../../../components/ui/AdminPagePrimitives";
 
 function formatDate(value?: string | null) {
   if (!value) return "-";
@@ -14,19 +19,6 @@ function formatDate(value?: string | null) {
 
 function memberName(user: ManagedUser) {
   return user.memberName || "Member account";
-}
-
-function statusClass(status: string) {
-  if (status === "ACTIVE") {
-    return "border-woreda-success/20 bg-woreda-successBg text-woreda-success";
-  }
-  if (status === "PENDING_SETUP") {
-    return "border-woreda-primary/20 bg-woreda-primarySoft text-woreda-primary";
-  }
-  if (status === "DISABLED") {
-    return "border-woreda-danger/20 bg-woreda-dangerBg text-woreda-danger";
-  }
-  return "border-woreda-border bg-woreda-surfaceLow text-woreda-textMuted";
 }
 
 export function UsersPage() {
@@ -119,21 +111,16 @@ export function UsersPage() {
       {error ? <div className="aw-error-banner">{error}</div> : null}
 
       <div className="hidden shrink-0 grid-cols-2 gap-3 md:grid md:grid-cols-4">
-        <Metric label="Member Users" value={summary.total} />
-        <Metric label="Active" value={summary.active} />
-        <Metric label="Pending setup" value={summary.pending} />
-        <Metric label="Disabled" value={summary.disabled} />
+        <AdminMetricCard label="Member Users" value={summary.total} note="Accounts in the system" />
+        <AdminMetricCard label="Active" value={summary.active} note="Currently enabled" tone="success" />
+        <AdminMetricCard label="Pending setup" value={summary.pending} note="Awaiting first sign-in" />
+        <AdminMetricCard label="Disabled" value={summary.disabled} note="Requires reactivation" tone="warning" />
       </div>
 
-      <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-3xl border border-woreda-border bg-woreda-surface">
-        <div className="flex shrink-0 flex-col gap-3 border-b border-woreda-border bg-woreda-surfaceLow p-4 xl:flex-row xl:items-center xl:justify-between">
-          <div>
-            <h2 className="text-lg font-black text-woreda-text">Member accounts</h2>
-            <p className="mt-1 text-sm font-semibold text-woreda-textMuted">
-              Only member login accounts are listed here.
-            </p>
-          </div>
-
+      <AdminSectionPanel
+        title="Member accounts"
+        description="Only member login accounts are listed here."
+        actions={
           <div className="aw-toolbar aw-toolbar-mobile-controls flex flex-wrap items-center gap-2">
             <div className="flex min-h-10 w-full sm:max-w-[18rem] items-center gap-2 border border-woreda-border bg-woreda-surface px-3">
               <Search size={16} className="text-woreda-textMuted" />
@@ -173,7 +160,8 @@ export function UsersPage() {
               </select>
             </div>
           </div>
-        </div>
+        }
+      >
 
         <div className="flex shrink-0 flex-col gap-3 border-b border-woreda-border bg-woreda-surface px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm font-black text-woreda-textMuted">{selectedCount} selected</p>
@@ -240,7 +228,10 @@ export function UsersPage() {
                     <td className="px-4 py-3 font-bold">{user.email}</td>
                     <td className="px-4 py-3">{user.hibretName || "-"}</td>
                     <td className="px-4 py-3">
-                      <span className={`inline-flex border px-2 py-1 text-xs font-black ${statusClass(user.status)}`}>{user.status}</span>
+                      <AdminStatusPill
+                        label={user.status}
+                        tone={user.status === "ACTIVE" ? "success" : user.status === "PENDING_SETUP" ? "primary" : "danger"}
+                      />
                     </td>
                     <td className="px-4 py-3">{formatDate(user.lastLoginAt)}</td>
                     <td className="px-4 py-3">
@@ -286,7 +277,10 @@ export function UsersPage() {
                         <p className="truncate text-xs font-semibold text-woreda-textMuted">{user.email}</p>
                       </div>
                     </div>
-                    <span className={`inline-flex border px-2 py-1 text-[11px] font-black ${statusClass(user.status)}`}>{user.status}</span>
+                    <AdminStatusPill
+                      label={user.status}
+                      tone={user.status === "ACTIVE" ? "success" : user.status === "PENDING_SETUP" ? "primary" : "danger"}
+                    />
                   </div>
                   <div className="mt-2 grid grid-cols-2 gap-2 text-xs font-semibold text-woreda-textMuted">
                     <p>Hibret: {user.hibretName || "-"}</p>
@@ -337,20 +331,7 @@ export function UsersPage() {
             </button>
           </div>
         </div>
-      </section>
+      </AdminSectionPanel>
     </section>
-  );
-}
-
-function Metric({ label, value }: { label: string; value: number }) {
-  return (
-    <article className="aw-stat-card relative overflow-hidden rounded-3xl border border-[var(--aw-border-soft)] bg-[var(--aw-surface)] p-4 shadow-sm">
-      <div className="absolute right-0 top-0 h-20 w-20 rounded-bl-full bg-[var(--aw-primary-soft)]" aria-hidden />
-      <p className="relative text-[11px] font-black uppercase tracking-[0.14em] text-[var(--aw-muted)]">{label}</p>
-      <p className="relative mt-2 text-[clamp(1.35rem,2vw,2rem)] font-black leading-none text-[var(--aw-primary)]">
-        {value}
-      </p>
-      <div className="relative mt-3 h-1.5 rounded-full bg-[var(--aw-primary)]" />
-    </article>
   );
 }

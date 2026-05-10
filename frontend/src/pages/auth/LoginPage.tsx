@@ -3,8 +3,10 @@ import type { FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import { ArrowLeft, Eye, EyeOff, Moon, Sun } from "lucide-react";
+import { isDevBypassLoginEnabled } from "../../services/runtimeConfig";
 import { useAuthStore } from "../../store/authStore";
 import { useThemeStore } from "../../store/themeStore";
+import type { UserRole } from "../../types/auth";
 import { AuthShell } from "./AuthShell";
 import { AUTH_SPLIT_HERO_IMAGES } from "./authHeroImages";
 
@@ -23,11 +25,13 @@ export function LoginPage() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [mockRole, setMockRole] = useState<UserRole>("WOREDA_ADMIN");
   const [showPassword, setShowPassword] = useState(false);
   const [code, setCode] = useState("");
   const [twoFactorToken, setTwoFactorToken] = useState("");
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
+  const devBypassEnabled = isDevBypassLoginEnabled();
 
   if (isAuthenticated) {
     return <Navigate to={destinationForRole(user?.role)} replace />;
@@ -39,7 +43,9 @@ export function LoginPage() {
     setNotice("");
 
     try {
-      const result = await login(email.trim(), password);
+      const result = await login(email.trim(), password, {
+        mockRole: devBypassEnabled ? mockRole : undefined,
+      });
 
       if (result && "twoFactorRequired" in result && result.twoFactorRequired) {
         setTwoFactorToken(result.twoFactorToken);
@@ -107,6 +113,22 @@ export function LoginPage() {
               aria-invalid={Boolean(error)}
             />
           </label>
+
+          {devBypassEnabled ? (
+            <label className="aw-auth-field" htmlFor="login-dev-role">
+              <span>Development role</span>
+              <select
+                id="login-dev-role"
+                value={mockRole}
+                onChange={(event) => setMockRole(event.target.value as UserRole)}
+                aria-label="Development role"
+              >
+                <option value="WOREDA_ADMIN">Woreda Admin</option>
+                <option value="HIBRET_ADMIN">Hibret Admin</option>
+                <option value="MEMBER">Member</option>
+              </select>
+            </label>
+          ) : null}
 
           <label className="aw-auth-field" htmlFor="login-password">
             <span>{t("auth.password")}</span>

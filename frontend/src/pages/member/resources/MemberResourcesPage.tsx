@@ -1,8 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
-import { ChevronDown, ChevronUp, Download, ExternalLink, FileText, FolderOpen, Search } from "lucide-react";
+import { ChevronDown, ChevronUp, Download, ExternalLink, FileText, Search } from "lucide-react";
 import { getResources } from "../../../services/contentService";
 import type { ResourceItem } from "../../../services/contentService";
 import { getFileDownloadUrl, getFilePreviewUrl } from "../../../services/announcementService";
+import {
+  AdminMetricCard,
+  AdminSectionPanel,
+  AdminStatusPill,
+  AdminEmptyState,
+} from "../../../components/ui/AdminPagePrimitives";
 
 function formatDate(value?: string | null) {
   if (!value) return "-";
@@ -73,24 +79,16 @@ export function MemberResourcesPage() {
       ) : null}
 
       <div className="stat-grid shrink-0">
-        <Metric label="Available resources" value={resources.length} />
-        <Metric label="Categories" value={categories.length} />
-        <Metric label="Matching results" value={filteredResources.length} />
+        <AdminMetricCard label="Available resources" value={resources.length} note="Published items ready to open" />
+        <AdminMetricCard label="Categories" value={categories.length} note="Topics represented in the library" />
+        <AdminMetricCard label="Matching results" value={filteredResources.length} note="Current filtered view" tone="success" />
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col border border-woreda-border bg-woreda-surface">
-        <div className="shrink-0 border-b border-woreda-border bg-woreda-surfaceLow px-5 py-4">
-          <div className="flex flex-col gap-1">
-            <div className="flex items-center gap-2">
-              <span className="h-5 w-1 bg-woreda-yellow" />
-              <h1 className="text-xl font-black text-woreda-text">Resource Library</h1>
-            </div>
-            <p className="text-sm font-semibold text-woreda-textMuted">
-              Published official files and documents available to members.
-            </p>
-          </div>
-
-          <div className="aw-toolbar mt-4">
+      <AdminSectionPanel
+        title="Resource Library"
+        description="Published official files and documents available to members."
+        actions={
+          <div className="aw-toolbar mt-0">
             <div className="aw-search-wrap">
               <span className="flex items-center px-3 text-woreda-textMuted">
                 <Search size={15} />
@@ -143,25 +141,21 @@ export function MemberResourcesPage() {
               </button>
             </div>
           </div>
-        </div>
+        }
+      >
 
         <div className="min-h-0 flex-1 overflow-auto p-5">
           {filteredResources.length === 0 ? (
-            <div className="border border-dashed border-woreda-border bg-woreda-surfaceLow px-4 py-14 text-center text-sm font-semibold text-woreda-textMuted">
-              <FolderOpen size={34} className="mx-auto mb-2" />
-              No published resources found.
-            </div>
+            <AdminEmptyState title="No published resources found" description="Try changing the search or category filters." />
           ) : (
             <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
               {filteredResources.map((resource) => (
-                <article key={resource.id} className="border border-woreda-border bg-woreda-surface p-5">
+                <article key={resource.id} className="rounded-3xl border border-[var(--aw-border-soft)] bg-[var(--aw-surface)] p-5 shadow-sm">
                   <div className="flex items-start justify-between gap-3">
-                    <div className="flex h-12 w-12 items-center justify-center border border-woreda-primary/20 bg-woreda-primarySoft text-woreda-primary">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-woreda-primary/20 bg-woreda-primarySoft text-woreda-primary">
                       <FileText size={22} />
                     </div>
-                    <span className="border border-woreda-success/20 bg-woreda-successBg px-2.5 py-1 text-xs font-bold text-woreda-success">
-                      Published
-                    </span>
+                    <AdminStatusPill label="Published" tone="success" />
                   </div>
 
                   <h2 className="mt-4 line-clamp-2 text-xl font-black text-woreda-text">
@@ -207,18 +201,7 @@ export function MemberResourcesPage() {
             </div>
           )}
         </div>
-      </div>
+      </AdminSectionPanel>
     </section>
-  );
-}
-
-function Metric({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="stat-card border border-woreda-border bg-woreda-surface px-5 py-4">
-      <p className="stat-label">
-        {label}
-      </p>
-      <p className="stat-value mt-2 text-woreda-text">{value}</p>
-    </div>
   );
 }

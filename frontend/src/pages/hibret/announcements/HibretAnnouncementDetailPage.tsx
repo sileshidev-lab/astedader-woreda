@@ -103,29 +103,29 @@ function statusWord(value?: string | null) {
 
 function statusTextClass(value?: string | null) {
   if (value === "approved" || value === "present" || value === "published") {
-    return "text-woreda-success";
+    return "text-[var(--aw-success)]";
   }
 
   if (value === "rejected" || value === "absent") {
-    return "text-woreda-danger";
+    return "text-[var(--aw-danger)]";
   }
 
   if (value === "submitted" || value === "draft") {
-    return "text-woreda-primary";
+    return "text-[var(--aw-primary)]";
   }
 
   if (value === "changes_requested" || value === "excused") {
-    return "text-woreda-yellowText";
+    return "text-[var(--aw-yellow-text)]";
   }
 
-  return "text-woreda-textMuted";
+  return "text-[var(--aw-muted)]";
 }
 
 function typeTextClass(type: AnnouncementType) {
-  if (type === "meeting") return "text-woreda-primary";
-  if (type === "conference") return "text-woreda-magenta";
-  if (type === "trend_report") return "text-woreda-yellowText";
-  return "text-woreda-textMuted";
+  if (type === "meeting") return "text-[var(--aw-primary)]";
+  if (type === "conference") return "text-[var(--aw-magenta)]";
+  if (type === "trend_report") return "text-[var(--aw-yellow-text)]";
+  return "text-[var(--aw-muted)]";
 }
 
 function getReportStatus(report?: LocalReport) {
@@ -139,10 +139,10 @@ function getReviewStatus(report?: LocalReport) {
 
 function tabClass(active: boolean) {
   return [
-    "min-h-11 border-b-2 px-4 py-3 text-sm font-black uppercase tracking-[0.1em] transition",
+    "min-h-11 rounded-2xl px-4 py-3 text-sm font-black uppercase tracking-[0.1em] transition",
     active
-      ? "border-woreda-yellow bg-woreda-surface text-woreda-primary"
-      : "border-transparent bg-woreda-surfaceLow text-woreda-textMuted hover:text-woreda-primary",
+      ? "bg-[var(--aw-primary)] text-white shadow-sm"
+      : "text-[var(--aw-text)] hover:bg-[var(--aw-surface-muted)] hover:text-[var(--aw-primary)]",
   ].join(" ");
 }
 
@@ -459,8 +459,8 @@ export function HibretAnnouncementDetailPage() {
 
   if (isLoading) {
     return (
-      <section className="aw-design-page border border-woreda-border/70 bg-woreda-surface p-5 shadow-none">
-        <p className="text-sm font-semibold text-woreda-textMuted">
+      <section className="flex min-h-[260px] items-center rounded-3xl border border-[var(--aw-border-soft)] bg-[var(--aw-surface)] p-5 shadow-sm">
+        <p className="text-sm font-semibold text-[var(--aw-muted)]">
           Loading directive.
         </p>
       </section>
@@ -469,8 +469,8 @@ export function HibretAnnouncementDetailPage() {
 
   if (!announcement) {
     return (
-      <section className="border border-woreda-border/70 bg-woreda-surface p-5 shadow-none">
-        <p className="text-sm font-semibold text-woreda-textMuted">
+      <section className="rounded-3xl border border-[var(--aw-border-soft)] bg-[var(--aw-surface)] p-5 shadow-sm">
+        <p className="text-sm font-semibold text-[var(--aw-muted)]">
           Directive not found.
         </p>
       </section>
@@ -480,49 +480,49 @@ export function HibretAnnouncementDetailPage() {
   return (
     <section className="aw-design-page aw-design-directives aw-design-detail aw-stitch-page aw-stitch-detail space-y-5">
       {error ? (
-        <div className="border border-woreda-danger bg-woreda-dangerBg px-4 py-3 text-sm font-semibold text-woreda-danger">
+        <div className="rounded-2xl border border-[var(--aw-danger)] bg-[var(--aw-danger-bg)] px-4 py-3 text-sm font-semibold text-[var(--aw-danger)]">
           {error}
         </div>
       ) : null}
 
       {message ? (
-        <div className="border border-woreda-success/20 bg-woreda-successBg px-4 py-3 text-sm font-semibold text-woreda-success">
+        <div className="rounded-2xl border border-[var(--aw-success)] bg-[var(--aw-success-bg)] px-4 py-3 text-sm font-semibold text-[var(--aw-success)]">
           {message}
         </div>
       ) : null}
 
-      <div className="border border-woreda-border/70 bg-woreda-surface shadow-none">
-        <div className="flex flex-col gap-4 border-b border-woreda-border bg-woreda-surfaceLow px-5 py-4 lg:flex-row lg:items-start lg:justify-between">
+      <div className="overflow-hidden rounded-3xl border border-[var(--aw-border-soft)] bg-[var(--aw-surface)] shadow-sm">
+        <div className="flex flex-col gap-4 border-b border-[var(--aw-border-soft)] bg-[var(--aw-surface)] p-4 sm:p-5 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <Link
               to="/hibret/announcements"
-              className="mb-3 inline-flex min-h-10 items-center justify-center gap-2 border border-woreda-border bg-woreda-surface px-4 py-2 text-sm font-bold text-woreda-text hover:border-woreda-primary hover:text-woreda-primary"
+              className="mb-3 inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl border border-[var(--aw-border-soft)] bg-[var(--aw-surface)] px-4 py-2 text-sm font-black text-[var(--aw-text)] shadow-sm hover:border-[var(--aw-primary)] hover:text-[var(--aw-primary)]"
             >
               <ArrowLeft size={16} />
               Back
             </Link>
 
-            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-woreda-textMuted">
+            <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[var(--aw-muted)]">
               Assigned directive
             </p>
-            <h1 className="mt-1 max-w-5xl text-3xl font-black leading-tight text-woreda-text">
+            <h1 className="mt-1 max-w-5xl text-[clamp(1.25rem,2vw,1.9rem)] font-black leading-tight text-[var(--aw-text)]">
               {announcement.title}
             </h1>
 
-            <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs font-bold uppercase tracking-[0.08em]">
-              <span className={typeTextClass(announcement.type)}>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <span className={`inline-flex rounded-full border border-[var(--aw-border-soft)] bg-[var(--aw-surface-muted)] px-3 py-1 text-xs font-black ${typeTextClass(announcement.type)}`}>
                 {typeLabels[announcement.type]}
               </span>
-              <span className="text-woreda-danger">
+              <span className="inline-flex rounded-full border border-[var(--aw-danger)]/25 bg-[var(--aw-danger-bg)] px-3 py-1 text-xs font-black text-[var(--aw-danger)]">
                 Deadline: {formatDate(announcement.deadline)}
               </span>
               {announcement.attendanceRequired ? (
-                <span className="text-woreda-yellowText">Attendance required</span>
+                <span className="inline-flex rounded-full border border-[var(--aw-yellow)]/40 bg-[var(--aw-yellow-bg)] px-3 py-1 text-xs font-black text-[var(--aw-yellow-text)]">Attendance required</span>
               ) : null}
-              <span className={statusTextClass(report?.status)}>
+              <span className={`inline-flex rounded-full border border-[var(--aw-border-soft)] bg-[var(--aw-surface-muted)] px-3 py-1 text-xs font-black ${statusTextClass(report?.status)}`}>
                 Report: {statusWord(getReportStatus(report))}
               </span>
-              <span className={statusTextClass(report?.reviewDecision)}>
+              <span className={`inline-flex rounded-full border border-[var(--aw-border-soft)] bg-[var(--aw-surface-muted)] px-3 py-1 text-xs font-black ${statusTextClass(report?.reviewDecision)}`}>
                 Review: {statusWord(getReviewStatus(report))}
               </span>
             </div>
@@ -530,14 +530,14 @@ export function HibretAnnouncementDetailPage() {
 
         </div>
 
-        <div className="grid gap-0 border-b border-woreda-border md:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 border-t border-[var(--aw-border-soft)] bg-[var(--aw-bg)] p-4 sm:grid-cols-2 xl:grid-cols-4">
           <ProgressStep label="Published" done />
           <ProgressStep label="Attendance" done={!announcement.attendanceRequired || attendanceComplete} />
           <ProgressStep label="Submitted" done={Boolean(report?.submittedAt || report?.status === "submitted" || report?.status === "approved")} />
           <ProgressStep label={statusWord(getReviewStatus(report))} done={Boolean(report?.reviewDecision)} />
         </div>
 
-        <div className="flex flex-wrap border-b border-woreda-border bg-woreda-surfaceLow">
+        <div className="flex flex-wrap gap-2 border-t border-[var(--aw-border-soft)] bg-[var(--aw-surface)] p-2">
           <button
             type="button"
             onClick={() => setActiveTab("report")}
@@ -623,13 +623,14 @@ export function HibretAnnouncementDetailPage() {
 
 function ProgressStep({ label, done }: { label: string; done: boolean }) {
   return (
-    <div className="border-b border-woreda-border bg-woreda-surface px-4 py-2.5 md:border-b-0 md:border-r last:md:border-r-0">
-      <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-woreda-textMuted">
+    <div className="aw-stat-card relative overflow-hidden rounded-3xl border border-[var(--aw-border-soft)] bg-[var(--aw-surface)] p-4 shadow-sm">
+      <p className="text-[10px] font-black uppercase tracking-[0.12em] text-[var(--aw-muted)]">
         {label}
       </p>
-      <p className={`mt-0.5 text-xs font-black uppercase tracking-[0.08em] ${done ? "text-woreda-success" : "text-woreda-textMuted"}`}>
+      <p className={`mt-2 text-sm font-black uppercase tracking-[0.08em] ${done ? "text-[var(--aw-success)]" : "text-[var(--aw-muted)]"}`}>
         {done ? "Complete" : "Pending"}
       </p>
+      <div className={`mt-3 h-1.5 rounded-full ${done ? "bg-[var(--aw-success)]" : "bg-[var(--aw-border-soft)]"}`} />
     </div>
   );
 }
