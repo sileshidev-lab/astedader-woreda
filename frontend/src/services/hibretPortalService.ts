@@ -1,7 +1,5 @@
 import { apiClient } from "./apiClient";
 import type { ResourceItem } from "./contentService";
-import { getMockResources } from "./devMockData";
-import { isDevMockDataEnabled } from "./runtimeConfig";
 
 export type HibretFamilyMember = {
   id: string;
@@ -127,34 +125,19 @@ export async function getMyHibretPortalDetail(hibretId?: string | null) {
 }
 
 export async function getHibretResources() {
-  try {
-    const response = await apiClient.get<{
-      resources: ResourceItem[];
-      summary: { total: number; published: number; drafts: number; archived: number };
-    }>("/resources");
+  const response = await apiClient.get<{
+    resources: ResourceItem[];
+    summary: { total: number; published: number; drafts: number; archived: number };
+  }>("/resources");
 
-    return {
-      ...response.data,
-      resources: response.data.resources.filter(
-        (item) =>
-          item.status === "published" &&
-          (item.targetRoles.includes("HIBRET_ADMIN") || item.targetRoles.includes("MEMBER"))
-      ),
-    };
-  } catch (error) {
-    if (isDevMockDataEnabled()) {
-      const data = getMockResources();
-      return {
-        ...data,
-        resources: data.resources.filter(
-          (item) =>
-            item.status === "published" &&
-            (item.targetRoles.includes("HIBRET_ADMIN") || item.targetRoles.includes("MEMBER"))
-        ),
-      };
-    }
-    throw error;
-  }
+  return {
+    ...response.data,
+    resources: response.data.resources.filter(
+      (item) =>
+        item.status === "published" &&
+        (item.targetRoles.includes("HIBRET_ADMIN") || item.targetRoles.includes("MEMBER"))
+    ),
+  };
 }
 
 export async function getChatMessages() {

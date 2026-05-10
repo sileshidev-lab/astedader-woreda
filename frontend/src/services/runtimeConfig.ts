@@ -14,9 +14,3 @@ export function isDevBypassLoginEnabled() {
   return import.meta.env.DEV && (flag === "true" || flag === "1" || flag === "yes");
 }
 
-export function isDevMockDataEnabled() {
-  const flag = String(import.meta.env.VITE_DEV_MOCK_DATA || "").toLowerCase();
-  if (flag === "true" || flag === "1" || flag === "yes") return import.meta.env.DEV;
-  return isDevBypassLoginEnabled();
-}
-

@@ -1,6 +1,4 @@
 import { apiClient } from "./apiClient";
-import { getMockMemberProfile, updateMockMemberProfile } from "./devMockData";
-import { isDevMockDataEnabled } from "./runtimeConfig";
 
 export type WoredaMember = {
   id: string;
@@ -292,15 +290,8 @@ export async function commitMemberImport(rows: MemberImportPreviewRow[]) {
 
 
 export async function getMyMemberProfile() {
-  try {
-    const response = await apiClient.get<{ member: WoredaMember }>("/members/me/profile");
-    return response.data.member;
-  } catch (error) {
-    if (isDevMockDataEnabled()) {
-      return getMockMemberProfile();
-    }
-    throw error;
-  }
+  const response = await apiClient.get<{ member: WoredaMember }>("/members/me/profile");
+  return response.data.member;
 }
 
 
@@ -328,15 +319,8 @@ export type MyMemberProfileUpdatePayload = {
 };
 
 export async function updateMyMemberProfile(payload: MyMemberProfileUpdatePayload) {
-  try {
-    const response = await apiClient.patch<{ member: WoredaMember }>("/members/me/profile", payload);
-    return response.data.member;
-  } catch (error) {
-    if (isDevMockDataEnabled()) {
-      return updateMockMemberProfile(payload);
-    }
-    throw error;
-  }
+  const response = await apiClient.patch<{ member: WoredaMember }>("/members/me/profile", payload);
+  return response.data.member;
 }
 
 

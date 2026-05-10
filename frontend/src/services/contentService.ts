@@ -1,6 +1,4 @@
 import { apiClient } from "./apiClient";
-import { getMockBroadcasts, getMockResources } from "./devMockData";
-import { isDevMockDataEnabled } from "./runtimeConfig";
 
 export type ContentStatus = "draft" | "published" | "archived";
 
@@ -45,19 +43,12 @@ export type ResourceItem = {
 };
 
 export async function getBroadcasts() {
-  try {
-    const response = await apiClient.get<{
-      broadcasts: Broadcast[];
-      summary: { total: number; published: number; drafts: number; archived: number };
-    }>("/broadcasts");
+  const response = await apiClient.get<{
+    broadcasts: Broadcast[];
+    summary: { total: number; published: number; drafts: number; archived: number };
+  }>("/broadcasts");
 
-    return response.data;
-  } catch (error) {
-    if (isDevMockDataEnabled()) {
-      return getMockBroadcasts();
-    }
-    throw error;
-  }
+  return response.data;
 }
 
 export async function createBroadcast(payload: {
@@ -106,19 +97,12 @@ export async function uploadBroadcastFile(file: File) {
 }
 
 export async function getResources() {
-  try {
-    const response = await apiClient.get<{
-      resources: ResourceItem[];
-      summary: { total: number; published: number; drafts: number; archived: number };
-    }>("/resources");
+  const response = await apiClient.get<{
+    resources: ResourceItem[];
+    summary: { total: number; published: number; drafts: number; archived: number };
+  }>("/resources");
 
-    return response.data;
-  } catch (error) {
-    if (isDevMockDataEnabled()) {
-      return getMockResources();
-    }
-    throw error;
-  }
+  return response.data;
 }
 
 export async function createResource(payload: {
