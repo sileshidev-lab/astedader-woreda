@@ -1,0 +1,467 @@
+{
+  "app": {
+    "name": "Astedader Woreda"
+  },
+  "auth": {
+    "authorizedAccess": "Authorized access",
+    "administrativePortal": "Astedader Woreda Administrative Portal",
+    "secureAccess": "Secure access for authorized Woreda, Hibret, and member administration.",
+    "emailAddress": "Email address",
+    "password": "Password",
+    "confirmPassword": "Confirm password",
+    "newPassword": "New password",
+    "verificationCode": "Verification code",
+    "forgotPassword": "Forgot password?",
+    "signIn": "Sign in",
+    "signingIn": "Signing in...",
+    "verifyAndSignIn": "Verify and sign in",
+    "verifying": "Verifying...",
+    "sendResetLink": "Send reset link",
+    "sending": "Sending...",
+    "resetPassword": "Reset password",
+    "saving": "Saving...",
+    "activateAccount": "Activate account",
+    "activating": "Activating...",
+    "backToLogin": "Back to login",
+    "backToPassword": "Back to password",
+    "issuedCredentials": "Use your issued account credentials to continue.",
+    "recoverInstruction": "Enter your account email. If the account exists, reset instructions will be sent.",
+    "resetInstruction": "Create a new password. It must be at least 8 characters.",
+    "setupInstruction": "Create a password from your invitation link. Minimum 8 characters.",
+    "emailPlaceholder": "your-email@domain.gov.et",
+    "passwordPlaceholder": "••••••••",
+    "codePlaceholder": "000000",
+    "minimumPasswordPlaceholder": "At least 8 characters",
+    "reEnterPasswordPlaceholder": "Re-enter password",
+    "switchToLight": "Switch to light theme",
+    "switchToDark": "Switch to dark theme",
+    "accessDenied": "Access denied",
+    "unauthorized": "Unauthorized",
+    "unauthorizedMessage": "Your account does not have access to this page.",
+    "returnToLogin": "Return to login",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+    "signInForm": "Sign in form",
+    "verificationForm": "Verification form",
+    "forgotPasswordForm": "Forgot password form",
+    "twoFactorInstruction": "Enter the verification code sent to your email.",
+    "twoFactorSent": "A verification code was sent to your email.",
+    "loginFailed": "Incorrect email or password. Try again or reset your password.",
+    "invalidCode": "Invalid or expired verification code. Check your email and try again.",
+    "resetSent": "Password reset instructions were sent if this account exists.",
+    "resetSendFailed": "Unable to send reset link. Check the email and try again."
+  },
+  "sidebar": {
+    "announcements": "Directives",
+    "hibrets": "Hibrets",
+    "members": "Members",
+    "admins": "Admins",
+    "reports": "Reports",
+    "resources": "Resources",
+    "gallery": "Gallery",
+    "broadcasts": "Broadcasts",
+    "forms": "Forms",
+    "chat": "Chat",
+    "activity": "Activity",
+    "analytics": "Analytics",
+    "settings": "Settings",
+    "users": "Users",
+    "dashboard": "Dashboard"
+  },
+  "common": {
+    "loading": "Loading",
+    "save": "Save",
+    "create": "Create",
+    "edit": "Edit",
+    "delete": "Delete",
+    "archive": "Archive",
+    "publish": "Publish",
+    "export": "Export",
+    "search": "Search",
+    "open": "Open",
+    "cancel": "Cancel",
+    "clear": "Clear",
+    "previous": "Previous",
+    "next": "Next",
+    "filters": "Filters",
+    "logout": "Logout",
+    "saving": "Saving...",
+    "paginationLine": "Page {{page}} of {{pages}} · {{total}} total",
+    "pageSize": "{{size}} / page",
+    "dark": "Dark",
+    "light": "Light"
+  },
+  "admins": {
+    "loading": "Loading admins.",
+    "empty": "No admins match the current filters.",
+    "summaryLine": "{{filtered}} of {{total}} admins",
+    "kpi": {
+      "total": "Admins",
+      "woreda": "Woreda",
+      "hibret": "Hibret",
+      "active": "Active",
+      "pendingSetup": "Pending",
+      "disabled": "Disabled"
+    },
+    "roles": {
+      "woreda": "Woreda Admin",
+      "hibret": "Hibret Admin",
+      "woredaLabel": "Woreda admin",
+      "hibretLabel": "Hibret admin"
+    },
+    "status": {
+      "active": "Active",
+      "pendingSetup": "Pending setup",
+      "disabled": "Disabled"
+    },
+    "scope": {
+      "woreda": "Woreda",
+      "allSystem": "All system scope",
+      "assignedHibret": "Assigned Hibret"
+    },
+    "privileges": {
+      "fullAccess": "Full access",
+      "count": "{{count}} privileges"
+    },
+    "filters": {
+      "searchPlaceholder": "Search email, role, Hibret, privilege",
+      "roleAll": "All roles",
+      "statusAll": "All statuses",
+      "scopeAll": "All scopes",
+      "scopeWoreda": "Woreda scope",
+      "scopeHibret": "Hibret scope"
+    },
+    "table": {
+      "admin": "Admin",
+      "scope": "Scope",
+      "account": "Account",
+      "privileges": "Privileges",
+      "lastLogin": "Last login",
+      "actions": "Actions"
+    },
+    "actions": {
+      "create": "Create Admin",
+      "save": "Save Admin",
+      "disable": "Disable",
+      "reactivate": "Reactivate",
+      "setupLink": "Setup Link"
+    },
+    "mobile": {
+      "scopeLabel": "Scope:"
+    },
+    "form": {
+      "eyebrow": "Admin account",
+      "createTitle": "Create Admin",
+      "editTitle": "Edit Admin",
+      "email": "Email",
+      "role": "Role",
+      "hibret": "Hibret",
+      "selectHibret": "Select Hibret",
+      "privilegesTitle": "Privileges",
+      "privilegesHint": "Select what this admin can access.",
+      "selectedCount": "{{count}} selected",
+      "fullAccessLabel": "Full access (*)",
+      "errors": {
+        "emailRequired": "Email is required.",
+        "hibretRequired": "Hibret is required for Hibret admins.",
+        "privilegeRequired": "Select at least one privilege."
+      }
+    },
+    "errors": {
+      "load": "Unable to load admins.",
+      "save": "Unable to save admin.",
+      "status": "Unable to update admin status.",
+      "resendSetup": "Unable to resend setup email."
+    },
+    "detail": {
+      "loading": "Loading admin.",
+      "notFound": "Admin not found.",
+      "eyebrow": "Admin detail",
+      "back": "Back to Admins",
+      "fields": {
+        "email": "Email",
+        "scope": "Scope",
+        "lastLogin": "Last login",
+        "created": "Created"
+      },
+      "actions": {
+        "markPendingSetup": "Mark Pending Setup"
+      },
+      "privileges": {
+        "fullSystemAccess": "Full system access"
+      },
+      "activity": {
+        "title": "Recent activity",
+        "subtitle": "Latest activity recorded for this admin.",
+        "empty": "No activity recorded yet."
+      },
+      "errors": {
+        "load": "Unable to load admin."
+      }
+    }
+  },
+  "resources": {
+    "empty": "No resources found.",
+    "noDescription": "No description recorded.",
+    "countLine": "{{count}} resources",
+    "kpi": {
+      "total": "Resources",
+      "published": "Published",
+      "draft": "Draft",
+      "archived": "Archived"
+    },
+    "actions": {
+      "create": "Create Resource",
+      "save": "Save Resource",
+      "download": "Download"
+    },
+    "form": {
+      "createTitle": "Create Resource",
+      "editTitle": "Edit Resource",
+      "titlePlaceholder": "Resource title",
+      "descriptionPlaceholder": "Description",
+      "categoryPlaceholder": "Category",
+      "chooseFile": "Choose resource file",
+      "changeFile": "Change file",
+      "uploadingSelected": "Uploading selected file...",
+      "selectedFile": "Selected file",
+      "noFile": "No file selected yet.",
+      "targetHibretAdmins": "Hibret Admins",
+      "targetMembers": "Members",
+      "uploading": "Uploading..."
+    },
+    "messages": {
+      "created": "Resource created.",
+      "updated": "Resource updated.",
+      "fileUploaded": "Selected file uploaded: {{name}}"
+    },
+    "errors": {
+      "load": "Unable to load resources.",
+      "save": "Unable to save resource.",
+      "upload": "Unable to upload selected file."
+    }
+  },
+  "broadcasts": {
+    "list": {
+      "eyebrow": "Official posts",
+      "title": "Broadcasts",
+      "subtitle": "Publish and read official Woreda communication posts in a clean article format for administrators and members.",
+      "feedTitle": "Broadcasts",
+      "feedSubtitle": "Read official Woreda communication posts published for administrators and members.",
+      "actions": {
+        "new": "New Article"
+      }
+    },
+    "detail": {
+      "fallbackTitle": "Broadcast",
+      "loading": "Loading broadcast...",
+      "confirmDelete": "Delete this broadcast?",
+      "bodyTitle": "Post body",
+      "attachmentsTitle": "Attachments",
+      "attachmentsSubtitle": "Files included with this broadcast.",
+      "attachmentsEmpty": "No attachments were submitted for this broadcast.",
+      "errors": {
+        "load": "Unable to load broadcast.",
+        "missingId": "Broadcast id is missing.",
+        "notFound": "Broadcast not found."
+      }
+    }
+    ,
+    "editor": {
+      "eyebrow": "Broadcast writer",
+      "createTitle": "Create Official Article",
+      "editTitle": "Edit Official Article",
+      "subtitle": "Write the broadcast like a public article: title, summary, main photo, article body, media, attachments, and live preview.",
+      "placeholder": "Write the official Woreda broadcast article here...",
+      "actions": {
+        "showSettings": "Show Settings",
+        "hideSettings": "Hide Settings",
+        "save": "Save Article"
+      },
+      "content": {
+        "title": "Article Content",
+        "subtitle": "Keep the title clear, the summary short, and the body readable.",
+        "titlePlaceholder": "Official broadcast title",
+        "summaryPlaceholder": "Short article summary shown on broadcast cards"
+      },
+      "toolbar": {
+        "bold": "Bold",
+        "italic": "Italic",
+        "heading": "Heading",
+        "list": "List",
+        "addImage": "Add Image"
+      },
+      "preview": {
+        "title": "Article Preview",
+        "desktop": "Desktop",
+        "mobile": "Mobile",
+        "coverAlt": "Broadcast main photo",
+        "eyebrow": "Official Broadcast",
+        "titleFallback": "Broadcast title",
+        "summaryFallback": "Broadcast summary preview."
+      },
+      "settings": {
+        "title": "Article Settings",
+        "subtitle": "Audience, main photo, body media, video links, and files.",
+        "audienceTitle": "Target Audience",
+        "coverUploadTitle": "Main Photo Upload",
+        "coverUploadAction": "Upload main photo",
+        "coverLinkTitle": "Main Photo Link",
+        "coverLinkPlaceholder": "Paste direct image URL",
+        "coverLinkAction": "Set Main Photo",
+        "inlineImageTitle": "Inline Image Link",
+        "inlineImagePlaceholder": "Paste image URL for article body",
+        "inlineImageAction": "Insert Image",
+        "videoTitle": "Video Link",
+        "videoPlaceholder": "Paste YouTube video link",
+        "videoAction": "Insert Video",
+        "linkTitle": "Media / External Link",
+        "linkLabelPlaceholder": "Link label",
+        "linkPlaceholder": "Paste link",
+        "linkAction": "Insert Link",
+        "attachmentsTitle": "Attachment Upload",
+        "attachmentsAction": "Upload attachment",
+        "publishingTitle": "Publishing",
+        "publishingHint": "Save as draft here. Publish, archive, or delete from the Broadcasts list.",
+        "uploadedFilesTitle": "Uploaded Files",
+        "uploadedFilesEmpty": "No files uploaded yet."
+      },
+      "messages": {
+        "uploaded": "Uploaded: {{name}}",
+        "coverUrlSaved": "Main photo link saved for preview.",
+        "created": "Broadcast created.",
+        "updated": "Broadcast updated."
+      },
+      "errors": {
+        "load": "Unable to load broadcast.",
+        "save": "Unable to save broadcast.",
+        "upload": "Unable to upload file.",
+        "titleRequired": "Broadcast title is required.",
+        "audienceRequired": "Select at least one target audience.",
+        "coverUrlProtocol": "Main photo link must start with http:// or https://",
+        "inlineImageProtocol": "Image link must start with http:// or https://",
+        "unauthorizedSave": "You do not have permission to create or update broadcasts."
+      }
+    }
+  },
+  "layout": {
+    "mainNavigation": "Main navigation",
+    "openNavigation": "Open navigation",
+    "closeNavigation": "Close navigation",
+    "signedIn": "Signed in",
+    "logout": "Logout",
+    "help": "Help",
+    "light": "Light",
+    "dark": "Dark",
+    "woreda": {
+      "roleLabel": "Woreda Admin",
+      "consoleTitle": "Administrative Console",
+      "consoleDescription": "Welcome to Astedader Woreda.",
+      "sections": {
+        "directives": "Woreda directives",
+        "community": "Community",
+        "access": "Access control",
+        "membership": "Membership registry",
+        "resources": "Resource library",
+        "gallery": "Report media",
+        "communication": "Communication",
+        "monitoring": "Admin monitoring",
+        "account": "Account",
+        "console": "Woreda Admin"
+      },
+      "descriptions": {
+        "directives": "Manage and track administrative directives and meetings.",
+        "hibrets": "Manage and organize hibrets.",
+        "users": "Manage user accounts and permissions.",
+        "members": "Manage member information.",
+        "admins": "Manage administrator accounts.",
+        "resources": "Manage and organize resources.",
+        "gallery": "View gallery media grouped by submitted report.",
+        "broadcasts": "Create and manage official broadcast posts.",
+        "chat": "Manage chat conversations.",
+        "activity": "View admin activity logs.",
+        "analytics": "Track reports, attendance, member distribution, and system activity analytics.",
+        "settings": "Manage account and language settings."
+      }
+    }
+  },
+  "announcements": {
+    "searchPlaceholder": "Search directives...",
+    "export": "Export",
+    "newDirective": "New Directive",
+    "emptyTitle": "No directives found",
+    "emptyDescription": "Adjust filters or create a new directive.",
+    "kpi": {
+      "total": "Total Directives",
+      "active": "Active",
+      "draft": "Draft",
+      "closed": "Closed"
+    },
+    "type": {
+      "meeting": "Meeting",
+      "conference": "Conference",
+      "trend_report": "Trend Report",
+      "other": "Other"
+    },
+    "status": {
+      "active": "Active",
+      "draft": "Draft",
+      "closed": "Closed"
+    },
+    "filters": {
+      "typeAll": "Type: All",
+      "statusAll": "Status: All",
+      "timeAll": "Time: All",
+      "thisWeek": "This Week",
+      "thisMonth": "This Month",
+      "last30": "Last 30 Days",
+      "custom": "Custom Range",
+      "from": "From",
+      "to": "To"
+    },
+    "table": {
+      "title": "Title",
+      "type": "Type",
+      "status": "Status",
+      "deadline": "Deadline",
+      "hibrets": "Hibrets",
+      "reports": "Reports",
+      "action": "Action"
+    },
+    "pagination": {
+      "page": "Page",
+      "of": "of",
+      "total": "total",
+      "pageSize": "page"
+    },
+    "drawer": {
+      "eyebrow": "Woreda directive",
+      "title": "New Directive",
+      "description": "Create as draft, then publish when ready."
+    },
+    "form": {
+      "title": "Title",
+      "type": "Type",
+      "deadline": "Deadline",
+      "instructions": "Instructions",
+      "attendanceRequired": "Attendance required",
+      "attachments": "Attachments",
+      "selectedFiles": "Selected files",
+      "targetHibrets": "Target Hibrets",
+      "selectAll": "Select all",
+      "unselectAll": "Unselect all",
+      "searchHibrets": "Search Hibrets",
+      "selected": "Selected:",
+      "create": "Create directive",
+      "creating": "Creating..."
+    },
+    "errors": {
+      "load": "Unable to load announcements.",
+      "targetRequired": "Select at least one target Hibret.",
+      "create": "Unable to create announcement."
+    }
+  },
+  "topbar": {
+    "dashboardSubtitle": "Overview of Woreda performance, submissions, attendance, and member activity."
+  }
+}

@@ -1,0 +1,467 @@
+{
+  "app": {
+    "name": "Astedader Woreda"
+  },
+  "auth": {
+    "authorizedAccess": "የተፈቀደ መዳረሻ",
+    "administrativePortal": "የአስተዳደር ወረዳ መተዳደሪያ ፖርታል",
+    "secureAccess": "ለተፈቀዱ የወረዳ፣ ሕብረት እና አባል አስተዳደር የተጠበቀ መዳረሻ።",
+    "emailAddress": "ኢሜይል አድራሻ",
+    "password": "የይለፍ ቃል",
+    "confirmPassword": "የይለፍ ቃል ያረጋግጡ",
+    "newPassword": "አዲስ የይለፍ ቃል",
+    "verificationCode": "የማረጋገጫ ኮድ",
+    "forgotPassword": "የይለፍ ቃል ረሱ?",
+    "signIn": "ግባ",
+    "signingIn": "በመግባት ላይ...",
+    "verifyAndSignIn": "አረጋግጥ እና ግባ",
+    "verifying": "በማረጋገጥ ላይ...",
+    "sendResetLink": "የመቀየሪያ ሊንክ ላክ",
+    "sending": "በመላክ ላይ...",
+    "resetPassword": "የይለፍ ቃል ቀይር",
+    "saving": "በማስቀመጥ ላይ...",
+    "activateAccount": "መለያ አንቃ",
+    "activating": "በማንቃት ላይ...",
+    "backToLogin": "ወደ መግቢያ ተመለስ",
+    "backToPassword": "ወደ የይለፍ ቃል ተመለስ",
+    "issuedCredentials": "የተሰጠዎትን የመለያ መረጃ ተጠቅመው ይግቡ።",
+    "recoverInstruction": "የመለያዎን ኢሜይል ያስገቡ። መለያው ካለ የመቀየሪያ መመሪያ ይላካል።",
+    "resetInstruction": "አዲስ የይለፍ ቃል ይፍጠሩ። ቢያንስ 8 ቁምፊዎች መሆን አለበት።",
+    "setupInstruction": "ከተላከልዎ የግብዣ ሊንክ የይለፍ ቃል ይፍጠሩ። ቢያንስ 8 ቁምፊዎች።",
+    "emailPlaceholder": "your-email@domain.gov.et",
+    "passwordPlaceholder": "••••••••",
+    "codePlaceholder": "000000",
+    "minimumPasswordPlaceholder": "ቢያንስ 8 ቁምፊዎች",
+    "reEnterPasswordPlaceholder": "የይለፍ ቃል እንደገና ያስገቡ",
+    "switchToLight": "ወደ ብርሃን ገጽታ ቀይር",
+    "switchToDark": "ወደ ጨለማ ገጽታ ቀይር",
+    "accessDenied": "መዳረሻ ተከልክሏል",
+    "unauthorized": "ያልተፈቀደ",
+    "unauthorizedMessage": "መለያዎ ይህን ገጽ ለመጠቀም ፈቃድ የለውም።",
+    "returnToLogin": "ወደ መግቢያ ተመለስ",
+    "showPassword": "የይለፍ ቃል አሳይ",
+    "hidePassword": "የይለፍ ቃል ደብቅ",
+    "signInForm": "የመግቢያ ቅጽ",
+    "verificationForm": "የማረጋገጫ ቅጽ",
+    "forgotPasswordForm": "የይለፍ ቃል መልሶ ማግኛ ቅጽ",
+    "twoFactorInstruction": "ወደ ኢሜይልዎ የተላከውን የማረጋገጫ ኮድ ያስገቡ።",
+    "twoFactorSent": "የማረጋገጫ ኮድ ወደ ኢሜይልዎ ተልኳል።",
+    "loginFailed": "ኢሜይል ወይም የይለፍ ቃል ትክክል አይደለም። እንደገና ይሞክሩ ወይም የይለፍ ቃል ይቀይሩ።",
+    "invalidCode": "የተሳሳተ ወይም ጊዜው ያለፈ የማረጋገጫ ኮድ። ኢሜይልዎን ይመልከቱ እና እንደገና ይሞክሩ።",
+    "resetSent": "መለያው ካለ የይለፍ ቃል መቀየሪያ መመሪያ ተልኳል።",
+    "resetSendFailed": "የመቀየሪያ ሊንክ መላክ አልተቻለም። ኢሜይሉን ያረጋግጡ እና እንደገና ይሞክሩ።"
+  },
+  "sidebar": {
+    "announcements": "መመሪያዎች",
+    "hibrets": "ሕብረቶች",
+    "members": "አባላት",
+    "admins": "አስተዳዳሪዎች",
+    "reports": "ሪፖርቶች",
+    "resources": "ሀብቶች",
+    "gallery": "ጋለሪ",
+    "broadcasts": "ስርጭቶች",
+    "forms": "ቅጾች",
+    "chat": "ውይይት",
+    "activity": "እንቅስቃሴ",
+    "analytics": "ትንታኔ",
+    "settings": "ቅንብሮች",
+    "users": "ተጠቃሚዎች",
+    "dashboard": "ዳሽቦርድ"
+  },
+  "common": {
+    "loading": "በመጫን ላይ",
+    "save": "አስቀምጥ",
+    "create": "ፍጠር",
+    "edit": "አርትዕ",
+    "delete": "ሰርዝ",
+    "archive": "አስቀምጥ",
+    "publish": "አትም",
+    "export": "ኤክስፖርት",
+    "search": "ፈልግ",
+    "open": "ክፈት",
+    "cancel": "ሰርዝ",
+    "clear": "አጽዳ",
+    "previous": "ቀዳሚ",
+    "next": "ቀጣይ",
+    "filters": "ማጣሪያዎች",
+    "logout": "ውጣ",
+    "saving": "በማስቀመጥ ላይ...",
+    "paginationLine": "ገጽ {{page}} ከ {{pages}} · {{total}} ጠቅላላ",
+    "pageSize": "{{size}} / ገጽ",
+    "dark": "ጨለማ",
+    "light": "ብርሃን"
+  },
+  "admins": {
+    "loading": "አስተዳዳሪዎችን በመጫን ላይ።",
+    "empty": "ከአሁኑ ማጣሪያዎች ጋር የሚዛመዱ አስተዳዳሪዎች የሉም።",
+    "summaryLine": "{{filtered}} ከ {{total}} አስተዳዳሪዎች",
+    "kpi": {
+      "total": "አስተዳዳሪዎች",
+      "woreda": "ወረዳ",
+      "hibret": "ሕብረት",
+      "active": "ንቁ",
+      "pendingSetup": "በመጠባበቅ ላይ",
+      "disabled": "ተሰናክሏል"
+    },
+    "roles": {
+      "woreda": "የወረዳ አስተዳዳሪ",
+      "hibret": "የሕብረት አስተዳዳሪ",
+      "woredaLabel": "የወረዳ አስተዳዳሪ",
+      "hibretLabel": "የሕብረት አስተዳዳሪ"
+    },
+    "status": {
+      "active": "ንቁ",
+      "pendingSetup": "ማቀናበር በመጠባበቅ ላይ",
+      "disabled": "ተሰናክሏል"
+    },
+    "scope": {
+      "woreda": "ወረዳ",
+      "allSystem": "ሙሉ ስርዓት መዳረሻ",
+      "assignedHibret": "የተመደበ ሕብረት"
+    },
+    "privileges": {
+      "fullAccess": "ሙሉ መዳረሻ",
+      "count": "{{count}} ፍቃዶች"
+    },
+    "filters": {
+      "searchPlaceholder": "ኢሜይል፣ ሚና፣ ሕብረት፣ ፍቃድ ፈልግ",
+      "roleAll": "ሁሉም ሚናዎች",
+      "statusAll": "ሁሉም ሁኔታዎች",
+      "scopeAll": "ሁሉም ክልሎች",
+      "scopeWoreda": "የወረዳ ክልል",
+      "scopeHibret": "የሕብረት ክልል"
+    },
+    "table": {
+      "admin": "አስተዳዳሪ",
+      "scope": "ክልል",
+      "account": "መለያ",
+      "privileges": "ፍቃዶች",
+      "lastLogin": "የመጨረሻ መግቢያ",
+      "actions": "ድርጊቶች"
+    },
+    "actions": {
+      "create": "አስተዳዳሪ ፍጠር",
+      "save": "አስተዳዳሪ አስቀምጥ",
+      "disable": "አሰናክል",
+      "reactivate": "እንደገና አንቃ",
+      "setupLink": "የማቀናበር አገናኝ"
+    },
+    "mobile": {
+      "scopeLabel": "ክልል:"
+    },
+    "form": {
+      "eyebrow": "የአስተዳዳሪ መለያ",
+      "createTitle": "አስተዳዳሪ ፍጠር",
+      "editTitle": "አስተዳዳሪ አርትዕ",
+      "email": "ኢሜይል",
+      "role": "ሚና",
+      "hibret": "ሕብረት",
+      "selectHibret": "ሕብረት ምረጥ",
+      "privilegesTitle": "ፍቃዶች",
+      "privilegesHint": "ይህ አስተዳዳሪ ምን መዳረሻ እንዳለው ምረጥ።",
+      "selectedCount": "{{count}} ተመርጧል",
+      "fullAccessLabel": "ሙሉ መዳረሻ (*)",
+      "errors": {
+        "emailRequired": "ኢሜይል አስፈላጊ ነው።",
+        "hibretRequired": "ለሕብረት አስተዳዳሪ ሕብረት መምረጥ አስፈላጊ ነው።",
+        "privilegeRequired": "ቢያንስ አንድ ፍቃድ ምረጥ።"
+      }
+    },
+    "errors": {
+      "load": "አስተዳዳሪዎችን ማምጣት አልተቻለም።",
+      "save": "አስተዳዳሪን ማስቀመጥ አልተቻለም።",
+      "status": "የአስተዳዳሪ ሁኔታ ማዘመን አልተቻለም።",
+      "resendSetup": "የማቀናበር ኢሜይል እንደገና መላክ አልተቻለም።"
+    },
+    "detail": {
+      "loading": "አስተዳዳሪን በመጫን ላይ።",
+      "notFound": "አስተዳዳሪ አልተገኘም።",
+      "eyebrow": "ዝርዝር መረጃ",
+      "back": "ወደ አስተዳዳሪዎች ተመለስ",
+      "fields": {
+        "email": "ኢሜይል",
+        "scope": "ክልል",
+        "lastLogin": "የመጨረሻ መግቢያ",
+        "created": "የተፈጠረበት"
+      },
+      "actions": {
+        "markPendingSetup": "ማቀናበር በመጠባበቅ ላይ ያድርግ"
+      },
+      "privileges": {
+        "fullSystemAccess": "ሙሉ ስርዓት መዳረሻ"
+      },
+      "activity": {
+        "title": "የቅርብ እንቅስቃሴ",
+        "subtitle": "ለዚህ አስተዳዳሪ የተመዘገበ የቅርብ እንቅስቃሴ።",
+        "empty": "እስካሁን እንቅስቃሴ አልተመዘገበም።"
+      },
+      "errors": {
+        "load": "አስተዳዳሪን ማምጣት አልተቻለም።"
+      }
+    }
+  },
+  "resources": {
+    "empty": "ሀብቶች አልተገኙም።",
+    "noDescription": "መግለጫ አልተመዘገበም።",
+    "countLine": "{{count}} ሀብቶች",
+    "kpi": {
+      "total": "ሀብቶች",
+      "published": "የታተመ",
+      "draft": "ረቂቅ",
+      "archived": "የተመዘገበ"
+    },
+    "actions": {
+      "create": "ሀብት ፍጠር",
+      "save": "ሀብት አስቀምጥ",
+      "download": "አውርድ"
+    },
+    "form": {
+      "createTitle": "ሀብት ፍጠር",
+      "editTitle": "ሀብት አርትዕ",
+      "titlePlaceholder": "የሀብት ርዕስ",
+      "descriptionPlaceholder": "መግለጫ",
+      "categoryPlaceholder": "ምድብ",
+      "chooseFile": "የሀብት ፋይል ምረጥ",
+      "changeFile": "ፋይል ቀይር",
+      "uploadingSelected": "የተመረጠ ፋይል በመስቀል ላይ...",
+      "selectedFile": "የተመረጠ ፋይል",
+      "noFile": "አሁን ድረስ ፋይል አልተመረጠም።",
+      "targetHibretAdmins": "የሕብረት አስተዳዳሪዎች",
+      "targetMembers": "አባላት",
+      "uploading": "በመስቀል ላይ..."
+    },
+    "messages": {
+      "created": "ሀብት ተፈጥሯል።",
+      "updated": "ሀብት ተዘምኗል።",
+      "fileUploaded": "የተመረጠ ፋይል ተሰቅሏል: {{name}}"
+    },
+    "errors": {
+      "load": "ሀብቶችን ማምጣት አልተቻለም።",
+      "save": "ሀብትን ማስቀመጥ አልተቻለም።",
+      "upload": "የተመረጠ ፋይል መስቀል አልተቻለም።"
+    }
+  },
+  "broadcasts": {
+    "list": {
+      "eyebrow": "የመንግስት ማስታወቂያዎች",
+      "title": "ስርጭቶች",
+      "subtitle": "ለአስተዳዳሪዎች እና አባላት የታተሙ የወረዳ ኦፊሴላዊ መልእክቶችን በአርቲክል ቅርጽ ያትሙ እና ያንብቡ።",
+      "feedTitle": "ስርጭቶች",
+      "feedSubtitle": "ለአስተዳዳሪዎች እና አባላት የታተሙ ኦፊሴላዊ መልእክቶችን ያንብቡ።",
+      "actions": {
+        "new": "አዲስ ጽሑፍ"
+      }
+    },
+    "detail": {
+      "fallbackTitle": "ስርጭት",
+      "loading": "ስርጭትን በመጫን ላይ...",
+      "confirmDelete": "ይህን ስርጭት መሰረዝ ይፈልጋሉ?",
+      "bodyTitle": "የልጥፍ ይዘት",
+      "attachmentsTitle": "ተያያዥ ፋይሎች",
+      "attachmentsSubtitle": "ከዚህ ስርጭት ጋር የተያያዙ ፋይሎች።",
+      "attachmentsEmpty": "ለዚህ ስርጭት ተያያዥ ፋይሎች አልተጨመሩም።",
+      "errors": {
+        "load": "ስርጭትን ማምጣት አልተቻለም።",
+        "missingId": "የስርጭት መለያ የለም።",
+        "notFound": "ስርጭት አልተገኘም።"
+      }
+    }
+    ,
+    "editor": {
+      "eyebrow": "የስርጭት ጸሐፊ",
+      "createTitle": "ኦፊሴላዊ ጽሑፍ ፍጠር",
+      "editTitle": "ኦፊሴላዊ ጽሑፍ አርትዕ",
+      "subtitle": "ስርጭቱን እንደ ሕዝባዊ ጽሑፍ ያዘጋጁ: ርዕስ፣ አጭር ማጠቃለያ፣ ዋና ፎቶ፣ ይዘት፣ ሚዲያ፣ ተያያዥ ፋይሎች እና ቀጥታ ቅድመ እይታ።",
+      "placeholder": "የወረዳ ኦፊሴላዊ ስርጭት ጽሑፍን እዚህ ይጻፉ...",
+      "actions": {
+        "showSettings": "ቅንብሮች አሳይ",
+        "hideSettings": "ቅንብሮች ደብቅ",
+        "save": "ጽሑፍ አስቀምጥ"
+      },
+      "content": {
+        "title": "የጽሑፍ ይዘት",
+        "subtitle": "ርዕሱን ግልፅ አድርጉ፣ ማጠቃለያውን አጭር ያድርጉ፣ ይዘቱን ለማንበብ ቀላል ያድርጉ።",
+        "titlePlaceholder": "የኦፊሴላዊ ስርጭት ርዕስ",
+        "summaryPlaceholder": "በካርዶች ላይ የሚታይ አጭር ማጠቃለያ"
+      },
+      "toolbar": {
+        "bold": "ወፍራም",
+        "italic": "ጥልቅ",
+        "heading": "ርዕስ",
+        "list": "ዝርዝር",
+        "addImage": "ምስል ጨምር"
+      },
+      "preview": {
+        "title": "ቅድመ እይታ",
+        "desktop": "ዴስክቶፕ",
+        "mobile": "ሞባይል",
+        "coverAlt": "ዋና ፎቶ",
+        "eyebrow": "ኦፊሴላዊ ስርጭት",
+        "titleFallback": "የስርጭት ርዕስ",
+        "summaryFallback": "የማጠቃለያ ቅድመ እይታ"
+      },
+      "settings": {
+        "title": "የጽሑፍ ቅንብሮች",
+        "subtitle": "ታዳሚ፣ ዋና ፎቶ፣ የይዘት ሚዲያ፣ ቪዲዮ አገናኞች እና ፋይሎች።",
+        "audienceTitle": "ታዳሚ",
+        "coverUploadTitle": "ዋና ፎቶ ስቀል",
+        "coverUploadAction": "ዋና ፎቶ ስቀል",
+        "coverLinkTitle": "ዋና ፎቶ ሊንክ",
+        "coverLinkPlaceholder": "ቀጥታ የምስል አገናኝ ለጥፍ",
+        "coverLinkAction": "ዋና ፎቶ አዘጋጅ",
+        "inlineImageTitle": "የይዘት ምስል ሊንክ",
+        "inlineImagePlaceholder": "ለይዘት የምስል አገናኝ ለጥፍ",
+        "inlineImageAction": "ምስል አስገባ",
+        "videoTitle": "የቪዲዮ ሊንክ",
+        "videoPlaceholder": "የYouTube ቪዲዮ አገናኝ ለጥፍ",
+        "videoAction": "ቪዲዮ አስገባ",
+        "linkTitle": "ሚዲያ / ውጪ ሊንክ",
+        "linkLabelPlaceholder": "የሊንክ መለያ",
+        "linkPlaceholder": "ሊንክ ለጥፍ",
+        "linkAction": "ሊንክ አስገባ",
+        "attachmentsTitle": "ተያያዥ ፋይል ስቀል",
+        "attachmentsAction": "ተያያዥ ፋይል ስቀል",
+        "publishingTitle": "ህትመት",
+        "publishingHint": "እዚህ እንደ ረቂቅ አስቀምጥ። ከዝርዝር ውስጥ አትም፣ አስቀምጥ ወይም ሰርዝ።",
+        "uploadedFilesTitle": "የተሰቀሉ ፋይሎች",
+        "uploadedFilesEmpty": "እስካሁን ፋይሎች አልተሰቀሉም።"
+      },
+      "messages": {
+        "uploaded": "ተሰቅሏል: {{name}}",
+        "coverUrlSaved": "የዋና ፎቶ ሊንክ ለቅድመ እይታ ተቀምጧል።",
+        "created": "ስርጭት ተፈጥሯል።",
+        "updated": "ስርጭት ተዘምኗል።"
+      },
+      "errors": {
+        "load": "ስርጭትን ማምጣት አልተቻለም።",
+        "save": "ስርጭትን ማስቀመጥ አልተቻለም።",
+        "upload": "ፋይል መስቀል አልተቻለም።",
+        "titleRequired": "የስርጭት ርዕስ አስፈላጊ ነው።",
+        "audienceRequired": "ቢያንስ አንድ ታዳሚ ምረጥ።",
+        "coverUrlProtocol": "የዋና ፎቶ ሊንክ በ http:// ወይም https:// መጀመር አለበት።",
+        "inlineImageProtocol": "የምስል ሊንክ በ http:// ወይም https:// መጀመር አለበት።",
+        "unauthorizedSave": "ስርጭቶችን ለመፍጠር ወይም ለማዘመን ፈቃድ የለዎትም።"
+      }
+    }
+  },
+  "layout": {
+    "mainNavigation": "ዋና መንገድ",
+    "openNavigation": "መንገድ ክፈት",
+    "closeNavigation": "መንገድ ዝጋ",
+    "signedIn": "የገባው ተጠቃሚ",
+    "logout": "ውጣ",
+    "help": "እገዛ",
+    "light": "ብርሃን",
+    "dark": "ጨለማ",
+    "woreda": {
+      "roleLabel": "የወረዳ አስተዳዳሪ",
+      "consoleTitle": "የአስተዳደር መቆጣጠሪያ",
+      "consoleDescription": "እንኳን ወደ አስተዳደር ወረዳ በደህና መጡ።",
+      "sections": {
+        "directives": "የወረዳ መመሪያዎች",
+        "community": "ማኅበረሰብ",
+        "access": "የመዳረሻ ቁጥጥር",
+        "membership": "የአባላት መዝገብ",
+        "resources": "የሀብት ቤተ-መዘክር",
+        "gallery": "የሪፖርት ሚዲያ",
+        "communication": "ግንኙነት",
+        "monitoring": "የአስተዳዳሪ ክትትል",
+        "account": "መለያ",
+        "console": "ወረዳ አስተዳዳሪ"
+      },
+      "descriptions": {
+        "directives": "የአስተዳደር መመሪያዎችን እና ስብሰባዎችን ያስተዳድሩ እና ይከታተሉ።",
+        "hibrets": "ሕብረቶችን ያስተዳድሩ እና ያደራጁ።",
+        "users": "የተጠቃሚ መለያዎችን እና ፈቃዶችን ያስተዳድሩ።",
+        "members": "የአባላትን መረጃ ያስተዳድሩ።",
+        "admins": "የአስተዳዳሪ መለያዎችን ያስተዳድሩ።",
+        "resources": "ሀብቶችን ያስተዳድሩ እና ያደራጁ።",
+        "gallery": "በተላከ ሪፖርት የተደራጀ የጋለሪ ሚዲያ ይመልከቱ።",
+        "broadcasts": "ኦፊሴላዊ የስርጭት ልጥፎችን ይፍጠሩ እና ያስተዳድሩ።",
+        "chat": "የውይይት መልዕክቶችን ያስተዳድሩ።",
+        "activity": "የአስተዳዳሪ እንቅስቃሴ መዝገቦችን ይመልከቱ።",
+        "analytics": "የሪፖርት፣ መገኘት፣ የአባላት ስርጭት እና የስርዓት እንቅስቃሴ ትንታኔዎችን ይከታተሉ።",
+        "settings": "የመለያ እና የቋንቋ ቅንብሮችን ያስተዳድሩ።"
+      }
+    }
+  },
+  "announcements": {
+    "searchPlaceholder": "መመሪያዎችን ፈልግ...",
+    "export": "ኤክስፖርት",
+    "newDirective": "አዲስ መመሪያ",
+    "emptyTitle": "መመሪያዎች አልተገኙም",
+    "emptyDescription": "ማጣሪያዎችን ያስተካክሉ ወይም አዲስ መመሪያ ይፍጠሩ።",
+    "kpi": {
+      "total": "ጠቅላላ መመሪያዎች",
+      "active": "ንቁ",
+      "draft": "ረቂቅ",
+      "closed": "የተዘጋ"
+    },
+    "type": {
+      "meeting": "ስብሰባ",
+      "conference": "ኮንፈረንስ",
+      "trend_report": "የአዝማሚያ ሪፖርት",
+      "other": "ሌላ"
+    },
+    "status": {
+      "active": "ንቁ",
+      "draft": "ረቂቅ",
+      "closed": "የተዘጋ"
+    },
+    "filters": {
+      "typeAll": "ዓይነት: ሁሉም",
+      "statusAll": "ሁኔታ: ሁሉም",
+      "timeAll": "ጊዜ: ሁሉም",
+      "thisWeek": "ይህ ሳምንት",
+      "thisMonth": "ይህ ወር",
+      "last30": "ያለፉት 30 ቀናት",
+      "custom": "ብጁ ጊዜ",
+      "from": "ከ",
+      "to": "እስከ"
+    },
+    "table": {
+      "title": "ርዕስ",
+      "type": "ዓይነት",
+      "status": "ሁኔታ",
+      "deadline": "የመጨረሻ ቀን",
+      "hibrets": "ሕብረቶች",
+      "reports": "ሪፖርቶች",
+      "action": "ተግባር"
+    },
+    "pagination": {
+      "page": "ገጽ",
+      "of": "ከ",
+      "total": "ጠቅላላ",
+      "pageSize": "በገጽ"
+    },
+    "drawer": {
+      "eyebrow": "የወረዳ መመሪያ",
+      "title": "አዲስ መመሪያ",
+      "description": "መጀመሪያ እንደ ረቂቅ ይፍጠሩ፣ ከዚያ ያትሙ።"
+    },
+    "form": {
+      "title": "ርዕስ",
+      "type": "ዓይነት",
+      "deadline": "የመጨረሻ ቀን",
+      "instructions": "መመሪያዎች",
+      "attendanceRequired": "መገኘት ያስፈልጋል",
+      "attachments": "አባሪዎች",
+      "selectedFiles": "የተመረጡ ፋይሎች",
+      "targetHibrets": "የታለሙ ሕብረቶች",
+      "selectAll": "ሁሉንም ምረጥ",
+      "unselectAll": "ሁሉንም አትምረጥ",
+      "searchHibrets": "ሕብረቶችን ፈልግ",
+      "selected": "የተመረጠ:",
+      "create": "መመሪያ ፍጠር",
+      "creating": "በመፍጠር ላይ..."
+    },
+    "errors": {
+      "load": "መመሪያዎችን መጫን አልተቻለም።",
+      "targetRequired": "ቢያንስ አንድ የታለመ ሕብረት ይምረጡ።",
+      "create": "መመሪያ መፍጠር አልተቻለም።"
+    }
+  },
+  "topbar": {
+    "dashboardSubtitle": "የወረዳ አፈጻጸም፣ ሪፖርቶች፣ መገኘት እና የአባላት እንቅስቃሴ አጠቃላይ እይታ።"
+  }
+}
