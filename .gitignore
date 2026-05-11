@@ -30,14 +30,14 @@ yarn-error.log*
 .vscode/
 *.swp
 
-# old/backups/generated local folders
+# backups / old generated folders
 oldfrontend/
 frontend-backups/
 *-backup-*/
 *.bak
 *.backup
 
-# local uploaded/generated runtime files
+# runtime uploads
 uploads/
 backend/uploads/
 frontend/public/test.txt
