@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ChevronDown, ChevronUp, Search, UserCheck } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -34,7 +34,12 @@ function memberName(user: ManagedUser) {
 
 export function UsersPage() {
   const [users, setUsers] = useState<ManagedUser[]>([]);
-  const [summary, setSummary] = useState({ total: 0, active: 0, pending: 0, disabled: 0 });
+  const [summary, setSummary] = useState({
+    total: 0,
+    active: 0,
+    pending: 0,
+    disabled: 0,
+  });
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
   const [selected, setSelected] = useState<string[]>([]);
@@ -43,7 +48,7 @@ export function UsersPage() {
   const [loading, setLoading] = useState(true);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
-  async function loadUsers() {
+  const loadUsers = useCallback(async () => {
     setLoading(true);
 
     try {
@@ -58,8 +63,10 @@ export function UsersPage() {
       setSummary({
         total: memberUsers.length,
         active: memberUsers.filter((user) => user.status === "ACTIVE").length,
-        pending: memberUsers.filter((user) => user.status === "PENDING_SETUP").length,
-        disabled: memberUsers.filter((user) => user.status === "DISABLED").length,
+        pending: memberUsers.filter((user) => user.status === "PENDING_SETUP")
+          .length,
+        disabled: memberUsers.filter((user) => user.status === "DISABLED")
+          .length,
       });
       setSelected([]);
     } catch (err) {
@@ -68,7 +75,7 @@ export function UsersPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [search, status]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -76,20 +83,22 @@ export function UsersPage() {
     }, 250);
 
     return () => window.clearTimeout(timer);
-  }, [search, status]);
-
-  useEffect(() => {
-    setPage(1);
-  }, [search, status]);
+  }, [loadUsers]);
 
   const totalPages = Math.max(1, Math.ceil(users.length / pageSize));
   const safePage = Math.min(page, totalPages);
-  const paginatedUsers = users.slice((safePage - 1) * pageSize, safePage * pageSize);
+  const paginatedUsers = users.slice(
+    (safePage - 1) * pageSize,
+    safePage * pageSize,
+  );
 
   const selectedCount = selected.length;
 
   const allVisibleSelected = useMemo(() => {
-    return paginatedUsers.length > 0 && paginatedUsers.every((user) => selected.includes(user.id));
+    return (
+      paginatedUsers.length > 0 &&
+      paginatedUsers.every((user) => selected.includes(user.id))
+    );
   }, [paginatedUsers, selected]);
 
   function toggleUser(userId: string) {
@@ -103,18 +112,26 @@ export function UsersPage() {
   function toggleAll() {
     setSelected(
       allVisibleSelected
-        ? selected.filter((id) => !paginatedUsers.some((user) => user.id === id))
+        ? selected.filter(
+            (id) => !paginatedUsers.some((user) => user.id === id),
+          )
         : [...new Set([...selected, ...paginatedUsers.map((user) => user.id)])],
     );
   }
 
   function readErrorMessage(err: unknown): string | undefined {
-    const value = err as { response?: { data?: { message?: unknown } } } | null | undefined;
+    const value = err as
+      | { response?: { data?: { message?: unknown } } }
+      | null
+      | undefined;
     const message = value?.response?.data?.message;
     return typeof message === "string" ? message : undefined;
   }
 
-  async function updateOne(userId: string, nextStatus: "ACTIVE" | "DISABLED" | "PENDING_SETUP") {
+  async function updateOne(
+    userId: string,
+    nextStatus: "ACTIVE" | "DISABLED" | "PENDING_SETUP",
+  ) {
     try {
       await updateManagedUserStatus(userId, nextStatus);
       toast.success("Member user updated.");
@@ -124,28 +141,42 @@ export function UsersPage() {
     }
   }
 
-  async function updateSelected(nextStatus: "ACTIVE" | "DISABLED" | "PENDING_SETUP") {
+  async function updateSelected(
+    nextStatus: "ACTIVE" | "DISABLED" | "PENDING_SETUP",
+  ) {
     if (!selected.length) return;
     try {
       await bulkUpdateManagedUsers(selected, nextStatus);
-      toast.success(`${selected.length} member user${selected.length === 1 ? "" : "s"} updated.`);
+      toast.success(
+        `${selected.length} member user${selected.length === 1 ? "" : "s"} updated.`,
+      );
       await loadUsers();
     } catch (err) {
-      toast.error(readErrorMessage(err) || "Unable to bulk update member users.");
+      toast.error(
+        readErrorMessage(err) || "Unable to bulk update member users.",
+      );
     }
   }
 
   return (
     <section className="users-page flex min-h-0 flex-1 flex-col gap-5">
       <div className="hidden shrink-0 grid-cols-2 gap-3 md:grid md:grid-cols-4">
-        <AdminMetricCard label="Member Users" value={summary.total} note="Accounts in the system" />
+        <AdminMetricCard
+          label="Member Users"
+          value={summary.total}
+          note="Accounts in the system"
+        />
         <AdminMetricCard
           label="Active"
           value={summary.active}
           note="Currently enabled"
           tone="success"
         />
-        <AdminMetricCard label="Pending setup" value={summary.pending} note="Awaiting first sign-in" />
+        <AdminMetricCard
+          label="Pending setup"
+          value={summary.pending}
+          note="Awaiting first sign-in"
+        />
         <AdminMetricCard
           label="Disabled"
           value={summary.disabled}
@@ -163,7 +194,10 @@ export function UsersPage() {
               <Search size={16} className="text-muted-foreground" aria-hidden />
               <input
                 value={search}
-                onChange={(event) => setSearch(event.target.value)}
+                onChange={(event) => {
+                  setSearch(event.target.value);
+                  setPage(1);
+                }}
                 placeholder="Search member users"
                 className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
               />
@@ -178,7 +212,11 @@ export function UsersPage() {
               aria-controls="users-mobile-filters"
             >
               Filters
-              {mobileFiltersOpen ? <ChevronUp aria-hidden /> : <ChevronDown aria-hidden />}
+              {mobileFiltersOpen ? (
+                <ChevronUp aria-hidden />
+              ) : (
+                <ChevronDown aria-hidden />
+              )}
             </Button>
             <div
               id="users-mobile-filters"
@@ -189,7 +227,10 @@ export function UsersPage() {
             >
               <Select
                 value={status || "all"}
-                onValueChange={(value) => setStatus(value === "all" ? "" : value)}
+                onValueChange={(value) => {
+                  setStatus(value === "all" ? "" : value);
+                  setPage(1);
+                }}
               >
                 <SelectTrigger className="w-44">
                   <SelectValue placeholder="All statuses" />
@@ -206,7 +247,9 @@ export function UsersPage() {
         }
       >
         <div className="flex shrink-0 flex-col gap-3 border-b border-border bg-card px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm font-medium text-muted-foreground">{selectedCount} selected</p>
+          <p className="text-sm font-medium text-muted-foreground">
+            {selectedCount} selected
+          </p>
 
           <div className="flex flex-wrap items-center gap-2">
             <Button
@@ -262,19 +305,28 @@ export function UsersPage() {
             <tbody className="divide-y divide-border">
               {loading ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-sm font-medium text-muted-foreground">
+                  <td
+                    colSpan={7}
+                    className="px-4 py-8 text-center text-sm font-medium text-muted-foreground"
+                  >
                     Loading member users...
                   </td>
                 </tr>
               ) : users.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-sm font-medium text-muted-foreground">
+                  <td
+                    colSpan={7}
+                    className="px-4 py-8 text-center text-sm font-medium text-muted-foreground"
+                  >
                     No member users found.
                   </td>
                 </tr>
               ) : (
                 paginatedUsers.map((user) => (
-                  <tr key={user.id} className="transition-colors hover:bg-muted/40">
+                  <tr
+                    key={user.id}
+                    className="transition-colors hover:bg-muted/40"
+                  >
                     <td className="px-4 py-3">
                       <Checkbox
                         checked={selected.includes(user.id)}
@@ -288,17 +340,27 @@ export function UsersPage() {
                           <UserCheck size={17} aria-hidden />
                         </div>
                         <div>
-                          <p className="text-sm font-medium text-foreground">{memberName(user)}</p>
+                          <p className="text-sm font-medium text-foreground">
+                            {memberName(user)}
+                          </p>
                           <p className="text-xs font-normal text-muted-foreground">
-                            {user.memberId ? "Member profile linked" : "No member profile"}
+                            {user.memberId
+                              ? "Member profile linked"
+                              : "No member profile"}
                           </p>
                         </div>
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-sm text-foreground">{user.email}</td>
-                    <td className="px-4 py-3 text-sm text-foreground">{user.hibretName || "-"}</td>
+                    <td className="px-4 py-3 text-sm text-foreground">
+                      {user.email}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-foreground">
+                      {user.hibretName || "-"}
+                    </td>
                     <td className="px-4 py-3">
-                      <Badge variant={statusToBadgeVariant(user.status)}>{user.status}</Badge>
+                      <Badge variant={statusToBadgeVariant(user.status)}>
+                        {user.status}
+                      </Badge>
                     </td>
                     <td className="px-4 py-3 text-sm text-muted-foreground">
                       {formatDate(user.lastLoginAt)}
@@ -328,7 +390,9 @@ export function UsersPage() {
                           type="button"
                           variant="ghost"
                           size="sm"
-                          onClick={() => void updateOne(user.id, "PENDING_SETUP")}
+                          onClick={() =>
+                            void updateOne(user.id, "PENDING_SETUP")
+                          }
                         >
                           Pending
                         </Button>
@@ -365,15 +429,23 @@ export function UsersPage() {
                         aria-label={`Select ${memberName(user)}`}
                       />
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-medium text-foreground">{memberName(user)}</p>
-                        <p className="truncate text-xs font-normal text-muted-foreground">{user.email}</p>
+                        <p className="truncate text-sm font-medium text-foreground">
+                          {memberName(user)}
+                        </p>
+                        <p className="truncate text-xs font-normal text-muted-foreground">
+                          {user.email}
+                        </p>
                       </div>
                     </div>
-                    <Badge variant={statusToBadgeVariant(user.status)}>{user.status}</Badge>
+                    <Badge variant={statusToBadgeVariant(user.status)}>
+                      {user.status}
+                    </Badge>
                   </div>
                   <div className="mt-2 grid grid-cols-2 gap-2 text-xs font-normal text-muted-foreground">
                     <p>Hibret: {user.hibretName || "-"}</p>
-                    <p className="text-right">Last login: {formatDate(user.lastLoginAt)}</p>
+                    <p className="text-right">
+                      Last login: {formatDate(user.lastLoginAt)}
+                    </p>
                   </div>
                   <div className="mt-3 flex flex-wrap justify-end gap-2">
                     {user.status === "DISABLED" ? (
@@ -446,7 +518,9 @@ export function UsersPage() {
               variant="outline"
               size="sm"
               disabled={safePage >= totalPages}
-              onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
+              onClick={() =>
+                setPage((current) => Math.min(totalPages, current + 1))
+              }
             >
               Next
             </Button>

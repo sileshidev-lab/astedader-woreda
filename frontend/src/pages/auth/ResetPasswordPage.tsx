@@ -3,6 +3,7 @@ import type { FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Eye, EyeOff, Moon, Sun } from "lucide-react";
 import { resetPassword } from "../../services/authService";
+import { readErrorMessage } from "@/lib/errors";
 import { AuthShell } from "./AuthShell";
 import { useThemeStore } from "../../stores/themeStore";
 import { AUTH_SPLIT_HERO_IMAGES } from "./authHeroImages";
@@ -27,7 +28,9 @@ export function ResetPasswordPage() {
     setError("");
 
     if (!token) {
-      setError("Reset token is missing. Open this page using the link from your email.");
+      setError(
+        "Reset token is missing. Open this page using the link from your email.",
+      );
       return;
     }
 
@@ -50,8 +53,11 @@ export function ResetPasswordPage() {
       setPassword("");
       setConfirmPassword("");
       setTimeout(() => navigate("/login", { replace: true }), 900);
-    } catch (err: any) {
-      setError(err?.response?.data?.message || "Unable to reset password. The link may be expired.");
+    } catch (err) {
+      setError(
+        readErrorMessage(err) ||
+          "Unable to reset password. The link may be expired.",
+      );
     } finally {
       setIsSaving(false);
     }
@@ -63,13 +69,21 @@ export function ResetPasswordPage() {
         type="button"
         className="aw-auth-theme-toggle"
         onClick={toggleTheme}
-        title={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
-        aria-label={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
+        title={
+          theme === "dark" ? "Switch to light theme" : "Switch to dark theme"
+        }
+        aria-label={
+          theme === "dark" ? "Switch to light theme" : "Switch to dark theme"
+        }
       >
         {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
       </button>
 
-      <form onSubmit={handleSubmit} className="aw-auth-form" aria-label="Reset password form">
+      <form
+        onSubmit={handleSubmit}
+        className="aw-auth-form"
+        aria-label="Reset password form"
+      >
         <Link to="/login" className="aw-auth-back">
           <ArrowLeft size={16} />
           Back to login
@@ -79,11 +93,25 @@ export function ResetPasswordPage() {
           <img src="/Prosperity_Party_logo.png" alt="Prosperity Party" />
         </div>
 
-        <p className="aw-auth-form-note">Create a new password. It must be at least 8 characters.</p>
+        <p className="aw-auth-form-note">
+          Create a new password. It must be at least 8 characters.
+        </p>
 
-        {!token ? <div className="aw-auth-alert aw-auth-alert-error" role="alert">Reset token is missing. Use the link sent to your email.</div> : null}
-        {error ? <div className="aw-auth-alert aw-auth-alert-error" role="alert">{error}</div> : null}
-        {message ? <div className="aw-auth-alert aw-auth-alert-success" role="status">{message}</div> : null}
+        {!token ? (
+          <div className="aw-auth-alert aw-auth-alert-error" role="alert">
+            Reset token is missing. Use the link sent to your email.
+          </div>
+        ) : null}
+        {error ? (
+          <div className="aw-auth-alert aw-auth-alert-error" role="alert">
+            {error}
+          </div>
+        ) : null}
+        {message ? (
+          <div className="aw-auth-alert aw-auth-alert-success" role="status">
+            {message}
+          </div>
+        ) : null}
 
         <PasswordField
           id="reset-password"
@@ -105,7 +133,11 @@ export function ResetPasswordPage() {
           placeholder="Re-enter password"
         />
 
-        <button type="submit" disabled={isSaving || !token} className="aw-auth-submit">
+        <button
+          type="submit"
+          disabled={isSaving || !token}
+          className="aw-auth-submit"
+        >
           {isSaving ? "Saving..." : "Reset password"}
         </button>
       </form>
@@ -144,7 +176,12 @@ function PasswordField({
           autoComplete="new-password"
           placeholder={placeholder}
         />
-        <button type="button" className="aw-auth-password-toggle" onClick={onToggle} aria-label={show ? "Hide password" : "Show password"}>
+        <button
+          type="button"
+          className="aw-auth-password-toggle"
+          onClick={onToggle}
+          aria-label={show ? "Hide password" : "Show password"}
+        >
           {show ? <EyeOff size={18} /> : <Eye size={18} />}
         </button>
       </div>

@@ -1,9 +1,13 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, Mail, ShieldCheck } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { getAdmin, resendAdminSetup, updateAdminStatus } from "../../../services/adminService";
+import {
+  getAdmin,
+  resendAdminSetup,
+  updateAdminStatus,
+} from "../../../services/adminService";
 import type { AdminListItem } from "../../../services/adminService";
 import { useAuthStore } from "../../../stores/authStore";
 import {
@@ -16,6 +20,7 @@ import {
 import { Button } from "@/components/ui/shadcn/button";
 import { Badge } from "@/components/ui/shadcn/badge";
 import { statusToBadgeVariant } from "@/lib/badge";
+import { readErrorMessage } from "@/lib/errors";
 
 function formatDate(value?: string | null) {
   if (!value) return "-";
@@ -43,7 +48,7 @@ export function AdminDetailPage() {
 
   const canUpdate = hasPrivilege("admin.update");
 
-  async function loadAdmin() {
+  const loadAdmin = useCallback(async () => {
     if (!adminId) return;
 
     try {
@@ -54,11 +59,15 @@ export function AdminDetailPage() {
     } finally {
       setIsLoading(false);
     }
-  }
+  }, [adminId, t]);
 
   useEffect(() => {
-    void loadAdmin();
-  }, [adminId]);
+    const timer = window.setTimeout(() => {
+      void loadAdmin();
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [loadAdmin]);
 
   async function changeStatus(status: "ACTIVE" | "DISABLED" | "PENDING_SETUP") {
     if (!admin) return;
@@ -69,8 +78,8 @@ export function AdminDetailPage() {
       const result = await updateAdminStatus(admin.id, status);
       toast.success(result.message);
       await loadAdmin();
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || t("admins.errors.status"));
+    } catch (err) {
+      toast.error(readErrorMessage(err) || t("admins.errors.status"));
     } finally {
       setBusy(false);
     }
@@ -85,8 +94,8 @@ export function AdminDetailPage() {
       const result = await resendAdminSetup(admin.id);
       toast.success(result.message);
       await loadAdmin();
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || t("admins.errors.resendSetup"));
+    } catch (err) {
+      toast.error(readErrorMessage(err) || t("admins.errors.resendSetup"));
     } finally {
       setBusy(false);
     }
@@ -96,7 +105,9 @@ export function AdminDetailPage() {
     return (
       <Card>
         <CardContent className="p-5">
-          <p className="text-sm text-muted-foreground">{t("admins.detail.loading")}</p>
+          <p className="text-sm text-muted-foreground">
+            {t("admins.detail.loading")}
+          </p>
         </CardContent>
       </Card>
     );
@@ -106,7 +117,9 @@ export function AdminDetailPage() {
     return (
       <Card>
         <CardContent className="p-5">
-          <p className="text-sm text-muted-foreground">{t("admins.detail.notFound")}</p>
+          <p className="text-sm text-muted-foreground">
+            {t("admins.detail.notFound")}
+          </p>
         </CardContent>
       </Card>
     );
@@ -122,9 +135,13 @@ export function AdminDetailPage() {
             </p>
             <CardTitle>{admin.email}</CardTitle>
             <div className="flex flex-wrap gap-2">
-              <Badge variant={statusToBadgeVariant(admin.status)}>{admin.status}</Badge>
+              <Badge variant={statusToBadgeVariant(admin.status)}>
+                {admin.status}
+              </Badge>
               <Badge variant="muted">
-                {admin.role === "WOREDA_ADMIN" ? t("admins.roles.woreda") : t("admins.roles.hibret")}
+                {admin.role === "WOREDA_ADMIN"
+                  ? t("admins.roles.woreda")
+                  : t("admins.roles.hibret")}
               </Badge>
             </div>
           </div>
@@ -142,11 +159,19 @@ export function AdminDetailPage() {
           <Info
             label={t("admins.detail.fields.scope")}
             value={
-              admin.role === "WOREDA_ADMIN" ? t("admins.scope.woreda") : admin.hibretName || "-"
+              admin.role === "WOREDA_ADMIN"
+                ? t("admins.scope.woreda")
+                : admin.hibretName || "-"
             }
           />
-          <Info label={t("admins.detail.fields.lastLogin")} value={formatDate(admin.lastLoginAt)} />
-          <Info label={t("admins.detail.fields.created")} value={formatDate(admin.createdAt)} />
+          <Info
+            label={t("admins.detail.fields.lastLogin")}
+            value={formatDate(admin.lastLoginAt)}
+          />
+          <Info
+            label={t("admins.detail.fields.created")}
+            value={formatDate(admin.createdAt)}
+          />
         </CardContent>
 
         {canUpdate ? (
@@ -209,7 +234,9 @@ export function AdminDetailPage() {
                 <CardDescription>
                   {admin.privileges.includes("*")
                     ? t("admins.detail.privileges.fullSystemAccess")
-                    : t("admins.privileges.count", { count: admin.privileges.length })}
+                    : t("admins.privileges.count", {
+                        count: admin.privileges.length,
+                      })}
                 </CardDescription>
               </div>
             </div>
@@ -219,7 +246,9 @@ export function AdminDetailPage() {
             <div className="flex flex-wrap gap-2">
               {admin.privileges.map((privilege) => (
                 <Badge key={privilege} variant="muted">
-                  {privilege === "*" ? t("admins.privileges.fullAccess") : privilege}
+                  {privilege === "*"
+                    ? t("admins.privileges.fullAccess")
+                    : privilege}
                 </Badge>
               ))}
             </div>
@@ -229,7 +258,9 @@ export function AdminDetailPage() {
         <Card className="flex min-h-0 flex-col overflow-hidden">
           <CardHeader>
             <CardTitle>{t("admins.detail.activity.title")}</CardTitle>
-            <CardDescription>{t("admins.detail.activity.subtitle")}</CardDescription>
+            <CardDescription>
+              {t("admins.detail.activity.subtitle")}
+            </CardDescription>
           </CardHeader>
 
           <CardContent className="min-h-0 flex-1 overflow-auto p-0">
@@ -239,12 +270,22 @@ export function AdminDetailPage() {
               </div>
             ) : (
               admin.activity.map((item) => (
-                <article key={item.id} className="border-b border-border px-5 py-4">
-                  <p className="font-medium text-foreground">{item.operation}</p>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {item.description || item.targetName || item.targetType || "-"}
+                <article
+                  key={item.id}
+                  className="border-b border-border px-5 py-4"
+                >
+                  <p className="font-medium text-foreground">
+                    {item.operation}
                   </p>
-                  <p className="mt-2 text-xs text-muted-foreground">{formatDate(item.createdAt)}</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {item.description ||
+                      item.targetName ||
+                      item.targetType ||
+                      "-"}
+                  </p>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    {formatDate(item.createdAt)}
+                  </p>
                 </article>
               ))
             )}
@@ -261,7 +302,9 @@ function Info({ label, value }: { label: string; value: string }) {
       <p className="text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
         {label}
       </p>
-      <p className="mt-1 truncate text-sm font-medium text-foreground">{value}</p>
+      <p className="mt-1 truncate text-sm font-medium text-foreground">
+        {value}
+      </p>
     </div>
   );
 }

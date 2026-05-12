@@ -1,7 +1,13 @@
 import { create } from "zustand";
+import type { StoreApi } from "zustand";
 import { AUTH_TOKEN_KEY, apiClient } from "../services/apiClient";
 import { isDevBypassLoginEnabled } from "../services/runtimeConfig";
-import type { AuthUser, LoginResponse, MeResponse, UserRole } from "../types/auth";
+import type {
+  AuthUser,
+  LoginResponse,
+  MeResponse,
+  UserRole,
+} from "../types/auth";
 
 type TwoFactorLoginResult = {
   twoFactorRequired: true;
@@ -9,6 +15,14 @@ type TwoFactorLoginResult = {
   message?: string;
   previewUrl?: string | null;
 };
+
+type AuthStoreSet = StoreApi<AuthState>["setState"];
+
+function isTwoFactorResponse(
+  response: LoginResponse,
+): response is Extract<LoginResponse, { twoFactorRequired: true }> {
+  return response.twoFactorRequired === true;
+}
 
 type AuthState = {
   user: AuthUser | null;
@@ -18,9 +32,12 @@ type AuthState = {
   login: (
     email: string,
     password: string,
-    options?: { mockRole?: UserRole }
+    options?: { mockRole?: UserRole },
   ) => Promise<void | TwoFactorLoginResult>;
-  completeTwoFactorLogin: (twoFactorToken: string, code: string) => Promise<void>;
+  completeTwoFactorLogin: (
+    twoFactorToken: string,
+    code: string,
+  ) => Promise<void>;
   loadCurrentUser: () => Promise<void>;
   applySession: (token: string, user: AuthUser) => void;
   logout: () => void;
@@ -44,7 +61,8 @@ const DEV_BYPASS_USER: AuthUser = {
 };
 
 function buildDevBypassUser(email: string, role: UserRole): AuthUser {
-  const normalizedEmail = email.trim() || `dev-${role.toLowerCase()}@astedader.local`;
+  const normalizedEmail =
+    email.trim() || `dev-${role.toLowerCase()}@astedader.local`;
 
   if (role === "HIBRET_ADMIN") {
     return {
@@ -90,7 +108,7 @@ function buildDevBypassUser(email: string, role: UserRole): AuthUser {
   };
 }
 
-function storeSession(token: string, user: AuthUser, set: any) {
+function storeSession(token: string, user: AuthUser, set: AuthStoreSet) {
   localStorage.setItem(AUTH_TOKEN_KEY, token);
 
   set({
@@ -125,7 +143,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ isLoading: true });
 
     if (isDevBypassLoginEnabled()) {
-      const mockUser = buildDevBypassUser(email, options?.mockRole || "WOREDA_ADMIN");
+      const mockUser = buildDevBypassUser(
+        email,
+        options?.mockRole || "WOREDA_ADMIN",
+      );
 
       localStorage.setItem(DEV_BYPASS_USER_KEY, JSON.stringify(mockUser));
       storeSession(DEV_BYPASS_TOKEN, mockUser, set);
@@ -138,7 +159,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         password,
       });
 
-      if ("twoFactorRequired" in response.data && response.data.twoFactorRequired) {
+      if (isTwoFactorResponse(response.data)) {
         set({ isLoading: false });
 
         return {

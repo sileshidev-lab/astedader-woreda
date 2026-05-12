@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
 import {
@@ -29,13 +29,16 @@ import type {
   WoredaMember,
 } from "../../../services/woredaMemberService";
 import { MemberFormDrawer } from "./MemberFormDrawer";
+import { readErrorMessage } from "@/lib/errors";
 
 const API_BASE_URL = getApiBaseUrl();
 
 function memberPhotoUrl(photoFileId?: string | null) {
   if (!photoFileId) return "";
   const token = localStorage.getItem(AUTH_TOKEN_KEY);
-  const query = token ? `?inline=true&token=${encodeURIComponent(token)}` : "?inline=true";
+  const query = token
+    ? `?inline=true&token=${encodeURIComponent(token)}`
+    : "?inline=true";
   return `${API_BASE_URL}/files/${photoFileId}/download${query}`;
 }
 
@@ -52,19 +55,28 @@ function formatDate(value?: string | null) {
 }
 
 function profileInitials(member: WoredaMember) {
-  return [member.firstName, member.fatherName]
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part.charAt(0).toUpperCase())
-    .join("") || "MB";
+  return (
+    [member.firstName, member.fatherName]
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part.charAt(0).toUpperCase())
+      .join("") || "MB"
+  );
 }
 
 function statusTone(status?: string | null) {
   const clean = String(status || "").toLowerCase();
 
-  if (clean === "active" || clean === "present" || clean === "approved") return "success";
-  if (clean === "pending_setup" || clean === "pending" || clean === "changes_requested") return "warning";
-  if (clean === "disabled" || clean === "rejected" || clean === "absent") return "danger";
+  if (clean === "active" || clean === "present" || clean === "approved")
+    return "success";
+  if (
+    clean === "pending_setup" ||
+    clean === "pending" ||
+    clean === "changes_requested"
+  )
+    return "warning";
+  if (clean === "disabled" || clean === "rejected" || clean === "absent")
+    return "danger";
   return "muted";
 }
 
@@ -80,9 +92,7 @@ export function MemberDetailPage() {
     : "/woreda/members";
   const returnTo = new URLSearchParams(location.search).get("returnTo");
   const membersBackPath =
-    returnTo && returnTo.startsWith("/")
-      ? returnTo
-      : membersBackDefaultPath;
+    returnTo && returnTo.startsWith("/") ? returnTo : membersBackDefaultPath;
 
   const [member, setMember] = useState<WoredaMember | null>(null);
   const [formOptions, setFormOptions] = useState<MemberFormOptions>({
@@ -95,7 +105,7 @@ export function MemberDetailPage() {
   const [accountMessage, setAccountMessage] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
-  async function loadMember() {
+  const loadMember = useCallback(async () => {
     if (!memberId) return;
 
     setIsLoading(true);
@@ -113,11 +123,15 @@ export function MemberDetailPage() {
     } finally {
       setIsLoading(false);
     }
-  }
+  }, [memberId]);
 
   useEffect(() => {
-    void loadMember();
-  }, [memberId]);
+    const timer = window.setTimeout(() => {
+      void loadMember();
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [loadMember]);
 
   async function handleUpdateMember(payload: MemberPayload) {
     if (!memberId) return;
@@ -129,8 +143,8 @@ export function MemberDetailPage() {
       setMember(updated);
       setIsEditOpen(false);
       await loadMember();
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Unable to update member.");
+    } catch (err) {
+      toast.error(readErrorMessage(err) || "Unable to update member.");
     } finally {
       setIsSaving(false);
     }
@@ -146,8 +160,8 @@ export function MemberDetailPage() {
       const result = await createMemberAccount(memberId);
       setAccountMessage(result.message);
       await loadMember();
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Unable to create account.");
+    } catch (err) {
+      toast.error(readErrorMessage(err) || "Unable to create account.");
     } finally {
       setIsAccountBusy(false);
     }
@@ -163,14 +177,16 @@ export function MemberDetailPage() {
       const result = await resendMemberSetup(memberId);
       setAccountMessage(result.message);
       await loadMember();
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Unable to resend setup email.");
+    } catch (err) {
+      toast.error(readErrorMessage(err) || "Unable to resend setup email.");
     } finally {
       setIsAccountBusy(false);
     }
   }
 
-  async function handleAccountStatus(status: "ACTIVE" | "DISABLED" | "PENDING_SETUP") {
+  async function handleAccountStatus(
+    status: "ACTIVE" | "DISABLED" | "PENDING_SETUP",
+  ) {
     if (!memberId) return;
 
     setIsAccountBusy(true);
@@ -180,14 +196,17 @@ export function MemberDetailPage() {
       const result = await updateMemberAccountStatus(memberId, status);
       setAccountMessage(result.message);
       await loadMember();
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Unable to update account status.");
+    } catch (err) {
+      toast.error(readErrorMessage(err) || "Unable to update account status.");
     } finally {
       setIsAccountBusy(false);
     }
   }
 
-  const completion = useMemo(() => safeCompletion(member?.profileCompletion), [member]);
+  const completion = useMemo(
+    () => safeCompletion(member?.profileCompletion),
+    [member],
+  );
 
   if (isLoading) {
     return (
@@ -218,7 +237,10 @@ export function MemberDetailPage() {
             <div className="member-profile-identity-row">
               <div className="member-profile-avatar">
                 {member.photoFileId ? (
-                  <img src={memberPhotoUrl(member.photoFileId)} alt={member.name || "Member photo"} />
+                  <img
+                    src={memberPhotoUrl(member.photoFileId)}
+                    alt={member.name || "Member photo"}
+                  />
                 ) : (
                   <span>{profileInitials(member)}</span>
                 )}
@@ -228,8 +250,18 @@ export function MemberDetailPage() {
                 <p className="member-profile-eyebrow">Member profile</p>
                 <h1>{member.name}</h1>
                 <div className="member-profile-status-row">
-                  <StatusPill label={member.membershipStatus || "Unknown status"} tone={statusTone(member.membershipStatus)} />
-                  <StatusPill label={member.account?.status || "No account linked"} tone={member.account ? statusTone(member.account.status) : "muted"} />
+                  <StatusPill
+                    label={member.membershipStatus || "Unknown status"}
+                    tone={statusTone(member.membershipStatus)}
+                  />
+                  <StatusPill
+                    label={member.account?.status || "No account linked"}
+                    tone={
+                      member.account
+                        ? statusTone(member.account.status)
+                        : "muted"
+                    }
+                  />
                 </div>
               </div>
             </div>
@@ -257,7 +289,10 @@ export function MemberDetailPage() {
           </div>
 
           <SummaryItem label="Hibret" value={member.hibretName} />
-          <SummaryItem label="Family" value={member.familyName || "Unassigned"} />
+          <SummaryItem
+            label="Family"
+            value={member.familyName || "Unassigned"}
+          />
           <SummaryItem label="Membership year" value={member.membershipYear} />
         </div>
       </div>
@@ -267,7 +302,10 @@ export function MemberDetailPage() {
           <CleanSection title="Identity" icon={<IdCard size={18} />}>
             <DetailPair label="Full name" value={member.name} strong />
             <DetailPair label="Gender" value={member.gender} />
-            <DetailPair label="Date of birth" value={formatDate(member.dateOfBirth)} />
+            <DetailPair
+              label="Date of birth"
+              value={formatDate(member.dateOfBirth)}
+            />
             <DetailPair label="Member code" value={member.memberCode} />
             <DetailPair label="FAN ID" value={member.fanId} />
             <DetailPair label="PP ID" value={member.ppId} />
@@ -275,7 +313,10 @@ export function MemberDetailPage() {
 
           <CleanSection title="Membership">
             <DetailPair label="Status" value={member.membershipStatus} strong />
-            <DetailPair label="Registration type" value={member.registrationType} />
+            <DetailPair
+              label="Registration type"
+              value={member.registrationType}
+            />
             <DetailPair label="Membership year" value={member.membershipYear} />
             <DetailPair label="Party role" value={member.partyRole} />
           </CleanSection>
@@ -288,7 +329,8 @@ export function MemberDetailPage() {
             <DetailPair
               label="Work experience"
               value={
-                member.workExperienceYears !== null && member.workExperienceYears !== undefined
+                member.workExperienceYears !== null &&
+                member.workExperienceYears !== undefined
                   ? `${member.workExperienceYears} years`
                   : null
               }
@@ -317,7 +359,10 @@ export function MemberDetailPage() {
                       <span>{record.announcementType.replace("_", " ")}</span>
                     </div>
                     <div>
-                      <StatusPill label={record.status} tone={statusTone(record.status)} />
+                      <StatusPill
+                        label={record.status}
+                        tone={statusTone(record.status)}
+                      />
                       <small>{formatDate(record.recordedAt)}</small>
                     </div>
                   </div>
@@ -335,7 +380,10 @@ export function MemberDetailPage() {
 
           <CleanSection title="Assignment" icon={<MapPin size={18} />} compact>
             <DetailPair label="Hibret" value={member.hibretName} strong />
-            <DetailPair label="Family" value={member.familyName || "Unassigned"} />
+            <DetailPair
+              label="Family"
+              value={member.familyName || "Unassigned"}
+            />
             <DetailPair label="Zone" value={member.zone} />
             <DetailPair label="Kebele" value={member.kebele} />
             <DetailPair label="Health status" value={member.healthStatus} />
@@ -356,12 +404,21 @@ export function MemberDetailPage() {
                   <BadgeCheck size={18} />
                   <div>
                     <strong>{member.account.email}</strong>
-                    <StatusPill label={member.account.status} tone={statusTone(member.account.status)} />
+                    <StatusPill
+                      label={member.account.status}
+                      tone={statusTone(member.account.status)}
+                    />
                   </div>
                 </div>
 
-                <DetailPair label="Last login" value={formatDate(member.account.lastLoginAt)} />
-                <DetailPair label="Created" value={formatDate(member.account.createdAt)} />
+                <DetailPair
+                  label="Last login"
+                  value={formatDate(member.account.lastLoginAt)}
+                />
+                <DetailPair
+                  label="Created"
+                  value={formatDate(member.account.createdAt)}
+                />
 
                 <div className="member-account-actions">
                   <Button
@@ -425,7 +482,11 @@ export function MemberDetailPage() {
             ) : null}
           </section>
 
-          <CleanSection title="Record dates" icon={<CalendarDays size={18} />} compact>
+          <CleanSection
+            title="Record dates"
+            icon={<CalendarDays size={18} />}
+            compact
+          >
             <DetailPair label="Created" value={formatDate(member.createdAt)} />
             <DetailPair label="Updated" value={formatDate(member.updatedAt)} />
           </CleanSection>
@@ -490,7 +551,11 @@ function CleanSection({
           </h2>
         </div>
       </div>
-      <div className={compact ? "member-detail-fields is-compact" : "member-detail-fields"}>
+      <div
+        className={
+          compact ? "member-detail-fields is-compact" : "member-detail-fields"
+        }
+      >
         {children}
       </div>
     </section>
@@ -506,17 +571,28 @@ function DetailPair({
   value: unknown;
   strong?: boolean;
 }) {
-  const missing = value === null || value === undefined || value === "" || value === "-";
+  const missing =
+    value === null || value === undefined || value === "" || value === "-";
 
   return (
-    <div className={missing ? "member-detail-pair is-empty" : "member-detail-pair"}>
+    <div
+      className={missing ? "member-detail-pair is-empty" : "member-detail-pair"}
+    >
       <span>{label}</span>
-      <strong className={strong ? "is-strong" : ""}>{missing ? "Not provided" : valueText(value)}</strong>
+      <strong className={strong ? "is-strong" : ""}>
+        {missing ? "Not provided" : valueText(value)}
+      </strong>
     </div>
   );
 }
 
-function EmptyState({ title, description }: { title: string; description: string }) {
+function EmptyState({
+  title,
+  description,
+}: {
+  title: string;
+  description: string;
+}) {
   return (
     <div className="member-detail-empty">
       <h3>{title}</h3>

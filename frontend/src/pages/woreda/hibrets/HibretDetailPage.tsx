@@ -1,8 +1,14 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent } from "react";
-import { Link, useLocation, useParams, useSearchParams } from "react-router-dom";
+import {
+  Link,
+  useLocation,
+  useParams,
+  useSearchParams,
+} from "react-router-dom";
 import { toast } from "sonner";
-import {ArrowLeft,
+import {
+  ArrowLeft,
   Edit3,
   Phone,
   Plus,
@@ -10,7 +16,8 @@ import {ArrowLeft,
   ShieldCheck,
   Trash2,
   UserRound,
-  X} from "lucide-react";
+  X,
+} from "lucide-react";
 import { Button } from "@/components/ui/shadcn/button";
 import { Badge } from "@/components/ui/shadcn/badge";
 import { Input } from "@/components/ui/shadcn/input";
@@ -24,6 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/shadcn/select";
 import { statusToBadgeVariant } from "@/lib/badge";
+import { readErrorMessage } from "@/lib/errors";
 import {
   assignMembersToFamily,
   bulkUpdateHibretAccountStatus,
@@ -32,7 +40,7 @@ import {
   getWoredaHibret,
   unassignMembersFromFamily,
   updateHibretAccountStatus,
-  updateHibretFamily
+  updateHibretFamily,
 } from "../../../services/woredaHibretService";
 import type {
   FamilyPayload,
@@ -98,10 +106,7 @@ function HibretAdministrativeNav({
 }) {
   return (
     <div className="aw-hibret-admin-toolbar-cluster">
-      <Link
-        to="/woreda/hibrets"
-        className="aw-hibret-detail-back-button"
-      >
+      <Link to="/woreda/hibrets" className="aw-hibret-detail-back-button">
         <ArrowLeft size={16} aria-hidden />
         Back to Hibrets
       </Link>
@@ -129,19 +134,21 @@ export function HibretDetailPage() {
   const location = useLocation();
   const [searchParams] = useSearchParams();
 
-  const initialSide = searchParams.get("side") === "political" ? "political" : "administrative";
+  const side: Side =
+    searchParams.get("side") === "political" ? "political" : "administrative";
 
   const [hibret, setHibret] = useState<WoredaHibretDetail | null>(null);
-  const [side, setSide] = useState<Side>(initialSide);
   const [politicalTab, setPoliticalTab] = useState<PoliticalTab>("meeting");
-  const [administrativeTab, setAdministrativeTab] = useState<AdministrativeTab>("members");
+  const [administrativeTab, setAdministrativeTab] =
+    useState<AdministrativeTab>("members");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const hasLoadedRef = useRef(false);
 
-  async function loadHibret() {
+  const loadHibret = useCallback(async () => {
     if (!hibretId) return;
 
-    const isInitialLoad = !hibret;
+    const isInitialLoad = !hasLoadedRef.current;
 
     if (isInitialLoad) {
       setIsLoading(true);
@@ -152,6 +159,7 @@ export function HibretDetailPage() {
     try {
       const data = await getWoredaHibret(hibretId);
       setHibret(data);
+      hasLoadedRef.current = true;
     } catch {
       const msg = "Unable to load Hibret detail.";
       setError(msg);
@@ -161,18 +169,23 @@ export function HibretDetailPage() {
         setIsLoading(false);
       }
     }
-  }
-
-  useEffect(() => {
-    const urlSide = searchParams.get("side") === "political" ? "political" : "administrative";
-    setSide(urlSide);
-  }, [searchParams]);
-
-  useEffect(() => {
-    void loadHibret();
   }, [hibretId]);
 
-  const setHibretDetailHeaderTitle = useWoredaHibretDetailHeaderStore((s) => s.setDetailTitle);
+  useEffect(() => {
+    hasLoadedRef.current = false;
+  }, [hibretId]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      void loadHibret();
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [loadHibret]);
+
+  const setHibretDetailHeaderTitle = useWoredaHibretDetailHeaderStore(
+    (s) => s.setDetailTitle,
+  );
 
   useEffect(() => {
     setHibretDetailHeaderTitle(null);
@@ -187,7 +200,7 @@ export function HibretDetailPage() {
 
   const politicalDirectives = useMemo(() => {
     return (hibret?.directives ?? []).filter(
-      (directive) => directive.type === politicalTab
+      (directive) => directive.type === politicalTab,
     );
   }, [hibret?.directives, politicalTab]);
 
@@ -195,7 +208,9 @@ export function HibretDetailPage() {
     return (
       <Card>
         <CardContent className="px-5 py-5">
-          <p className="text-sm text-muted-foreground">Loading Hibret detail.</p>
+          <p className="text-sm text-muted-foreground">
+            Loading Hibret detail.
+          </p>
         </CardContent>
       </Card>
     );
@@ -242,9 +257,7 @@ export function HibretDetailPage() {
                     onClick={() => setPoliticalTab(tab.key)}
                     className={[
                       "aw-hibret-detail-tab",
-                      politicalTab === tab.key
-                        ? "is-active"
-                        : "",
+                      politicalTab === tab.key ? "is-active" : "",
                     ].join(" ")}
                   >
                     {tab.label}
@@ -284,22 +297,33 @@ function PoliticalWorkspace({
   hibret,
   directiveType,
   directives,
-  returnTo
+  returnTo,
 }: {
   hibret: WoredaHibretDetail;
   directiveType: PoliticalTab;
   directives: WoredaHibretDirective[];
   returnTo: string;
 }) {
-  const submitted = directives.filter((directive) => directive.report?.submittedAt).length;
+  const submitted = directives.filter(
+    (directive) => directive.report?.submittedAt,
+  ).length;
   const pending = directives.length - submitted;
-  const reviewed = directives.filter((directive) => directive.report?.reviewDecision).length;
+  const reviewed = directives.filter(
+    (directive) => directive.report?.reviewDecision,
+  ).length;
 
   return (
     <section className="aw-hibret-political-workspace flex min-h-0 flex-1 flex-col gap-4">
       <div className="stat-grid">
-        <MiniMetric label={`${directiveTypeLabel(directiveType)} directives`} value={directives.length} />
-        <MiniMetric label="Submitted reports" value={submitted} tone="success" />
+        <MiniMetric
+          label={`${directiveTypeLabel(directiveType)} directives`}
+          value={directives.length}
+        />
+        <MiniMetric
+          label="Submitted reports"
+          value={submitted}
+          tone="success"
+        />
         <MiniMetric label="Pending reports" value={pending} tone="magenta" />
         <MiniMetric label="Reviewed" value={reviewed} tone="primary" />
       </div>
@@ -308,7 +332,8 @@ function PoliticalWorkspace({
         <p>Political workstream</p>
         <h2>{directiveTypeLabel(directiveType)} work</h2>
         <span>
-          Targeted directives, Hibret reports, report media, and Woreda review links.
+          Targeted directives, Hibret reports, report media, and Woreda review
+          links.
         </span>
       </div>
 
@@ -316,12 +341,24 @@ function PoliticalWorkspace({
         <table className="aw-hibret-political-table">
           <thead className="sticky top-0 z-10 bg-[var(--aw-surface-muted)] text-xs uppercase tracking-wide text-[var(--aw-muted)]">
             <tr>
-              <th className="border-b border-[var(--aw-border)]/60 px-4 py-3">Directive</th>
-              <th className="border-b border-[var(--aw-border)]/60 px-4 py-3">Status</th>
-              <th className="border-b border-[var(--aw-border)]/60 px-4 py-3">Deadline</th>
-              <th className="border-b border-[var(--aw-border)]/60 px-4 py-3">Report</th>
-              <th className="border-b border-[var(--aw-border)]/60 px-4 py-3">Review</th>
-              <th className="border-b border-[var(--aw-border)]/60 px-4 py-3 text-right">Action</th>
+              <th className="border-b border-[var(--aw-border)]/60 px-4 py-3">
+                Directive
+              </th>
+              <th className="border-b border-[var(--aw-border)]/60 px-4 py-3">
+                Status
+              </th>
+              <th className="border-b border-[var(--aw-border)]/60 px-4 py-3">
+                Deadline
+              </th>
+              <th className="border-b border-[var(--aw-border)]/60 px-4 py-3">
+                Report
+              </th>
+              <th className="border-b border-[var(--aw-border)]/60 px-4 py-3">
+                Review
+              </th>
+              <th className="border-b border-[var(--aw-border)]/60 px-4 py-3 text-right">
+                Action
+              </th>
             </tr>
           </thead>
 
@@ -329,14 +366,21 @@ function PoliticalWorkspace({
             {directives.length === 0 ? (
               <tr>
                 <td colSpan={6} className="px-4 py-12 text-center">
-                  <EmptyMessage message={`No ${directiveTypeLabel(directiveType).toLowerCase()} directives assigned to this Hibret.`} />
+                  <EmptyMessage
+                    message={`No ${directiveTypeLabel(directiveType).toLowerCase()} directives assigned to this Hibret.`}
+                  />
                 </td>
               </tr>
             ) : (
               directives.map((directive) => (
-                <tr key={directive.id} className="hover:bg-[var(--aw-surface-muted)]">
+                <tr
+                  key={directive.id}
+                  className="hover:bg-[var(--aw-surface-muted)]"
+                >
                   <td className="border-b border-[var(--aw-border-soft)] px-4 py-4">
-                    <p className="font-bold text-[var(--aw-text)]">{directive.title}</p>
+                    <p className="font-bold text-[var(--aw-text)]">
+                      {directive.title}
+                    </p>
                     <p className="mt-1 text-xs font-semibold text-[var(--aw-muted)]">
                       Assigned {formatDate(directive.assignedAt)}
                     </p>
@@ -354,7 +398,9 @@ function PoliticalWorkspace({
                     <StatusBadge
                       status={
                         directive.report?.status ||
-                        (directive.status === "closed" ? "Unsubmitted" : "Pending")
+                        (directive.status === "closed"
+                          ? "Unsubmitted"
+                          : "Pending")
                       }
                     />
                   </td>
@@ -363,7 +409,9 @@ function PoliticalWorkspace({
                     <StatusBadge
                       status={
                         directive.report?.reviewDecision ||
-                        (directive.status === "closed" ? "Unsubmitted" : "Pending")
+                        (directive.status === "closed"
+                          ? "Unsubmitted"
+                          : "Pending")
                       }
                     />
                   </td>
@@ -379,7 +427,9 @@ function PoliticalWorkspace({
                       </Button>
                     ) : (
                       <span className="text-xs font-medium text-muted-foreground">
-                        {directive.status === "closed" ? "Unsubmitted" : "Pending"}
+                        {directive.status === "closed"
+                          ? "Unsubmitted"
+                          : "Pending"}
                       </span>
                     )}
                   </td>
@@ -398,7 +448,7 @@ function AdministrativeWorkspace({
   hibretId,
   activeTab,
   onAdministrativeTabChange,
-  onReload
+  onReload,
 }: {
   hibret: WoredaHibretDetail;
   hibretId?: string;
@@ -418,7 +468,9 @@ function AdministrativeWorkspace({
       <div className="member-registry-page aw-member-registry flex min-h-0 flex-1 flex-col overflow-hidden">
         <div className="shrink-0">
           <div className="member-registry-control-bar">
-            <div className="flex min-w-0 flex-1 flex-wrap items-center gap-3">{adminNav}</div>
+            <div className="flex min-w-0 flex-1 flex-wrap items-center gap-3">
+              {adminNav}
+            </div>
           </div>
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto p-5">
@@ -438,15 +490,13 @@ function AdministrativeWorkspace({
   );
 }
 
-
-
 function AccountBulkToolbar({
   selectedCount,
   disabled,
   onDisable,
   onReactivate,
   onPending,
-  onClear
+  onClear,
 }: {
   selectedCount: number;
   disabled: boolean;
@@ -508,7 +558,7 @@ function AccountBulkToolbar({
 
 export function AdminsPanel({
   hibret,
-  onReload
+  onReload,
 }: {
   hibret: WoredaHibretDetail;
   onReload: () => Promise<void>;
@@ -527,36 +577,47 @@ export function AdminsPanel({
     setSelectedAdminIds((current) =>
       current.includes(userId)
         ? current.filter((id) => id !== userId)
-        : [...current, userId]
+        : [...current, userId],
     );
   }
 
-  async function changeStatus(userId: string, status: "ACTIVE" | "DISABLED" | "PENDING_SETUP") {
+  async function changeStatus(
+    userId: string,
+    status: "ACTIVE" | "DISABLED" | "PENDING_SETUP",
+  ) {
     setBusyUserId(userId);
 
     try {
       const result = await updateHibretAccountStatus(hibret.id, userId, status);
       toast.success(result.message);
       await onReload();
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Unable to update account.");
+    } catch (err) {
+      toast.error(readErrorMessage(err) || "Unable to update account.");
     } finally {
       setBusyUserId(null);
     }
   }
 
-  async function bulkChangeStatus(status: "ACTIVE" | "DISABLED" | "PENDING_SETUP") {
+  async function bulkChangeStatus(
+    status: "ACTIVE" | "DISABLED" | "PENDING_SETUP",
+  ) {
     if (selectedAdminIds.length === 0) return;
 
     setBusyUserId("bulk");
 
     try {
-      const result = await bulkUpdateHibretAccountStatus(hibret.id, selectedAdminIds, status);
+      const result = await bulkUpdateHibretAccountStatus(
+        hibret.id,
+        selectedAdminIds,
+        status,
+      );
       toast.success(`${result.message} Updated: ${result.updated}.`);
       setSelectedAdminIds([]);
       await onReload();
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Unable to update selected accounts.");
+    } catch (err) {
+      toast.error(
+        readErrorMessage(err) || "Unable to update selected accounts.",
+      );
     } finally {
       setBusyUserId(null);
     }
@@ -573,7 +634,9 @@ export function AdminsPanel({
         />
         <AdminSmallMetric
           label="Pending setup"
-          value={admins.filter((admin) => admin.status === "PENDING_SETUP").length}
+          value={
+            admins.filter((admin) => admin.status === "PENDING_SETUP").length
+          }
           tone="magenta"
         />
       </div>
@@ -630,24 +693,46 @@ export function AdminsPanel({
                 <th className="w-12 border-b border-[var(--aw-border)]/60 px-4 py-3">
                   <input
                     type="checkbox"
-                    checked={filteredAdmins.length > 0 && filteredAdmins.every((admin) => selectedAdminIds.includes(admin.id))}
+                    checked={
+                      filteredAdmins.length > 0 &&
+                      filteredAdmins.every((admin) =>
+                        selectedAdminIds.includes(admin.id),
+                      )
+                    }
                     onChange={(event) => {
-                      setSelectedAdminIds(event.target.checked ? filteredAdmins.map((admin) => admin.id) : []);
+                      setSelectedAdminIds(
+                        event.target.checked
+                          ? filteredAdmins.map((admin) => admin.id)
+                          : [],
+                      );
                     }}
                     className="h-4 w-4"
                   />
                 </th>
-                <th className="border-b border-[var(--aw-border)]/60 px-4 py-3">Admin</th>
-                <th className="border-b border-[var(--aw-border)]/60 px-4 py-3">Account</th>
-                <th className="border-b border-[var(--aw-border)]/60 px-4 py-3">Last login</th>
-                <th className="border-b border-[var(--aw-border)]/60 px-4 py-3">Created</th>
-                <th className="border-b border-[var(--aw-border)]/60 px-4 py-3 text-right">Actions</th>
+                <th className="border-b border-[var(--aw-border)]/60 px-4 py-3">
+                  Admin
+                </th>
+                <th className="border-b border-[var(--aw-border)]/60 px-4 py-3">
+                  Account
+                </th>
+                <th className="border-b border-[var(--aw-border)]/60 px-4 py-3">
+                  Last login
+                </th>
+                <th className="border-b border-[var(--aw-border)]/60 px-4 py-3">
+                  Created
+                </th>
+                <th className="border-b border-[var(--aw-border)]/60 px-4 py-3 text-right">
+                  Actions
+                </th>
               </tr>
             </thead>
 
             <tbody>
               {filteredAdmins.map((admin) => (
-                <tr key={admin.id} className="transition hover:bg-[var(--aw-primary-soft)]/40">
+                <tr
+                  key={admin.id}
+                  className="transition hover:bg-[var(--aw-primary-soft)]/40"
+                >
                   <td className="border-b border-[var(--aw-border-soft)] px-4 py-4">
                     <input
                       type="checkbox"
@@ -662,7 +747,9 @@ export function AdminsPanel({
                       <div className="flex h-10 w-10 items-center justify-center rounded border border-[var(--aw-primary)]/20 bg-[var(--aw-primary-soft)] text-[var(--aw-primary)]">
                         <ShieldCheck size={18} />
                       </div>
-                      <p className="font-bold text-[var(--aw-text)]">{admin.email}</p>
+                      <p className="font-bold text-[var(--aw-text)]">
+                        {admin.email}
+                      </p>
                     </div>
                   </td>
 
@@ -708,7 +795,9 @@ export function AdminsPanel({
                           variant="outline"
                           size="sm"
                           disabled={busyUserId === admin.id}
-                          onClick={() => changeStatus(admin.id, "PENDING_SETUP")}
+                          onClick={() =>
+                            changeStatus(admin.id, "PENDING_SETUP")
+                          }
                         >
                           Mark Pending
                         </Button>
@@ -727,16 +816,17 @@ export function AdminsPanel({
 
 function FamiliesPanel({
   hibret,
-  onReload
+  onReload,
 }: {
   hibret: WoredaHibretDetail;
   onReload: () => Promise<void>;
 }) {
-  const [selectedFamily, setSelectedFamily] = useState<WoredaHibretFamily | null>(
-    hibret.families[0] ?? null
-  );
+  const [selectedFamily, setSelectedFamily] =
+    useState<WoredaHibretFamily | null>(hibret.families[0] ?? null);
   const [isFamilyFormOpen, setIsFamilyFormOpen] = useState(false);
-  const [editingFamily, setEditingFamily] = useState<WoredaHibretFamily | null>(null);
+  const [editingFamily, setEditingFamily] = useState<WoredaHibretFamily | null>(
+    null,
+  );
   const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
   const [unassignedSearch, setUnassignedSearch] = useState("");
   const [isBusy, setIsBusy] = useState(false);
@@ -772,8 +862,12 @@ function FamiliesPanel({
     ? hibret.members.filter((member) => member.familyId === currentFamily.id)
     : [];
 
-  const membersInFamilies = hibret.members.filter((member) => member.familyId).length;
-  const inactiveFamilies = hibret.families.filter((family) => family.status === "inactive").length;
+  const membersInFamilies = hibret.members.filter(
+    (member) => member.familyId,
+  ).length;
+  const inactiveFamilies = hibret.families.filter(
+    (family) => family.status === "inactive",
+  ).length;
 
   function openCreateFamily() {
     setEditingFamily(null);
@@ -801,8 +895,8 @@ function FamiliesPanel({
       setIsFamilyFormOpen(false);
       setEditingFamily(null);
       await onReload();
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Unable to save family.");
+    } catch (err) {
+      toast.error(readErrorMessage(err) || "Unable to save family.");
     } finally {
       setIsBusy(false);
     }
@@ -812,7 +906,7 @@ function FamiliesPanel({
     const confirmed = window.confirm(
       family.memberCount > 0
         ? "This family has members. It will be marked inactive. Continue?"
-        : "Delete this empty family?"
+        : "Delete this empty family?",
     );
 
     if (!confirmed) return;
@@ -824,8 +918,8 @@ function FamiliesPanel({
       toast.success(result.message);
       setSelectedFamily(null);
       await onReload();
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Unable to remove family.");
+    } catch (err) {
+      toast.error(readErrorMessage(err) || "Unable to remove family.");
     } finally {
       setIsBusy(false);
     }
@@ -837,12 +931,18 @@ function FamiliesPanel({
     setIsBusy(true);
 
     try {
-      const result = await assignMembersToFamily(hibret.id, currentFamily.id, selectedMemberIds);
-      toast.success(`${result.assigned} members assigned to ${currentFamily.name}.`);
+      const result = await assignMembersToFamily(
+        hibret.id,
+        currentFamily.id,
+        selectedMemberIds,
+      );
+      toast.success(
+        `${result.assigned} members assigned to ${currentFamily.name}.`,
+      );
       setSelectedMemberIds([]);
       await onReload();
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Unable to assign members.");
+    } catch (err) {
+      toast.error(readErrorMessage(err) || "Unable to assign members.");
     } finally {
       setIsBusy(false);
     }
@@ -857,8 +957,10 @@ function FamiliesPanel({
       const result = await unassignMembersFromFamily(hibret.id, memberIds);
       toast.success(`${result.unassigned} members removed from family.`);
       await onReload();
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Unable to remove members from family.");
+    } catch (err) {
+      toast.error(
+        readErrorMessage(err) || "Unable to remove members from family.",
+      );
     } finally {
       setIsBusy(false);
     }
@@ -868,7 +970,7 @@ function FamiliesPanel({
     setSelectedMemberIds((current) =>
       current.includes(memberId)
         ? current.filter((id) => id !== memberId)
-        : [...current, memberId]
+        : [...current, memberId],
     );
   }
 
@@ -876,16 +978,30 @@ function FamiliesPanel({
     <section className="space-y-5">
       <div className="stat-grid">
         <AdminSmallMetric label="Families" value={hibret.families.length} />
-        <AdminSmallMetric label="Active" value={hibret.families.length - inactiveFamilies} tone="success" />
-        <AdminSmallMetric label="Members in families" value={membersInFamilies} tone="primary" />
-        <AdminSmallMetric label="Unassigned members" value={hibret.members.length - membersInFamilies} tone="magenta" />
+        <AdminSmallMetric
+          label="Active"
+          value={hibret.families.length - inactiveFamilies}
+          tone="success"
+        />
+        <AdminSmallMetric
+          label="Members in families"
+          value={membersInFamilies}
+          tone="primary"
+        />
+        <AdminSmallMetric
+          label="Unassigned members"
+          value={hibret.members.length - membersInFamilies}
+          tone="magenta"
+        />
       </div>
 
       <div className="grid min-h-[var(--aw-panel-min-h)] gap-5 xl:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
         <section className="flex min-h-0 flex-col overflow-hidden rounded-3xl border border-[var(--aw-border)]/70 bg-[var(--aw-surface-muted)] shadow-none">
           <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[var(--aw-border)]/60 px-5 py-4">
             <div>
-              <h2 className="text-lg font-bold text-[var(--aw-text)]">Family list</h2>
+              <h2 className="text-lg font-bold text-[var(--aw-text)]">
+                Family list
+              </h2>
               <p className="mt-1 text-xs font-semibold text-[var(--aw-muted)]">
                 Showing {hibret.families.length} families
               </p>
@@ -924,7 +1040,9 @@ function FamiliesPanel({
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
-                          <p className="truncate text-base font-bold text-[var(--aw-text)]">{family.name}</p>
+                          <p className="truncate text-base font-bold text-[var(--aw-text)]">
+                            {family.name}
+                          </p>
                           <p className="mt-2 text-xs font-bold text-[var(--aw-muted)]">
                             {family.memberCount} members
                           </p>
@@ -936,7 +1054,9 @@ function FamiliesPanel({
                       <div className="mt-4 space-y-2 text-xs font-semibold text-[var(--aw-muted)]">
                         <p className="flex items-center gap-2">
                           <UserRound size={14} />
-                          <span>{family.contactName || "No contact recorded"}</span>
+                          <span>
+                            {family.contactName || "No contact recorded"}
+                          </span>
                         </p>
                         <p className="flex items-center gap-2">
                           <Phone size={14} />
@@ -957,7 +1077,9 @@ function FamiliesPanel({
               <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                 <div>
                   <div className="flex flex-wrap items-center gap-3">
-                    <h3 className="text-2xl font-bold text-[var(--aw-text)]">{currentFamily.name}</h3>
+                    <h3 className="text-2xl font-bold text-[var(--aw-text)]">
+                      {currentFamily.name}
+                    </h3>
                     <StatusBadge status={currentFamily.status || "unknown"} />
                   </div>
 
@@ -992,9 +1114,15 @@ function FamiliesPanel({
               </div>
 
               <div className="stat-grid mt-5">
-                <AdminInfo label="Contact" value={currentFamily.contactName || "-"} />
+                <AdminInfo
+                  label="Contact"
+                  value={currentFamily.contactName || "-"}
+                />
                 <AdminInfo label="Phone" value={currentFamily.phone || "-"} />
-                <AdminInfo label="Created" value={formatDate(currentFamily.createdAt)} />
+                <AdminInfo
+                  label="Created"
+                  value={formatDate(currentFamily.createdAt)}
+                />
               </div>
             </article>
           ) : (
@@ -1003,7 +1131,9 @@ function FamiliesPanel({
 
           <section className="overflow-hidden rounded-3xl border border-[var(--aw-border)]/70 bg-[var(--aw-surface)] shadow-none">
             <div className="border-b border-[var(--aw-border)]/60 bg-[var(--aw-surface-muted)] px-5 py-4">
-              <h3 className="text-base font-bold text-[var(--aw-text)]">Members in selected family</h3>
+              <h3 className="text-base font-bold text-[var(--aw-text)]">
+                Members in selected family
+              </h3>
             </div>
 
             <div className="max-h-[min(20rem,calc(var(--aw-viewport-block)-18rem))] overflow-auto">
@@ -1015,22 +1145,35 @@ function FamiliesPanel({
                 <table className="min-w-full text-left text-sm">
                   <thead className="sticky top-0 bg-[var(--aw-surface-muted)] text-xs uppercase tracking-wide text-[var(--aw-muted)]">
                     <tr>
-                      <th className="border-b border-[var(--aw-border)]/60 px-4 py-3">Member</th>
-                      <th className="border-b border-[var(--aw-border)]/60 px-4 py-3">Contact</th>
-                      <th className="border-b border-[var(--aw-border)]/60 px-4 py-3 text-right">Action</th>
+                      <th className="border-b border-[var(--aw-border)]/60 px-4 py-3">
+                        Member
+                      </th>
+                      <th className="border-b border-[var(--aw-border)]/60 px-4 py-3">
+                        Contact
+                      </th>
+                      <th className="border-b border-[var(--aw-border)]/60 px-4 py-3 text-right">
+                        Action
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
                     {familyMembers.map((member) => (
-                      <tr key={member.id} className="transition hover:bg-[var(--aw-primary-soft)]/40">
+                      <tr
+                        key={member.id}
+                        className="transition hover:bg-[var(--aw-primary-soft)]/40"
+                      >
                         <td className="border-b border-[var(--aw-border-soft)] px-4 py-3">
                           <div className="flex items-center gap-3">
                             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded border border-[var(--aw-primary)]/20 bg-[var(--aw-primary-soft)] text-xs font-black text-[var(--aw-primary)]">
                               {initials(member.name) || "M"}
                             </div>
                             <div>
-                              <p className="font-bold text-[var(--aw-text)]">{member.name}</p>
-                              <p className="text-xs text-[var(--aw-muted)]">{member.memberCode || "-"}</p>
+                              <p className="font-bold text-[var(--aw-text)]">
+                                {member.name}
+                              </p>
+                              <p className="text-xs text-[var(--aw-muted)]">
+                                {member.memberCode || "-"}
+                              </p>
                             </div>
                           </div>
                         </td>
@@ -1062,7 +1205,9 @@ function FamiliesPanel({
           <section className="overflow-hidden rounded-3xl border border-[var(--aw-border)]/70 bg-[var(--aw-surface)] shadow-none">
             <div className="flex flex-col gap-3 border-b border-[var(--aw-border)]/60 bg-[var(--aw-surface-muted)] px-5 py-4 md:flex-row md:items-center md:justify-between">
               <div>
-                <h3 className="text-base font-bold text-[var(--aw-text)]">Unassigned members</h3>
+                <h3 className="text-base font-bold text-[var(--aw-text)]">
+                  Unassigned members
+                </h3>
                 <p className="mt-1 text-xs font-semibold text-[var(--aw-muted)]">
                   Select members and assign them to the selected family.
                 </p>
@@ -1070,10 +1215,15 @@ function FamiliesPanel({
 
               <div className="flex flex-col gap-2 md:flex-row md:items-center">
                 <div className="relative w-full md:max-w-[18rem]">
-                  <Search aria-hidden className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <Search
+                    aria-hidden
+                    className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+                  />
                   <Input
                     value={unassignedSearch}
-                    onChange={(event) => setUnassignedSearch(event.target.value)}
+                    onChange={(event) =>
+                      setUnassignedSearch(event.target.value)
+                    }
                     placeholder="Search members"
                     className="pl-9"
                   />
@@ -1083,7 +1233,9 @@ function FamiliesPanel({
                   type="button"
                   variant="default"
                   size="default"
-                  disabled={isBusy || !currentFamily || selectedMemberIds.length === 0}
+                  disabled={
+                    isBusy || !currentFamily || selectedMemberIds.length === 0
+                  }
                   onClick={handleAssignMembers}
                 >
                   Assign Selected
@@ -1108,13 +1260,20 @@ function FamiliesPanel({
                   <thead className="sticky top-0 bg-[var(--aw-surface-muted)] text-xs uppercase tracking-wide text-[var(--aw-muted)]">
                     <tr>
                       <th className="w-10 border-b border-[var(--aw-border)]/60 px-4 py-3"></th>
-                      <th className="border-b border-[var(--aw-border)]/60 px-4 py-3">Member</th>
-                      <th className="border-b border-[var(--aw-border)]/60 px-4 py-3">Contact</th>
+                      <th className="border-b border-[var(--aw-border)]/60 px-4 py-3">
+                        Member
+                      </th>
+                      <th className="border-b border-[var(--aw-border)]/60 px-4 py-3">
+                        Contact
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
                     {unassignedMembers.map((member) => (
-                      <tr key={member.id} className="transition hover:bg-[var(--aw-primary-soft)]/40">
+                      <tr
+                        key={member.id}
+                        className="transition hover:bg-[var(--aw-primary-soft)]/40"
+                      >
                         <td className="border-b border-[var(--aw-border-soft)] px-4 py-3">
                           <input
                             type="checkbox"
@@ -1124,8 +1283,12 @@ function FamiliesPanel({
                           />
                         </td>
                         <td className="border-b border-[var(--aw-border-soft)] px-4 py-3">
-                          <p className="font-bold text-[var(--aw-text)]">{member.name}</p>
-                          <p className="text-xs text-[var(--aw-muted)]">{member.memberCode || "-"}</p>
+                          <p className="font-bold text-[var(--aw-text)]">
+                            {member.name}
+                          </p>
+                          <p className="text-xs text-[var(--aw-muted)]">
+                            {member.memberCode || "-"}
+                          </p>
                         </td>
                         <td className="border-b border-[var(--aw-border-soft)] px-4 py-3 text-xs text-[var(--aw-muted)]">
                           <p>{member.phone || "-"}</p>
@@ -1142,6 +1305,7 @@ function FamiliesPanel({
       </div>
 
       <FamilyFormModal
+        key={isFamilyFormOpen ? (editingFamily?.id ?? "new") : "closed"}
         isOpen={isFamilyFormOpen}
         family={editingFamily}
         isSaving={isBusy}
@@ -1178,7 +1342,7 @@ function FamilyFormModal({
   family,
   isSaving,
   onClose,
-  onSubmit
+  onSubmit,
 }: {
   isOpen: boolean;
   family: WoredaHibretFamily | null;
@@ -1186,25 +1350,13 @@ function FamilyFormModal({
   onClose: () => void;
   onSubmit: (payload: FamilyPayload) => Promise<void>;
 }) {
-  const [form, setForm] = useState<FamilyPayload>({
-    name: "",
-    contactName: "",
-    phone: "",
-    status: "active"
-});
+  const [form, setForm] = useState<FamilyPayload>(() => ({
+    name: family?.name || "",
+    contactName: family?.contactName || "",
+    phone: family?.phone || "",
+    status: family?.status || "active",
+  }));
   const [localError, setLocalError] = useState("");
-
-  useEffect(() => {
-    if (!isOpen) return;
-
-    setForm({
-      name: family?.name || "",
-      contactName: family?.contactName || "",
-      phone: family?.phone || "",
-      status: family?.status || "active"
-});
-    setLocalError("");
-  }, [isOpen, family]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -1233,8 +1385,8 @@ function FamilyFormModal({
       name: form.name.trim(),
       contactName: form.contactName?.trim() || null,
       phone: form.phone?.trim() || null,
-      status: form.status || "active"
-});
+      status: form.status || "active",
+    });
   }
 
   return (
@@ -1251,7 +1403,10 @@ function FamilyFormModal({
             <p className="text-xs font-bold uppercase tracking-wider text-[var(--aw-muted)]">
               Family record
             </p>
-            <h2 id="family-form-title" className="mt-1 text-xl font-bold text-[var(--aw-text)]">
+            <h2
+              id="family-form-title"
+              className="mt-1 text-xl font-bold text-[var(--aw-text)]"
+            >
               {family ? "Edit Family" : "Create Family"}
             </h2>
           </div>
@@ -1277,27 +1432,35 @@ function FamilyFormModal({
           <TextInput
             label="Family name"
             value={form.name}
-            onChange={(value) => setForm((current) => ({ ...current, name: value }))}
+            onChange={(value) =>
+              setForm((current) => ({ ...current, name: value }))
+            }
             required
           />
 
           <TextInput
             label="Contact name"
             value={form.contactName || ""}
-            onChange={(value) => setForm((current) => ({ ...current, contactName: value }))}
+            onChange={(value) =>
+              setForm((current) => ({ ...current, contactName: value }))
+            }
           />
 
           <TextInput
             label="Phone"
             value={form.phone || ""}
-            onChange={(value) => setForm((current) => ({ ...current, phone: value }))}
+            onChange={(value) =>
+              setForm((current) => ({ ...current, phone: value }))
+            }
           />
 
           <div className="flex flex-col gap-1.5">
             <Label>Status</Label>
             <Select
               value={form.status || "active"}
-              onValueChange={(value) => setForm((current) => ({ ...current, status: value }))}
+              onValueChange={(value) =>
+                setForm((current) => ({ ...current, status: value }))
+              }
             >
               <SelectTrigger>
                 <SelectValue />
@@ -1311,11 +1474,21 @@ function FamilyFormModal({
         </div>
 
         <div className="flex justify-end gap-3 border-t border-[var(--aw-border)] bg-[var(--aw-surface-muted)] px-5 py-4">
-          <Button type="button" variant="outline" size="default" onClick={onClose}>
+          <Button
+            type="button"
+            variant="outline"
+            size="default"
+            onClick={onClose}
+          >
             Cancel
           </Button>
 
-          <Button type="submit" variant="default" size="default" disabled={isSaving}>
+          <Button
+            type="submit"
+            variant="default"
+            size="default"
+            disabled={isSaving}
+          >
             {isSaving ? "Saving..." : "Save Family"}
           </Button>
         </div>
@@ -1328,7 +1501,7 @@ function TextInput({
   label,
   value,
   onChange,
-  required = false
+  required = false,
 }: {
   label: string;
   value: string;
@@ -1387,7 +1560,7 @@ function AdminInfo({ label, value }: { label: string; value: string }) {
 function SectionHeader({
   title,
   description,
-  count
+  count,
 }: {
   title: string;
   description: string;

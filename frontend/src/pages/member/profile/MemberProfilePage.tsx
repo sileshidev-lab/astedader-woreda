@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { FormEvent, ReactNode } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -53,6 +53,7 @@ import {
   SheetTitle,
 } from "@/components/ui/shadcn/sheet";
 import { statusToBadgeVariant } from "@/lib/badge";
+import { readErrorMessage } from "@/lib/errors";
 
 const GENDER_UNSPECIFIED = "__unspecified__";
 
@@ -63,7 +64,8 @@ function valueText(value: unknown) {
 
 function inputValue(value: unknown) {
   if (value === null || value === undefined || value === "-") return "";
-  if (typeof value === "string" && value.includes("T")) return value.slice(0, 10);
+  if (typeof value === "string" && value.includes("T"))
+    return value.slice(0, 10);
   return String(value);
 }
 
@@ -84,7 +86,9 @@ function isMissing(value: unknown) {
   return value === null || value === undefined || value === "" || value === "-";
 }
 
-function makeEditForm(member: WoredaMember | null): MyMemberProfileUpdatePayload {
+function makeEditForm(
+  member: WoredaMember | null,
+): MyMemberProfileUpdatePayload {
   return {
     firstName: inputValue(member?.firstName),
     fatherName: inputValue(member?.fatherName),
@@ -116,7 +120,7 @@ export function MemberProfilePage() {
   const [isSaving, setIsSaving] = useState(false);
   const [editForm, setEditForm] = useState<MyMemberProfileUpdatePayload>({});
 
-  async function loadProfile() {
+  const loadProfile = useCallback(async () => {
     setIsLoading(true);
 
     try {
@@ -128,11 +132,15 @@ export function MemberProfilePage() {
     } finally {
       setIsLoading(false);
     }
-  }
+  }, []);
 
   useEffect(() => {
-    void loadProfile();
-  }, []);
+    const timer = window.setTimeout(() => {
+      void loadProfile();
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [loadProfile]);
 
   const fullName = useMemo(() => {
     if (!member) return "Member Profile";
@@ -187,8 +195,8 @@ export function MemberProfilePage() {
       setEditForm(makeEditForm(updated));
       setIsEditOpen(false);
       toast.success("Profile updated successfully.");
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Unable to update profile.");
+    } catch (err) {
+      toast.error(readErrorMessage(err) || "Unable to update profile.");
     } finally {
       setIsSaving(false);
     }
@@ -208,7 +216,10 @@ export function MemberProfilePage() {
         <CardHeader className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
           <div className="space-y-3">
             <Button asChild variant="link" size="sm" className="h-auto p-0">
-              <Link to="/member/profile" className="inline-flex items-center gap-1.5">
+              <Link
+                to="/member/profile"
+                className="inline-flex items-center gap-1.5"
+              >
                 <ArrowLeft aria-hidden />
                 My Profile
               </Link>
@@ -249,7 +260,12 @@ export function MemberProfilePage() {
           </div>
 
           <div className="ml-auto flex items-center gap-2">
-            <Button type="button" variant="default" size="default" onClick={openEdit}>
+            <Button
+              type="button"
+              variant="default"
+              size="default"
+              onClick={openEdit}
+            >
               <Edit3 aria-hidden />
               Edit Profile
             </Button>
@@ -259,7 +275,10 @@ export function MemberProfilePage() {
         <CardContent className="border-t border-border">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
             <ProgressTile completion={profileCompletion} />
-            <SummaryItem label="Member code" value={member?.memberCode || "-"} />
+            <SummaryItem
+              label="Member code"
+              value={member?.memberCode || "-"}
+            />
             <SummaryItem label="PP ID" value={member?.ppId || "-"} />
             <SummaryItem label="Hibret" value={member?.hibretName || "-"} />
           </div>
@@ -273,10 +292,16 @@ export function MemberProfilePage() {
             missingFields={missingFields}
           />
 
-          <ProfileSection title="Identity" icon={<IdCard size={16} aria-hidden />}>
+          <ProfileSection
+            title="Identity"
+            icon={<IdCard size={16} aria-hidden />}
+          >
             <Detail label="Full name" value={fullName} strong />
             <Detail label="Gender" value={member?.gender} />
-            <Detail label="Date of birth" value={formatDate(member?.dateOfBirth)} />
+            <Detail
+              label="Date of birth"
+              value={formatDate(member?.dateOfBirth)}
+            />
             <Detail label="Member code" value={member?.memberCode} />
             <Detail label="FAN ID" value={member?.fanId} />
             <Detail label="PP ID" value={member?.ppId} />
@@ -288,8 +313,14 @@ export function MemberProfilePage() {
           >
             <Detail label="Hibret" value={member?.hibretName} strong />
             <Detail label="Family" value={member?.familyName} />
-            <Detail label="Membership status" value={member?.membershipStatus} />
-            <Detail label="Registration type" value={member?.registrationType} />
+            <Detail
+              label="Membership status"
+              value={member?.membershipStatus}
+            />
+            <Detail
+              label="Registration type"
+              value={member?.registrationType}
+            />
             <Detail label="Membership year" value={member?.membershipYear} />
             <Detail label="Party role" value={member?.partyRole} />
           </ProfileSection>
@@ -324,7 +355,10 @@ export function MemberProfilePage() {
         </main>
 
         <aside className="space-y-6">
-          <ProfileSection title="Contact" icon={<Phone size={16} aria-hidden />}>
+          <ProfileSection
+            title="Contact"
+            icon={<Phone size={16} aria-hidden />}
+          >
             <Detail label="Phone" value={member?.phone} strong />
             <Detail label="Email" value={member?.email || user?.email} />
           </ProfileSection>
@@ -400,7 +434,9 @@ export function MemberProfilePage() {
             <p className="text-[11px] font-medium uppercase tracking-[0.06em] text-muted-foreground">
               Member profile
             </p>
-            <SheetTitle className="text-base font-semibold">Edit Profile</SheetTitle>
+            <SheetTitle className="text-base font-semibold">
+              Edit Profile
+            </SheetTitle>
             <SheetDescription className="text-sm text-muted-foreground">
               Update contact, education, work, and profile information.
             </SheetDescription>
@@ -473,7 +509,10 @@ export function MemberProfilePage() {
                 </EditGroup>
 
                 <EditGroup title="Membership information">
-                  <ReadOnlyInput label="Member code" value={member?.memberCode} />
+                  <ReadOnlyInput
+                    label="Member code"
+                    value={member?.memberCode}
+                  />
                   <ReadOnlyInput label="FAN ID" value={member?.fanId} />
                   <ReadOnlyInput label="PP ID" value={member?.ppId} />
                   <ReadOnlyInput label="Hibret" value={member?.hibretName} />
@@ -604,7 +643,13 @@ function ProgressTile({ completion }: { completion: number }) {
   );
 }
 
-function EditGroup({ title, children }: { title: string; children: ReactNode }) {
+function EditGroup({
+  title,
+  children,
+}: {
+  title: string;
+  children: ReactNode;
+}) {
   return (
     <Card>
       <CardHeader className="border-b border-border bg-muted/40 px-4 py-3">
@@ -677,7 +722,11 @@ function ProfileCompletenessCard({
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base font-semibold">
-          <CheckCircle2 size={16} aria-hidden className="text-muted-foreground" />
+          <CheckCircle2
+            size={16}
+            aria-hidden
+            className="text-muted-foreground"
+          />
           Profile completeness
         </CardTitle>
         <CardDescription className="text-sm text-muted-foreground">
@@ -687,7 +736,9 @@ function ProfileCompletenessCard({
 
       <CardContent>
         <div className="flex items-center justify-between gap-2">
-          <span className="text-sm font-medium text-foreground">Completion</span>
+          <span className="text-sm font-medium text-foreground">
+            Completion
+          </span>
           <span className="text-sm font-semibold tabular-nums text-foreground">
             {clamped}%
           </span>
@@ -735,9 +786,7 @@ function ProfileSection({
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base font-semibold">
-          {icon ? (
-            <span className="text-muted-foreground">{icon}</span>
-          ) : null}
+          {icon ? <span className="text-muted-foreground">{icon}</span> : null}
           {title}
         </CardTitle>
       </CardHeader>

@@ -121,10 +121,38 @@ function cleanString(value: unknown) {
 }
 
 function normalizeEmail(value: unknown) {
-  return String(value || "").trim().toLowerCase();
+  return String(value || "")
+    .trim()
+    .toLowerCase();
 }
 
-function mapAdmin(user: any) {
+type AdminListItem = {
+  id: string;
+  email: string;
+  role: string;
+  status: string;
+  privileges: string[];
+  hibretId: string | null;
+  hibretName: string | null;
+  lastLoginAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+type AdminRecord = {
+  id: string;
+  email: string;
+  role: string;
+  status: string;
+  privileges?: string[] | null;
+  hibretId: string | null;
+  hibret?: { name?: string | null } | null;
+  lastLoginAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+function mapAdmin(user: AdminRecord): AdminListItem {
   return {
     id: user.id,
     email: user.email,
@@ -149,7 +177,10 @@ async function sendAdminSetupEmail(user: any) {
   }
 
   const url = setupUrl(user.setupToken);
-  const roleLabel = user.role === "WOREDA_ADMIN" ? "Woreda administrator" : "Hibret administrator";
+  const roleLabel =
+    user.role === "WOREDA_ADMIN"
+      ? "Woreda administrator"
+      : "Hibret administrator";
 
   const result = await sendMail({
     to: user.email,
@@ -184,23 +215,27 @@ If you did not expect this email, please ignore it.`,
   };
 }
 
-router.get("/form-options", requirePrivilege("admin.read"), async (_req, res) => {
-  const hibrets = await prisma.hibret.findMany({
-    orderBy: { name: "asc" },
-    select: {
-      id: true,
-      name: true,
-      status: true,
-    },
-  });
+router.get(
+  "/form-options",
+  requirePrivilege("admin.read"),
+  async (_req, res) => {
+    const hibrets = await prisma.hibret.findMany({
+      orderBy: { name: "asc" },
+      select: {
+        id: true,
+        name: true,
+        status: true,
+      },
+    });
 
-  return res.json({
-    options: {
-      hibrets,
-      privileges: AVAILABLE_PRIVILEGES,
-    },
-  });
-});
+    return res.json({
+      options: {
+        hibrets,
+        privileges: AVAILABLE_PRIVILEGES,
+      },
+    });
+  },
+);
 
 router.get("/", requirePrivilege("admin.read"), async (_req, res) => {
   const admins = await prisma.user.findMany({
@@ -215,15 +250,18 @@ router.get("/", requirePrivilege("admin.read"), async (_req, res) => {
     orderBy: [{ role: "asc" }, { email: "asc" }],
   });
 
-  const mapped = admins.map(mapAdmin);
+  const mapped: AdminListItem[] = admins.map(mapAdmin);
 
   return res.json({
     summary: {
       total: mapped.length,
-      woredaAdmins: mapped.filter((admin) => admin.role === "WOREDA_ADMIN").length,
-      hibretAdmins: mapped.filter((admin) => admin.role === "HIBRET_ADMIN").length,
+      woredaAdmins: mapped.filter((admin) => admin.role === "WOREDA_ADMIN")
+        .length,
+      hibretAdmins: mapped.filter((admin) => admin.role === "HIBRET_ADMIN")
+        .length,
       active: mapped.filter((admin) => admin.status === "ACTIVE").length,
-      pendingSetup: mapped.filter((admin) => admin.status === "PENDING_SETUP").length,
+      pendingSetup: mapped.filter((admin) => admin.status === "PENDING_SETUP")
+        .length,
       disabled: mapped.filter((admin) => admin.status === "DISABLED").length,
     },
     admins: mapped,
@@ -249,25 +287,33 @@ router.post("/", requirePrivilege("admin.create"), async (req, res) => {
   }
 
   if (role === "HIBRET_ADMIN" && !hibretId) {
-    return res.status(400).json({ message: "Hibret is required for Hibret admins." });
+    return res
+      .status(400)
+      .json({ message: "Hibret is required for Hibret admins." });
   }
 
   if (role === "WOREDA_ADMIN" && hibretId) {
-    return res.status(400).json({ message: "Woreda admins should not be assigned to a Hibret." });
+    return res
+      .status(400)
+      .json({ message: "Woreda admins should not be assigned to a Hibret." });
   }
 
   if (hibretId) {
     const hibret = await prisma.hibret.findUnique({ where: { id: hibretId } });
 
     if (!hibret) {
-      return res.status(400).json({ message: "Selected Hibret was not found." });
+      return res
+        .status(400)
+        .json({ message: "Selected Hibret was not found." });
     }
   }
 
   const existing = await prisma.user.findUnique({ where: { email } });
 
   if (existing) {
-    return res.status(409).json({ message: "An account with this email already exists." });
+    return res
+      .status(409)
+      .json({ message: "An account with this email already exists." });
   }
 
   const setupToken = crypto.randomBytes(32).toString("hex");
@@ -329,143 +375,182 @@ router.get("/:adminId", requirePrivilege("admin.read"), async (req, res) => {
   });
 });
 
-router.patch("/:adminId", requirePrivilege("admin.update"), async (req, res) => {
-  const adminId = String(req.params.adminId);
-  const email = req.body.email === undefined ? undefined : normalizeEmail(req.body.email);
-  const role = req.body.role === undefined ? undefined : String(req.body.role || "").trim();
-  const hibretId = req.body.hibretId === undefined ? undefined : cleanString(req.body.hibretId);
-  const privileges = req.body.privileges === undefined
-    ? undefined
-    : Array.isArray(req.body.privileges)
-      ? req.body.privileges.map(String)
-      : [];
+router.patch(
+  "/:adminId",
+  requirePrivilege("admin.update"),
+  async (req, res) => {
+    const adminId = String(req.params.adminId);
+    const email =
+      req.body.email === undefined ? undefined : normalizeEmail(req.body.email);
+    const role =
+      req.body.role === undefined
+        ? undefined
+        : String(req.body.role || "").trim();
+    const hibretId =
+      req.body.hibretId === undefined
+        ? undefined
+        : cleanString(req.body.hibretId);
+    const privileges =
+      req.body.privileges === undefined
+        ? undefined
+        : Array.isArray(req.body.privileges)
+          ? req.body.privileges.map(String)
+          : [];
 
-  const existing = await prisma.user.findUnique({
-    where: { id: adminId },
-  });
+    const existing = await prisma.user.findUnique({
+      where: { id: adminId },
+    });
 
-  if (!existing || !["WOREDA_ADMIN", "HIBRET_ADMIN"].includes(existing.role)) {
-    return res.status(404).json({ message: "Admin not found." });
-  }
-
-  const nextRole = role || existing.role;
-  const nextHibretId = hibretId === undefined ? existing.hibretId : hibretId;
-
-  if (!["WOREDA_ADMIN", "HIBRET_ADMIN"].includes(nextRole)) {
-    return res.status(400).json({ message: "Select a valid admin role." });
-  }
-
-  if (nextRole === "HIBRET_ADMIN" && !nextHibretId) {
-    return res.status(400).json({ message: "Hibret is required for Hibret admins." });
-  }
-
-  if (nextRole === "WOREDA_ADMIN" && nextHibretId) {
-    return res.status(400).json({ message: "Woreda admins should not be assigned to a Hibret." });
-  }
-
-  if (nextHibretId) {
-    const hibret = await prisma.hibret.findUnique({ where: { id: nextHibretId } });
-
-    if (!hibret) {
-      return res.status(400).json({ message: "Selected Hibret was not found." });
+    if (
+      !existing ||
+      !["WOREDA_ADMIN", "HIBRET_ADMIN"].includes(existing.role)
+    ) {
+      return res.status(404).json({ message: "Admin not found." });
     }
-  }
 
-  if (email && email !== existing.email) {
-    const duplicate = await prisma.user.findUnique({ where: { email } });
+    const nextRole = role || existing.role;
+    const nextHibretId = hibretId === undefined ? existing.hibretId : hibretId;
 
-    if (duplicate) {
-      return res.status(409).json({ message: "An account with this email already exists." });
+    if (!["WOREDA_ADMIN", "HIBRET_ADMIN"].includes(nextRole)) {
+      return res.status(400).json({ message: "Select a valid admin role." });
     }
-  }
 
-  const updated = await prisma.user.update({
-    where: { id: adminId },
-    data: {
-      ...(email !== undefined ? { email } : {}),
-      ...(role !== undefined ? { role: nextRole as any } : {}),
-      ...(hibretId !== undefined || role !== undefined
-        ? { hibretId: nextRole === "HIBRET_ADMIN" ? nextHibretId : null }
-        : {}),
-      ...(privileges !== undefined ? { privileges } : {}),
-    },
-    include: {
-      hibret: true,
-    },
-  });
+    if (nextRole === "HIBRET_ADMIN" && !nextHibretId) {
+      return res
+        .status(400)
+        .json({ message: "Hibret is required for Hibret admins." });
+    }
 
-  return res.json({
-    message: "Admin updated.",
-    admin: mapAdmin(updated),
-  });
-});
+    if (nextRole === "WOREDA_ADMIN" && nextHibretId) {
+      return res
+        .status(400)
+        .json({ message: "Woreda admins should not be assigned to a Hibret." });
+    }
 
-router.patch("/:adminId/status", requirePrivilege("admin.update"), async (req, res) => {
-  const adminId = String(req.params.adminId);
-  const status = String(req.body.status || "").trim();
+    if (nextHibretId) {
+      const hibret = await prisma.hibret.findUnique({
+        where: { id: nextHibretId },
+      });
 
-  if (!["ACTIVE", "DISABLED", "PENDING_SETUP"].includes(status)) {
-    return res.status(400).json({ message: "Invalid account status." });
-  }
+      if (!hibret) {
+        return res
+          .status(400)
+          .json({ message: "Selected Hibret was not found." });
+      }
+    }
 
-  const existing = await prisma.user.findUnique({
-    where: { id: adminId },
-  });
+    if (email && email !== existing.email) {
+      const duplicate = await prisma.user.findUnique({ where: { email } });
 
-  if (!existing || !["WOREDA_ADMIN", "HIBRET_ADMIN"].includes(existing.role)) {
-    return res.status(404).json({ message: "Admin not found." });
-  }
+      if (duplicate) {
+        return res
+          .status(409)
+          .json({ message: "An account with this email already exists." });
+      }
+    }
 
-  const updated = await prisma.user.update({
-    where: { id: adminId },
-    data: { status: status as any },
-    include: {
-      hibret: true,
-    },
-  });
+    const updated = await prisma.user.update({
+      where: { id: adminId },
+      data: {
+        ...(email !== undefined ? { email } : {}),
+        ...(role !== undefined ? { role: nextRole as any } : {}),
+        ...(hibretId !== undefined || role !== undefined
+          ? { hibretId: nextRole === "HIBRET_ADMIN" ? nextHibretId : null }
+          : {}),
+        ...(privileges !== undefined ? { privileges } : {}),
+      },
+      include: {
+        hibret: true,
+      },
+    });
 
-  return res.json({
-    message: "Admin status updated.",
-    admin: mapAdmin(updated),
-  });
-});
+    return res.json({
+      message: "Admin updated.",
+      admin: mapAdmin(updated),
+    });
+  },
+);
 
-router.post("/:adminId/resend-setup", requirePrivilege("admin.update"), async (req, res) => {
-  const adminId = String(req.params.adminId);
+router.patch(
+  "/:adminId/status",
+  requirePrivilege("admin.update"),
+  async (req, res) => {
+    const adminId = String(req.params.adminId);
+    const status = String(req.body.status || "").trim();
 
-  const existing = await prisma.user.findUnique({
-    where: { id: adminId },
-    include: {
-      hibret: true,
-    },
-  });
+    if (!["ACTIVE", "DISABLED", "PENDING_SETUP"].includes(status)) {
+      return res.status(400).json({ message: "Invalid account status." });
+    }
 
-  if (!existing || !["WOREDA_ADMIN", "HIBRET_ADMIN"].includes(existing.role)) {
-    return res.status(404).json({ message: "Admin not found." });
-  }
+    const existing = await prisma.user.findUnique({
+      where: { id: adminId },
+    });
 
-  const setupToken = crypto.randomBytes(32).toString("hex");
+    if (
+      !existing ||
+      !["WOREDA_ADMIN", "HIBRET_ADMIN"].includes(existing.role)
+    ) {
+      return res.status(404).json({ message: "Admin not found." });
+    }
 
-  const updated = await prisma.user.update({
-    where: { id: adminId },
-    data: {
-      setupToken,
-      status: "PENDING_SETUP",
-      passwordHash: null,
-    },
-    include: {
-      hibret: true,
-    },
-  });
+    const updated = await prisma.user.update({
+      where: { id: adminId },
+      data: { status: status as any },
+      include: {
+        hibret: true,
+      },
+    });
 
-  const emailResult = await sendAdminSetupEmail(updated);
+    return res.json({
+      message: "Admin status updated.",
+      admin: mapAdmin(updated),
+    });
+  },
+);
 
-  return res.json({
-    message: "Setup email sent.",
-    admin: mapAdmin(updated),
-    setupUrl: emailResult.setupUrl,
-    previewUrl: env.IS_PRODUCTION ? null : emailResult.previewUrl,
-  });
-});
+router.post(
+  "/:adminId/resend-setup",
+  requirePrivilege("admin.update"),
+  async (req, res) => {
+    const adminId = String(req.params.adminId);
+
+    const existing = await prisma.user.findUnique({
+      where: { id: adminId },
+      include: {
+        hibret: true,
+      },
+    });
+
+    if (
+      !existing ||
+      !["WOREDA_ADMIN", "HIBRET_ADMIN"].includes(existing.role)
+    ) {
+      return res.status(404).json({ message: "Admin not found." });
+    }
+
+    const setupToken = crypto.randomBytes(32).toString("hex");
+
+    const updated = await prisma.user.update({
+      where: { id: adminId },
+      data: {
+        setupToken,
+        status: "PENDING_SETUP",
+        passwordHash: null,
+      },
+      include: {
+        hibret: true,
+      },
+    });
+
+    const emailResult = await sendAdminSetupEmail(updated);
+
+    return res.json({
+      message: "Setup email sent.",
+      admin: mapAdmin(updated),
+      setupUrl: emailResult.setupUrl,
+      previewUrl: env.IS_PRODUCTION ? null : emailResult.previewUrl,
+    });
+  },
+);
 
 export default router;

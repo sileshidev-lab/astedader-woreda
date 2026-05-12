@@ -1,14 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import {
-  ChevronDown,
-  ChevronUp,
-  Edit3,
-  Plus,
-  Search,
-} from "lucide-react";
+import { ChevronDown, ChevronUp, Edit3, Plus, Search } from "lucide-react";
 import {
   createAdmin,
   getAdminFormOptions,
@@ -59,6 +53,7 @@ import {
   TableRow,
 } from "@/components/ui/shadcn/table";
 import { statusToBadgeVariant } from "@/lib/badge";
+import { readErrorMessage } from "@/lib/errors";
 
 const emptySummary: AdminSummary = {
   total: 0,
@@ -122,7 +117,7 @@ export function AdminsPage() {
   const canCreate = hasPrivilege("admin.create");
   const canUpdate = hasPrivilege("admin.update");
 
-  async function loadAdmins() {
+  const loadAdmins = useCallback(async () => {
     try {
       const [adminData, optionData] = await Promise.all([
         getAdmins(),
@@ -137,11 +132,15 @@ export function AdminsPage() {
     } finally {
       setIsLoading(false);
     }
-  }
+  }, [t]);
 
   useEffect(() => {
-    void loadAdmins();
-  }, []);
+    const timer = window.setTimeout(() => {
+      void loadAdmins();
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [loadAdmins]);
 
   const filteredAdmins = useMemo(() => {
     const query = searchText.trim().toLowerCase();
@@ -149,8 +148,10 @@ export function AdminsPage() {
     return admins.filter((admin) => {
       if (roleFilter && admin.role !== roleFilter) return false;
       if (statusFilter && admin.status !== statusFilter) return false;
-      if (scopeFilter === "woreda" && admin.role !== "WOREDA_ADMIN") return false;
-      if (scopeFilter === "hibret" && admin.role !== "HIBRET_ADMIN") return false;
+      if (scopeFilter === "woreda" && admin.role !== "WOREDA_ADMIN")
+        return false;
+      if (scopeFilter === "hibret" && admin.role !== "HIBRET_ADMIN")
+        return false;
 
       if (!query) return true;
 
@@ -168,13 +169,12 @@ export function AdminsPage() {
     });
   }, [admins, roleFilter, searchText, scopeFilter, statusFilter]);
 
-  useEffect(() => {
-    setPage(1);
-  }, [searchText, roleFilter, statusFilter, scopeFilter]);
-
   const totalPages = Math.max(1, Math.ceil(filteredAdmins.length / pageSize));
   const safePage = Math.min(page, totalPages);
-  const paginatedAdmins = filteredAdmins.slice((safePage - 1) * pageSize, safePage * pageSize);
+  const paginatedAdmins = filteredAdmins.slice(
+    (safePage - 1) * pageSize,
+    safePage * pageSize,
+  );
 
   function openCreate() {
     setEditingAdmin(null);
@@ -198,22 +198,25 @@ export function AdminsPage() {
       setIsFormOpen(false);
       setEditingAdmin(null);
       await loadAdmins();
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || t("admins.errors.save"));
+    } catch (err) {
+      toast.error(readErrorMessage(err) || t("admins.errors.save"));
     } finally {
       setIsSaving(false);
     }
   }
 
-  async function handleStatus(admin: AdminListItem, status: "ACTIVE" | "DISABLED" | "PENDING_SETUP") {
+  async function handleStatus(
+    admin: AdminListItem,
+    status: "ACTIVE" | "DISABLED" | "PENDING_SETUP",
+  ) {
     setBusyAdminId(admin.id);
 
     try {
       const result = await updateAdminStatus(admin.id, status);
       toast.success(result.message);
       await loadAdmins();
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || t("admins.errors.status"));
+    } catch (err) {
+      toast.error(readErrorMessage(err) || t("admins.errors.status"));
     } finally {
       setBusyAdminId(null);
     }
@@ -226,8 +229,8 @@ export function AdminsPage() {
       const result = await resendAdminSetup(admin.id);
       toast.success(result.message);
       await loadAdmins();
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || t("admins.errors.resendSetup"));
+    } catch (err) {
+      toast.error(readErrorMessage(err) || t("admins.errors.resendSetup"));
     } finally {
       setBusyAdminId(null);
     }
@@ -240,7 +243,10 @@ export function AdminsPage() {
         <Metric label={t("admins.kpi.woreda")} value={summary.woredaAdmins} />
         <Metric label={t("admins.kpi.hibret")} value={summary.hibretAdmins} />
         <Metric label={t("admins.kpi.active")} value={summary.active} />
-        <Metric label={t("admins.kpi.pendingSetup")} value={summary.pendingSetup} />
+        <Metric
+          label={t("admins.kpi.pendingSetup")}
+          value={summary.pendingSetup}
+        />
         <Metric label={t("admins.kpi.disabled")} value={summary.disabled} />
       </div>
 
@@ -248,11 +254,19 @@ export function AdminsPage() {
         <CardHeader className="shrink-0 space-y-4">
           <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
             <CardDescription>
-              {t("admins.summaryLine", { filtered: filteredAdmins.length, total: admins.length })}
+              {t("admins.summaryLine", {
+                filtered: filteredAdmins.length,
+                total: admins.length,
+              })}
             </CardDescription>
 
             {canCreate ? (
-              <Button type="button" variant="default" size="default" onClick={openCreate}>
+              <Button
+                type="button"
+                variant="default"
+                size="default"
+                onClick={openCreate}
+              >
                 <Plus aria-hidden />
                 {t("admins.actions.create")}
               </Button>
@@ -268,7 +282,10 @@ export function AdminsPage() {
               />
               <Input
                 value={searchText}
-                onChange={(event) => setSearchText(event.target.value)}
+                onChange={(event) => {
+                  setSearchText(event.target.value);
+                  setPage(1);
+                }}
                 placeholder={t("admins.filters.searchPlaceholder")}
                 className="pl-9"
               />
@@ -282,7 +299,11 @@ export function AdminsPage() {
               aria-expanded={mobileFiltersOpen}
             >
               {t("common.filters")}
-              {mobileFiltersOpen ? <ChevronUp aria-hidden /> : <ChevronDown aria-hidden />}
+              {mobileFiltersOpen ? (
+                <ChevronUp aria-hidden />
+              ) : (
+                <ChevronDown aria-hidden />
+              )}
             </Button>
             <div
               className={[
@@ -292,44 +313,73 @@ export function AdminsPage() {
             >
               <Select
                 value={roleFilter || "all"}
-                onValueChange={(value) => setRoleFilter(value === "all" ? "" : value)}
+                onValueChange={(value) => {
+                  setRoleFilter(value === "all" ? "" : value);
+                  setPage(1);
+                }}
               >
                 <SelectTrigger className="min-w-[160px] md:w-auto">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">{t("admins.filters.roleAll")}</SelectItem>
-                  <SelectItem value="WOREDA_ADMIN">{t("admins.roles.woreda")}</SelectItem>
-                  <SelectItem value="HIBRET_ADMIN">{t("admins.roles.hibret")}</SelectItem>
+                  <SelectItem value="all">
+                    {t("admins.filters.roleAll")}
+                  </SelectItem>
+                  <SelectItem value="WOREDA_ADMIN">
+                    {t("admins.roles.woreda")}
+                  </SelectItem>
+                  <SelectItem value="HIBRET_ADMIN">
+                    {t("admins.roles.hibret")}
+                  </SelectItem>
                 </SelectContent>
               </Select>
 
               <Select
                 value={statusFilter || "all"}
-                onValueChange={(value) => setStatusFilter(value === "all" ? "" : value)}
+                onValueChange={(value) => {
+                  setStatusFilter(value === "all" ? "" : value);
+                  setPage(1);
+                }}
               >
                 <SelectTrigger className="min-w-[160px] md:w-auto">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">{t("admins.filters.statusAll")}</SelectItem>
-                  <SelectItem value="ACTIVE">{t("admins.status.active")}</SelectItem>
-                  <SelectItem value="PENDING_SETUP">{t("admins.status.pendingSetup")}</SelectItem>
-                  <SelectItem value="DISABLED">{t("admins.status.disabled")}</SelectItem>
+                  <SelectItem value="all">
+                    {t("admins.filters.statusAll")}
+                  </SelectItem>
+                  <SelectItem value="ACTIVE">
+                    {t("admins.status.active")}
+                  </SelectItem>
+                  <SelectItem value="PENDING_SETUP">
+                    {t("admins.status.pendingSetup")}
+                  </SelectItem>
+                  <SelectItem value="DISABLED">
+                    {t("admins.status.disabled")}
+                  </SelectItem>
                 </SelectContent>
               </Select>
 
               <Select
                 value={scopeFilter || "all"}
-                onValueChange={(value) => setScopeFilter(value === "all" ? "" : value)}
+                onValueChange={(value) => {
+                  setScopeFilter(value === "all" ? "" : value);
+                  setPage(1);
+                }}
               >
                 <SelectTrigger className="min-w-[160px] md:w-auto">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">{t("admins.filters.scopeAll")}</SelectItem>
-                  <SelectItem value="woreda">{t("admins.filters.scopeWoreda")}</SelectItem>
-                  <SelectItem value="hibret">{t("admins.filters.scopeHibret")}</SelectItem>
+                  <SelectItem value="all">
+                    {t("admins.filters.scopeAll")}
+                  </SelectItem>
+                  <SelectItem value="woreda">
+                    {t("admins.filters.scopeWoreda")}
+                  </SelectItem>
+                  <SelectItem value="hibret">
+                    {t("admins.filters.scopeHibret")}
+                  </SelectItem>
                 </SelectContent>
               </Select>
 
@@ -342,6 +392,7 @@ export function AdminsPage() {
                   setRoleFilter("");
                   setStatusFilter("");
                   setScopeFilter("");
+                  setPage(1);
                 }}
               >
                 {t("common.clear")}
@@ -353,7 +404,9 @@ export function AdminsPage() {
         <CardContent className="min-h-0 flex-1 px-0 pb-0 pt-0">
           <div className="hidden min-h-0 md:block">
             {isLoading ? (
-              <div className="p-5 text-sm text-muted-foreground">{t("admins.loading")}</div>
+              <div className="p-5 text-sm text-muted-foreground">
+                {t("admins.loading")}
+              </div>
             ) : filteredAdmins.length === 0 ? (
               <div className="p-5">
                 <EmptyMessage message={t("admins.empty")} />
@@ -367,7 +420,9 @@ export function AdminsPage() {
                     <TableHead>{t("admins.table.account")}</TableHead>
                     <TableHead>{t("admins.table.privileges")}</TableHead>
                     <TableHead>{t("admins.table.lastLogin")}</TableHead>
-                    <TableHead className="text-right">{t("admins.table.actions")}</TableHead>
+                    <TableHead className="text-right">
+                      {t("admins.table.actions")}
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
 
@@ -380,7 +435,9 @@ export function AdminsPage() {
                             {initials(admin.email)}
                           </div>
                           <div>
-                            <p className="font-medium text-foreground">{admin.email}</p>
+                            <p className="font-medium text-foreground">
+                              {admin.email}
+                            </p>
                             <p className="mt-0.5 text-xs text-muted-foreground">
                               {admin.role === "WOREDA_ADMIN"
                                 ? t("admins.roles.woredaLabel")
@@ -404,15 +461,21 @@ export function AdminsPage() {
                       </TableCell>
 
                       <TableCell>
-                        <Badge variant={statusToBadgeVariant(admin.status)}>{admin.status}</Badge>
+                        <Badge variant={statusToBadgeVariant(admin.status)}>
+                          {admin.status}
+                        </Badge>
                       </TableCell>
 
                       <TableCell>
                         {admin.privileges.includes("*") ? (
-                          <Badge variant="default">{t("admins.privileges.fullAccess")}</Badge>
+                          <Badge variant="default">
+                            {t("admins.privileges.fullAccess")}
+                          </Badge>
                         ) : (
                           <span className="text-xs text-muted-foreground">
-                            {t("admins.privileges.count", { count: admin.privileges.length })}
+                            {t("admins.privileges.count", {
+                              count: admin.privileges.length,
+                            })}
                           </span>
                         )}
                       </TableCell>
@@ -424,7 +487,9 @@ export function AdminsPage() {
                       <TableCell className="text-right">
                         <div className="flex flex-wrap justify-end gap-2">
                           <Button asChild variant="outline" size="sm">
-                            <Link to={`/woreda/admins/${admin.id}`}>{t("common.open")}</Link>
+                            <Link to={`/woreda/admins/${admin.id}`}>
+                              {t("common.open")}
+                            </Link>
                           </Button>
 
                           {canUpdate ? (
@@ -495,14 +560,18 @@ export function AdminsPage() {
                     <CardContent className="p-3">
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
-                          <p className="truncate font-medium text-foreground">{admin.email}</p>
+                          <p className="truncate font-medium text-foreground">
+                            {admin.email}
+                          </p>
                           <p className="mt-1 text-xs text-muted-foreground">
                             {admin.role === "WOREDA_ADMIN"
                               ? t("admins.roles.woredaLabel")
                               : t("admins.roles.hibretLabel")}
                           </p>
                         </div>
-                        <Badge variant={statusToBadgeVariant(admin.status)}>{admin.status}</Badge>
+                        <Badge variant={statusToBadgeVariant(admin.status)}>
+                          {admin.status}
+                        </Badge>
                       </div>
                       <div className="mt-2 text-xs text-muted-foreground">
                         {t("admins.mobile.scopeLabel")}{" "}
@@ -512,7 +581,9 @@ export function AdminsPage() {
                       </div>
                       <div className="mt-3 flex flex-wrap justify-end gap-2">
                         <Button asChild variant="outline" size="sm">
-                          <Link to={`/woreda/admins/${admin.id}`}>{t("common.open")}</Link>
+                          <Link to={`/woreda/admins/${admin.id}`}>
+                            {t("common.open")}
+                          </Link>
                         </Button>
                         {canUpdate ? (
                           <Button
@@ -554,10 +625,18 @@ export function AdminsPage() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="10">{t("common.pageSize", { size: 10 })}</SelectItem>
-                <SelectItem value="20">{t("common.pageSize", { size: 20 })}</SelectItem>
-                <SelectItem value="50">{t("common.pageSize", { size: 50 })}</SelectItem>
-                <SelectItem value="100">{t("common.pageSize", { size: 100 })}</SelectItem>
+                <SelectItem value="10">
+                  {t("common.pageSize", { size: 10 })}
+                </SelectItem>
+                <SelectItem value="20">
+                  {t("common.pageSize", { size: 20 })}
+                </SelectItem>
+                <SelectItem value="50">
+                  {t("common.pageSize", { size: 50 })}
+                </SelectItem>
+                <SelectItem value="100">
+                  {t("common.pageSize", { size: 100 })}
+                </SelectItem>
               </SelectContent>
             </Select>
             <Button
@@ -574,7 +653,9 @@ export function AdminsPage() {
               variant="outline"
               size="sm"
               disabled={safePage >= totalPages}
-              onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
+              onClick={() =>
+                setPage((current) => Math.min(totalPages, current + 1))
+              }
             >
               {t("common.next")}
             </Button>
@@ -583,6 +664,7 @@ export function AdminsPage() {
       </Card>
 
       <AdminFormModal
+        key={isFormOpen ? (editingAdmin?.id ?? "new") : "closed"}
         isOpen={isFormOpen}
         admin={editingAdmin}
         options={options}
@@ -613,26 +695,28 @@ function AdminFormModal({
   onSubmit: (payload: AdminPayload) => Promise<void>;
 }) {
   const { t } = useTranslation();
-  const [email, setEmail] = useState("");
-  const [role, setRole] = useState<AdminRole>("HIBRET_ADMIN");
-  const [hibretId, setHibretId] = useState("");
-  const [privileges, setPrivileges] = useState<string[]>([]);
-
-  useEffect(() => {
-    if (!isOpen) return;
-
-    setEmail(admin?.email || "");
-    setRole((admin?.role as AdminRole) || "HIBRET_ADMIN");
-    setHibretId(admin?.hibretId || "");
-    setPrivileges(admin?.privileges?.length ? admin.privileges : []);
-  }, [admin, isOpen]);
-
-  useEffect(() => {
-    if (role === "WOREDA_ADMIN") {
-      setHibretId("");
-      if (privileges.length === 0) setPrivileges(["*"]);
+  const initialRole = (admin?.role as AdminRole) || "HIBRET_ADMIN";
+  const [email, setEmail] = useState(() => admin?.email || "");
+  const [role, setRole] = useState<AdminRole>(initialRole);
+  const [hibretId, setHibretId] = useState(() =>
+    initialRole === "WOREDA_ADMIN" ? "" : admin?.hibretId || "",
+  );
+  const [privileges, setPrivileges] = useState<string[]>(() => {
+    const seed = admin?.privileges?.length ? admin.privileges : [];
+    if (initialRole === "WOREDA_ADMIN") {
+      return seed.length === 0 ? ["*"] : seed;
     }
-  }, [privileges.length, role]);
+    return seed;
+  });
+
+  function handleRoleChange(nextRole: AdminRole) {
+    setRole(nextRole);
+
+    if (nextRole === "WOREDA_ADMIN") {
+      setHibretId("");
+      setPrivileges((current) => (current.length === 0 ? ["*"] : current));
+    }
+  }
 
   function togglePrivilege(privilege: string) {
     setPrivileges((current) => {
@@ -686,10 +770,14 @@ function AdminFormModal({
               {t("admins.form.eyebrow")}
             </p>
             <SheetTitle>
-              {admin ? t("admins.form.editTitle") : t("admins.form.createTitle")}
+              {admin
+                ? t("admins.form.editTitle")
+                : t("admins.form.createTitle")}
             </SheetTitle>
             <SheetDescription>
-              {admin ? t("admins.form.editTitle") : t("admins.form.createTitle")}
+              {admin
+                ? t("admins.form.editTitle")
+                : t("admins.form.createTitle")}
             </SheetDescription>
           </SheetHeader>
 
@@ -708,13 +796,22 @@ function AdminFormModal({
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="admin-role">{t("admins.form.role")}</Label>
-                <Select value={role} onValueChange={(value) => setRole(value as AdminRole)}>
+                <Select
+                  value={role}
+                  onValueChange={(value) =>
+                    handleRoleChange(value as AdminRole)
+                  }
+                >
                   <SelectTrigger id="admin-role">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="HIBRET_ADMIN">{t("admins.roles.hibret")}</SelectItem>
-                    <SelectItem value="WOREDA_ADMIN">{t("admins.roles.woreda")}</SelectItem>
+                    <SelectItem value="HIBRET_ADMIN">
+                      {t("admins.roles.hibret")}
+                    </SelectItem>
+                    <SelectItem value="WOREDA_ADMIN">
+                      {t("admins.roles.woreda")}
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -723,14 +820,18 @@ function AdminFormModal({
                 <Label htmlFor="admin-hibret">{t("admins.form.hibret")}</Label>
                 <Select
                   value={hibretId || "none"}
-                  onValueChange={(value) => setHibretId(value === "none" ? "" : value)}
+                  onValueChange={(value) =>
+                    setHibretId(value === "none" ? "" : value)
+                  }
                   disabled={role === "WOREDA_ADMIN"}
                 >
                   <SelectTrigger id="admin-hibret">
                     <SelectValue placeholder={t("admins.form.selectHibret")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">{t("admins.form.selectHibret")}</SelectItem>
+                    <SelectItem value="none">
+                      {t("admins.form.selectHibret")}
+                    </SelectItem>
                     {options.hibrets.map((hibret) => (
                       <SelectItem key={hibret.id} value={hibret.id}>
                         {hibret.name}
@@ -755,7 +856,9 @@ function AdminFormModal({
                 <Badge variant="muted">
                   {privileges.includes("*")
                     ? t("admins.privileges.fullAccess")
-                    : t("admins.form.selectedCount", { count: privileges.length })}
+                    : t("admins.form.selectedCount", {
+                        count: privileges.length,
+                      })}
                 </Badge>
               </div>
 
@@ -770,7 +873,9 @@ function AdminFormModal({
                       onCheckedChange={() => togglePrivilege(privilege)}
                     />
                     <span>
-                      {privilege === "*" ? t("admins.form.fullAccessLabel") : privilege}
+                      {privilege === "*"
+                        ? t("admins.form.fullAccessLabel")
+                        : privilege}
                     </span>
                   </label>
                 ))}
@@ -779,11 +884,21 @@ function AdminFormModal({
           </div>
 
           <div className="flex justify-end gap-3 border-t border-border bg-muted/30 px-6 py-4">
-            <Button type="button" variant="outline" size="default" onClick={onClose}>
+            <Button
+              type="button"
+              variant="outline"
+              size="default"
+              onClick={onClose}
+            >
               {t("common.cancel")}
             </Button>
 
-            <Button type="submit" variant="default" size="default" disabled={isSaving}>
+            <Button
+              type="submit"
+              variant="default"
+              size="default"
+              disabled={isSaving}
+            >
               {isSaving ? t("common.saving") : t("admins.actions.save")}
             </Button>
           </div>

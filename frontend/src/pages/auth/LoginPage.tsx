@@ -14,6 +14,7 @@ import type { UserRole } from "../../types/auth";
 import { AuthShell } from "./AuthShell";
 import { AUTH_SPLIT_HERO_IMAGES } from "./authHeroImages";
 import { Button } from "@/components/ui/shadcn/button";
+import { readErrorMessage } from "@/lib/errors";
 
 function destinationForRole(role?: string) {
   if (role === "WOREDA_ADMIN") return "/woreda/dashboard";
@@ -22,17 +23,12 @@ function destinationForRole(role?: string) {
   return "/login";
 }
 
-function readErrorMessage(error: unknown): string | undefined {
-  const err = error as { response?: { data?: { message?: unknown } } } | null | undefined;
-  const message = err?.response?.data?.message;
-  return typeof message === "string" ? message : undefined;
-}
-
 export function LoginPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { theme, toggleTheme } = useThemeStore();
-  const { login, completeTwoFactorLogin, isAuthenticated, isLoading, user } = useAuthStore();
+  const { login, completeTwoFactorLogin, isAuthenticated, isLoading, user } =
+    useAuthStore();
 
   const devBypassEnabled = isDevBypassLoginEnabled();
   const devPrefillEnabled = isDevPrefillEnabled();
@@ -41,7 +37,9 @@ export function LoginPage() {
   const shouldPrefill = devBypassEnabled || devPrefillEnabled;
 
   const [email, setEmail] = useState(shouldPrefill ? defaultDemo.email : "");
-  const [password, setPassword] = useState(shouldPrefill ? defaultDemo.password : "");
+  const [password, setPassword] = useState(
+    shouldPrefill ? defaultDemo.password : "",
+  );
   const [mockRole, setMockRole] = useState<UserRole>(defaultRole);
   const [showPassword, setShowPassword] = useState(false);
   const [code, setCode] = useState("");
@@ -73,7 +71,9 @@ export function LoginPage() {
 
     try {
       await login(demo.email, demo.password, { mockRole: role });
-      navigate(destinationForRole(useAuthStore.getState().user?.role), { replace: true });
+      navigate(destinationForRole(useAuthStore.getState().user?.role), {
+        replace: true,
+      });
     } catch (err) {
       setError(readErrorMessage(err) || t("auth.loginFailed"));
     }
@@ -102,9 +102,11 @@ export function LoginPage() {
         return;
       }
 
-      navigate(destinationForRole(useAuthStore.getState().user?.role), { replace: true });
-    } catch (err: any) {
-      setError(err?.response?.data?.message || t("auth.loginFailed"));
+      navigate(destinationForRole(useAuthStore.getState().user?.role), {
+        replace: true,
+      });
+    } catch (err) {
+      setError(readErrorMessage(err) || t("auth.loginFailed"));
     }
   }
 
@@ -114,9 +116,11 @@ export function LoginPage() {
 
     try {
       await completeTwoFactorLogin(twoFactorToken, code.trim());
-      navigate(destinationForRole(useAuthStore.getState().user?.role), { replace: true });
-    } catch (err: any) {
-      setError(err?.response?.data?.message || t("auth.invalidCode"));
+      navigate(destinationForRole(useAuthStore.getState().user?.role), {
+        replace: true,
+      });
+    } catch (err) {
+      setError(readErrorMessage(err) || t("auth.invalidCode"));
     }
   }
 
@@ -130,14 +134,22 @@ export function LoginPage() {
         type="button"
         className="aw-auth-theme-toggle"
         onClick={toggleTheme}
-        title={theme === "dark" ? t("auth.switchToLight") : t("auth.switchToDark")}
-        aria-label={theme === "dark" ? t("auth.switchToLight") : t("auth.switchToDark")}
+        title={
+          theme === "dark" ? t("auth.switchToLight") : t("auth.switchToDark")
+        }
+        aria-label={
+          theme === "dark" ? t("auth.switchToLight") : t("auth.switchToDark")
+        }
       >
         {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
       </button>
 
       {!twoFactorToken ? (
-        <form onSubmit={handleSubmit} className="aw-auth-form" aria-label={t("auth.signInForm")}>
+        <form
+          onSubmit={handleSubmit}
+          className="aw-auth-form"
+          aria-label={t("auth.signInForm")}
+        >
           <div className="aw-auth-logo">
             <img src="/Prosperity_Party_logo.png" alt="Prosperity Party" />
           </div>
@@ -201,7 +213,9 @@ export function LoginPage() {
               <select
                 id="login-dev-role"
                 value={mockRole}
-                onChange={(event) => applyDemoCredentials(event.target.value as UserRole)}
+                onChange={(event) =>
+                  applyDemoCredentials(event.target.value as UserRole)
+                }
                 aria-label="Demo role"
               >
                 <option value="WOREDA_ADMIN">Woreda Admin</option>
@@ -228,7 +242,9 @@ export function LoginPage() {
                 type="button"
                 className="aw-auth-password-toggle"
                 onClick={() => setShowPassword((current) => !current)}
-                aria-label={showPassword ? t("auth.hidePassword") : t("auth.showPassword")}
+                aria-label={
+                  showPassword ? t("auth.hidePassword") : t("auth.showPassword")
+                }
               >
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
@@ -246,7 +262,11 @@ export function LoginPage() {
           </button>
         </form>
       ) : (
-        <form onSubmit={handleTwoFactorSubmit} className="aw-auth-form" aria-label={t("auth.verificationForm")}>
+        <form
+          onSubmit={handleTwoFactorSubmit}
+          className="aw-auth-form"
+          aria-label={t("auth.verificationForm")}
+        >
           <button
             type="button"
             className="aw-auth-back"

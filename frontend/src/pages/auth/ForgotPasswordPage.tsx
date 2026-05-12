@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Link, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Moon, Sun } from "lucide-react";
 import { forgotPassword } from "../../services/authService";
+import { readErrorMessage } from "@/lib/errors";
 import { AuthShell } from "./AuthShell";
 import { useThemeStore } from "../../stores/themeStore";
 import { AUTH_SPLIT_HERO_IMAGES } from "./authHeroImages";
@@ -12,7 +13,10 @@ export function ForgotPasswordPage() {
   const { t } = useTranslation();
   const { theme, toggleTheme } = useThemeStore();
   const [searchParams] = useSearchParams();
-  const initialEmail = useMemo(() => searchParams.get("email") || "", [searchParams]);
+  const initialEmail = useMemo(
+    () => searchParams.get("email") || "",
+    [searchParams],
+  );
 
   const [email, setEmail] = useState(initialEmail);
   const [isSending, setIsSending] = useState(false);
@@ -28,8 +32,8 @@ export function ForgotPasswordPage() {
     try {
       const result = await forgotPassword(email.trim());
       setMessage(result.message || t("auth.resetSent"));
-    } catch (err: any) {
-      setError(err?.response?.data?.message || t("auth.resetSendFailed"));
+    } catch (err) {
+      setError(readErrorMessage(err) || t("auth.resetSendFailed"));
     } finally {
       setIsSending(false);
     }
@@ -41,13 +45,21 @@ export function ForgotPasswordPage() {
         type="button"
         className="aw-auth-theme-toggle"
         onClick={toggleTheme}
-        title={theme === "dark" ? t("auth.switchToLight") : t("auth.switchToDark")}
-        aria-label={theme === "dark" ? t("auth.switchToLight") : t("auth.switchToDark")}
+        title={
+          theme === "dark" ? t("auth.switchToLight") : t("auth.switchToDark")
+        }
+        aria-label={
+          theme === "dark" ? t("auth.switchToLight") : t("auth.switchToDark")
+        }
       >
         {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
       </button>
 
-      <form onSubmit={handleSubmit} className="aw-auth-form" aria-label={t("auth.forgotPasswordForm")}>
+      <form
+        onSubmit={handleSubmit}
+        className="aw-auth-form"
+        aria-label={t("auth.forgotPasswordForm")}
+      >
         <Link to="/login" className="aw-auth-back">
           <ArrowLeft size={16} />
           {t("auth.backToLogin")}

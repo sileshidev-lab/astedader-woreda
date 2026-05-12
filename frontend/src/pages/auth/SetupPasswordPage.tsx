@@ -3,6 +3,7 @@ import type { FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Eye, EyeOff, Moon, Sun } from "lucide-react";
 import { setupAccount } from "../../services/authService";
+import { readErrorMessage } from "@/lib/errors";
 import { useAuthStore } from "../../stores/authStore";
 import { AuthShell } from "./AuthShell";
 import { useThemeStore } from "../../stores/themeStore";
@@ -35,7 +36,9 @@ export function SetupPasswordPage() {
     setError("");
 
     if (!token) {
-      setError("Account setup token is missing. Please use the link from your email.");
+      setError(
+        "Account setup token is missing. Please use the link from your email.",
+      );
       return;
     }
 
@@ -61,8 +64,11 @@ export function SetupPasswordPage() {
 
       const destination = destinationForRole(result.user.role);
       setTimeout(() => navigate(destination, { replace: true }), 600);
-    } catch (err: any) {
-      setError(err?.response?.data?.message || "Unable to activate account. The link may be expired or already used.");
+    } catch (err) {
+      setError(
+        readErrorMessage(err) ||
+          "Unable to activate account. The link may be expired or already used.",
+      );
     } finally {
       setIsSaving(false);
     }
@@ -74,13 +80,21 @@ export function SetupPasswordPage() {
         type="button"
         className="aw-auth-theme-toggle"
         onClick={toggleTheme}
-        title={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
-        aria-label={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
+        title={
+          theme === "dark" ? "Switch to light theme" : "Switch to dark theme"
+        }
+        aria-label={
+          theme === "dark" ? "Switch to light theme" : "Switch to dark theme"
+        }
       >
         {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
       </button>
 
-      <form onSubmit={handleSubmit} className="aw-auth-form" aria-label="Account setup form">
+      <form
+        onSubmit={handleSubmit}
+        className="aw-auth-form"
+        aria-label="Account setup form"
+      >
         <Link to="/login" className="aw-auth-back">
           <ArrowLeft size={16} />
           Back to login
@@ -90,11 +104,26 @@ export function SetupPasswordPage() {
           <img src="/Prosperity_Party_logo.png" alt="Prosperity Party" />
         </div>
 
-        <p className="aw-auth-form-note">Create a password from your invitation link. Minimum 8 characters.</p>
+        <p className="aw-auth-form-note">
+          Create a password from your invitation link. Minimum 8 characters.
+        </p>
 
-        {!token ? <div className="aw-auth-alert aw-auth-alert-error" role="alert">Account setup token is missing. Open this page using the link sent to your email.</div> : null}
-        {error ? <div className="aw-auth-alert aw-auth-alert-error" role="alert">{error}</div> : null}
-        {message ? <div className="aw-auth-alert aw-auth-alert-success" role="status">{message}</div> : null}
+        {!token ? (
+          <div className="aw-auth-alert aw-auth-alert-error" role="alert">
+            Account setup token is missing. Open this page using the link sent
+            to your email.
+          </div>
+        ) : null}
+        {error ? (
+          <div className="aw-auth-alert aw-auth-alert-error" role="alert">
+            {error}
+          </div>
+        ) : null}
+        {message ? (
+          <div className="aw-auth-alert aw-auth-alert-success" role="status">
+            {message}
+          </div>
+        ) : null}
 
         <PasswordField
           id="setup-password"
@@ -116,7 +145,11 @@ export function SetupPasswordPage() {
           placeholder="Re-enter password"
         />
 
-        <button type="submit" disabled={isSaving || !token} className="aw-auth-submit">
+        <button
+          type="submit"
+          disabled={isSaving || !token}
+          className="aw-auth-submit"
+        >
           {isSaving ? "Activating..." : "Activate account"}
         </button>
       </form>
@@ -155,7 +188,12 @@ function PasswordField({
           autoComplete="new-password"
           placeholder={placeholder}
         />
-        <button type="button" className="aw-auth-password-toggle" onClick={onToggle} aria-label={show ? "Hide password" : "Show password"}>
+        <button
+          type="button"
+          className="aw-auth-password-toggle"
+          onClick={onToggle}
+          aria-label={show ? "Hide password" : "Show password"}
+        >
           {show ? <EyeOff size={18} /> : <Eye size={18} />}
         </button>
       </div>
