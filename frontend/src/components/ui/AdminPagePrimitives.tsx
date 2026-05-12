@@ -11,24 +11,37 @@ export function AdminMetricCard({
   note?: string;
   tone?: "primary" | "success" | "warning" | "default";
 }) {
-  const toneClass =
+  // Tone influences subtle text-color hints on the label; the surface
+  // itself stays neutral so the page reads as a calm grid rather than a
+  // collection of decorated stat cards.
+  const labelTone =
     tone === "success"
-      ? "bg-[var(--aw-success)]"
+      ? "text-[var(--aw-success)]"
       : tone === "warning"
-        ? "bg-[var(--aw-yellow)]"
+        ? "text-[var(--aw-warning)]"
         : tone === "default"
-          ? "bg-[var(--aw-text)]"
-          : "bg-[var(--aw-primary)]";
+          ? "text-[var(--aw-muted)]"
+          : "text-[var(--aw-muted)]";
 
   return (
-    <article className="aw-stat-card relative overflow-hidden rounded-3xl border border-[var(--aw-border-soft)] bg-[var(--aw-surface)] p-4 shadow-sm">
-      <div className="absolute right-0 top-0 h-20 w-20 rounded-bl-full bg-[var(--aw-primary-soft)]" aria-hidden />
-      <p className="relative text-[11px] font-black uppercase tracking-[0.14em] text-[var(--aw-muted)]">{label}</p>
-      <p className="relative mt-2 text-[clamp(1.35rem,2vw,2rem)] font-black leading-none text-[var(--aw-text)]">
+    <article
+      className="relative overflow-hidden rounded-md border border-[var(--aw-border)] bg-[var(--aw-surface)] p-4"
+      style={{ boxShadow: "var(--aw-shadow-xs)" }}
+    >
+      <p
+        className={`relative font-sans text-[11px] font-medium uppercase tracking-[0.06em] ${labelTone}`}
+      >
+        {label}
+      </p>
+      <p
+        className="relative mt-1.5 font-display text-[1.625rem] font-semibold leading-tight text-[var(--aw-text)]"
+        style={{ letterSpacing: "-0.01em", fontVariantNumeric: "tabular-nums lining-nums" }}
+      >
         {value}
       </p>
-      {note ? <p className="relative mt-2 text-xs font-semibold text-[var(--aw-muted)]">{note}</p> : null}
-      <div className={`relative mt-3 h-1.5 rounded-full ${toneClass}`} />
+      {note ? (
+        <p className="relative mt-1.5 text-xs font-normal text-[var(--aw-muted)]">{note}</p>
+      ) : null}
     </article>
   );
 }
@@ -42,17 +55,24 @@ export function AdminStatusPill({
 }) {
   const className =
     tone === "primary"
-      ? "border-woreda-primary/25 bg-woreda-primarySoft text-woreda-primary"
+      ? "border-[color:var(--aw-primary)]/15 bg-[var(--aw-primary-soft)] text-[var(--aw-primary)]"
       : tone === "success"
-        ? "border-woreda-success/25 bg-woreda-successBg text-woreda-success"
+        ? "border-[color:var(--aw-success)]/20 bg-[var(--aw-success-bg)] text-[var(--aw-success)]"
         : tone === "danger"
-          ? "border-woreda-danger/25 bg-woreda-dangerBg text-woreda-danger"
+          ? "border-[color:var(--aw-danger)]/20 bg-[var(--aw-danger-bg)] text-[var(--aw-danger)]"
           : tone === "warning"
-            ? "border-woreda-yellow/30 bg-woreda-yellowBg text-woreda-yellowText"
-            : "border-woreda-border bg-woreda-surfaceLow text-woreda-textMuted";
+            ? "border-[color:var(--aw-warning)]/25 bg-[var(--aw-warning-bg)] text-[var(--aw-warning)]"
+            : "border-[var(--aw-border)] bg-[var(--aw-surface-muted)] text-[var(--aw-muted)]";
 
   return (
-    <span className={`inline-flex items-center border px-2.5 py-1 text-xs font-black uppercase tracking-[0.06em] ${className}`}>
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs font-medium ${className}`}
+    >
+      <span
+        aria-hidden
+        className="inline-block h-1.5 w-1.5 rounded-full"
+        style={{ background: "currentColor", opacity: 0.7 }}
+      />
       {label}
     </span>
   );
@@ -70,11 +90,18 @@ export function AdminSectionPanel({
   children: ReactNode;
 }) {
   return (
-    <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-3xl border border-[var(--aw-border-soft)] bg-[var(--aw-surface)] shadow-sm">
-      <div className="flex shrink-0 flex-col gap-3 border-b border-[var(--aw-border-soft)] bg-[var(--aw-surface-muted)] px-5 py-4 xl:flex-row xl:items-center xl:justify-between">
-        <div>
-          <h2 className="text-lg font-black text-[var(--aw-text)]">{title}</h2>
-          {description ? <p className="mt-1 text-sm font-semibold text-[var(--aw-muted)]">{description}</p> : null}
+    <section
+      className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-md border border-[var(--aw-border)] bg-[var(--aw-surface)]"
+      style={{ boxShadow: "var(--aw-shadow-xs)" }}
+    >
+      <div className="flex shrink-0 flex-col gap-2 border-b border-[var(--aw-border-soft)] bg-[var(--aw-surface)] px-5 py-3.5 xl:flex-row xl:items-center xl:justify-between">
+        <div className="min-w-0">
+          <h2 className="font-display text-base font-semibold text-[var(--aw-text)]" style={{ letterSpacing: "-0.005em" }}>
+            {title}
+          </h2>
+          {description ? (
+            <p className="mt-0.5 text-sm font-normal text-[var(--aw-muted)]">{description}</p>
+          ) : null}
         </div>
         {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
       </div>
@@ -91,9 +118,11 @@ export function AdminEmptyState({
   description: string;
 }) {
   return (
-    <div className="rounded-2xl border border-dashed border-[var(--aw-border-soft)] bg-[var(--aw-surface-muted)] px-4 py-10 text-center">
-      <p className="text-base font-black text-[var(--aw-text)]">{title}</p>
-      <p className="mt-2 text-sm font-semibold text-[var(--aw-muted)]">{description}</p>
+    <div className="rounded-md border border-dashed border-[var(--aw-border)] bg-[var(--aw-surface)] px-4 py-10 text-center">
+      <p className="font-display text-base font-semibold text-[var(--aw-text)]">{title}</p>
+      <p className="mx-auto mt-1.5 max-w-xl text-sm font-normal leading-relaxed text-[var(--aw-muted)]">
+        {description}
+      </p>
     </div>
   );
 }

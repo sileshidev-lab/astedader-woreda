@@ -1,69 +1,357 @@
+/* =============================================================
+   Astedader Woreda — Design Tokens
+   Restrained, enterprise / institutional palette in the spirit
+   of Stripe Dashboard, Linear, Vercel, GOV.UK and USWDS.
+
+   Naming convention is preserved: every consumer that already
+   references --aw-* will pick up the new values automatically.
+   The shadcn HSL bridge below mirrors the same palette so the
+   two systems stay in sync.
+   ============================================================= */
+
 :root {
-  --aw-bg: #f6f8fb;
+  /* ---------------------------------------------------------
+     Palette — light theme.
+     Primary is a deep, near-charcoal slate-blue; the neutral
+     backbone carries most of the UI; semantic colors are
+     desaturated and used sparingly.
+     --------------------------------------------------------- */
+
+  /* Surfaces & background */
+  --aw-bg: #f7f8fa;
   --aw-surface: #ffffff;
-  --aw-surface-muted: #f1f5f9;
-  --aw-border: #d7dee5;
-  --aw-border-soft: #e8edf2;
+  --aw-surface-muted: #f1f4f8;
+  --aw-surface-container: #eceff4;
+  --aw-surface-high: #ffffff;
+  --aw-surface-sunken: #e7ebf2;
 
-  --aw-text: #191c1d;
+  /* Borders — hairline neutral */
+  --aw-border: #e2e8f0;
+  --aw-border-soft: #eef1f5;
+  --aw-border-strong: #cbd5e1;
+
+  /* Text */
+  --aw-text: #0f172a;
+  --aw-text-strong: #0b1220;
+  --aw-text-soft: #334155;
   --aw-muted: #64748b;
+  --aw-muted-strong: #475569;
 
-  --aw-primary: #00658d;
-  --aw-primary-dark: #004c6b;
-  --aw-primary-strong: #00344b;
-  --aw-primary-soft: #e6f3f8;
-  --aw-sidebar: #00344b;
+  /* Primary — deep slate (no teal cast) */
+  --aw-primary: #1e293b;
+  --aw-primary-dark: #0f172a;
+  --aw-primary-strong: #0b1220;
+  --aw-primary-soft: rgba(30, 41, 59, 0.08);
+  --aw-primary-softer: rgba(30, 41, 59, 0.04);
+  --aw-primary-contrast: #ffffff;
+  --aw-sidebar: #0f172a;
+  --aw-sidebar-dark: #0b1220;
 
-  --aw-yellow: #ffd100;
-  --aw-yellow-text: #8a6d00;
-  --aw-yellow-bg: rgba(255, 209, 0, 0.18);
-  --aw-magenta: #ec008c;
-  --aw-magenta-bg: rgba(236, 0, 140, 0.14);
+  /* Accent — aliased to a quiet steel-blue rather than gold.
+     The Ethiopian ceremonial amber remains available below as
+     --aw-yellow and the flag tokens, used only in explicitly
+     semantic contexts (e.g. official strip if ever re-enabled). */
+  --aw-accent: #475569;
+  --aw-accent-soft: rgba(71, 85, 105, 0.10);
+  --aw-accent-strong: #334155;
+  --aw-yellow: #b45309;
+  --aw-yellow-text: #92400e;
+  --aw-yellow-bg: rgba(180, 83, 9, 0.10);
 
-  --aw-success: #0d6e4d;
-  --aw-success-bg: #d4f5e8;
-  --aw-danger: #ba1a1a;
-  --aw-danger-bg: #ffdad6;
-  --aw-warning: #8a6d00;
-  --aw-warning-bg: rgba(255, 209, 0, 0.18);
-  --aw-surface-container: #edf2f7;
-  --aw-surface-high: #f8fafc;
+  /* Ceremonial crimson — used very sparingly */
+  --aw-magenta: #9c1b3d;
+  --aw-magenta-bg: rgba(156, 27, 61, 0.08);
 
-  --aw-shell-x: clamp(12px, 3vw, 40px);
-  --aw-shell-y: clamp(12px, 2vw, 28px);
-  --aw-sidebar-w: clamp(220px, 18vw, 280px);
-  --aw-topbar-h: 64px;
+  /* Semantic — desaturated, enterprise tone */
+  --aw-success: #15803d;
+  --aw-success-bg: rgba(21, 128, 61, 0.10);
+  --aw-success-soft: rgba(21, 128, 61, 0.08);
+  --aw-warning: #b45309;
+  --aw-warning-bg: rgba(180, 83, 9, 0.10);
+  --aw-danger: #b42318;
+  --aw-danger-bg: rgba(180, 35, 24, 0.10);
+  --aw-info: #1d4ed8;
+  --aw-info-bg: rgba(29, 78, 216, 0.10);
+
+  /* Ethiopian flag accents — semantic only, never decorative */
+  --aw-flag-green: #15803d;
+  --aw-flag-yellow: #b45309;
+  --aw-flag-red: #b42318;
+
+  /* ---------------------------------------------------------
+     Typography — formal sans-serif with Ethiopic support.
+     --------------------------------------------------------- */
+  --aw-font-sans:
+    "Inter", "Public Sans", "Noto Sans Ethiopic", "SF Pro Text",
+    system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Roboto, "Helvetica Neue", Arial, sans-serif;
+  --aw-font-display:
+    "Inter", "Public Sans", "Noto Sans Ethiopic", "SF Pro Display",
+    system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Roboto, "Helvetica Neue", Arial, sans-serif;
+  --aw-font-mono:
+    "JetBrains Mono", "Cascadia Code", "Fira Code", "SF Mono",
+    Menlo, Consolas, monospace;
+
+  /* Type scale — tighter, enterprise dashboard cadence */
+  --aw-text-xs: 0.75rem;       /* 12 caption */
+  --aw-text-sm: 0.8125rem;     /* 13 small / table */
+  --aw-text-base: 0.875rem;    /* 14 body */
+  --aw-text-md: 1rem;          /* 16 h3 / large body */
+  --aw-text-lg: 1.125rem;      /* 18 h2 */
+  --aw-text-xl: 1.25rem;       /* 20 h2 large */
+  --aw-text-2xl: 1.5rem;       /* 24 h1 */
+  --aw-text-3xl: 1.75rem;      /* 28 display */
+  --aw-text-4xl: 2rem;         /* 32 hero (rare) */
+  --aw-text-display: 1.75rem;
+
+  /* Weights — enterprise tone: 600 is the heaviest used */
+  --aw-weight-regular: 400;
+  --aw-weight-medium: 500;
+  --aw-weight-semibold: 600;
+  --aw-weight-bold: 600;
+  --aw-weight-extrabold: 600;
+  --aw-weight-black: 700;
+
+  /* Line heights */
+  --aw-leading-tight: 1.25;
+  --aw-leading-snug: 1.4;
+  --aw-leading-normal: 1.5;
+  --aw-leading-relaxed: 1.65;
+
+  /* Letter spacing — restrained */
+  --aw-tracking-tight: -0.01em;
+  --aw-tracking-normal: 0;
+  --aw-tracking-wide: 0.04em;
+  --aw-tracking-eyebrow: 0.06em;
+
+  /* ---------------------------------------------------------
+     Spacing — 4/8 px grid.
+     --------------------------------------------------------- */
+  --aw-space-0: 0;
+  --aw-space-1: 4px;
+  --aw-space-2: 8px;
+  --aw-space-3: 12px;
+  --aw-space-4: 16px;
+  --aw-space-5: 20px;
+  --aw-space-6: 24px;
+  --aw-space-7: 28px;
+  --aw-space-8: 32px;
+  --aw-space-10: 40px;
+  --aw-space-12: 48px;
+  --aw-space-16: 64px;
+
+  /* ---------------------------------------------------------
+     Radii — modest, enterprise-feeling corners.
+     --------------------------------------------------------- */
+  --aw-radius-xs: 4px;
+  --aw-radius-sm: 6px;       /* inputs, buttons */
+  --aw-radius-md: 8px;       /* cards, panels */
+  --aw-radius-lg: 10px;      /* large surfaces */
+  --aw-radius-xl: 12px;
+  --aw-radius-pill: 999px;
+  --aw-radius-card: 8px;
+  --aw-radius-input: 6px;
+  --aw-radius-button: 6px;
+
+  /* ---------------------------------------------------------
+     Shadows — near-flat, crisp borders carry weight.
+     --------------------------------------------------------- */
+  --aw-shadow-xs: 0 1px 1px rgba(15, 23, 42, 0.03);
+  --aw-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --aw-shadow-md: 0 2px 4px rgba(15, 23, 42, 0.05), 0 4px 12px rgba(15, 23, 42, 0.04);
+  --aw-shadow-lg: 0 8px 24px rgba(15, 23, 42, 0.07);
+  --aw-shadow-xl: 0 18px 40px rgba(15, 23, 42, 0.10);
+  --aw-shadow-ring: 0 0 0 1px rgba(30, 41, 59, 0.10);
+  --aw-shadow-focus: 0 0 0 2px rgba(30, 41, 59, 0.35);
+
+  /* ---------------------------------------------------------
+     Motion — calm, professional.
+     --------------------------------------------------------- */
+  --aw-duration-fast: 120ms;
+  --aw-duration-base: 180ms;
+  --aw-duration-slow: 260ms;
+  --aw-ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --aw-ease-emphasized: cubic-bezier(0.3, 0, 0, 1.15);
+
+  /* ---------------------------------------------------------
+     Layout chrome (sidebar/topbar/page guards).
+     Tightened a notch so the chrome feels lighter.
+     --------------------------------------------------------- */
+  --aw-shell-x: clamp(16px, 3vw, 36px);
+  --aw-shell-y: clamp(14px, 1.8vw, 24px);
+  --aw-sidebar-w: clamp(220px, 18vw, 272px);
+  --aw-topbar-h: 56px;
+  --aw-official-strip-h: 2px;
   --aw-page-max: 1600px;
   --sidebar-w: var(--aw-sidebar-w);
-  --overlay-scrim: rgba(0, 76, 107, 0.66);
-  --overlay-scrim-strong: rgba(15, 23, 42, 0.78);
-  --primary-darkest: var(--aw-primary-dark);
+  --overlay-scrim: rgba(15, 23, 42, 0.45);
+  --overlay-scrim-strong: rgba(15, 23, 42, 0.65);
+  --primary-darkest: var(--aw-primary-strong);
+
+  /* ---------------------------------------------------------
+     Z-index scale.
+     --------------------------------------------------------- */
+  --aw-z-base: 0;
+  --aw-z-dropdown: 100;
+  --aw-z-sticky: 200;
+  --aw-z-overlay: 300;
+  --aw-z-modal: 400;
+  --aw-z-toast: 500;
+
+  /* ---------------------------------------------------------
+     shadcn/ui theme contract (light).
+     Bare HSL triplets that mirror the palette above so
+     `bg-primary`, `text-foreground`, `bg-muted`, etc. all
+     resolve to the same colors as the legacy --aw-* tokens.
+     --------------------------------------------------------- */
+  --background: 220 18% 97%;          /* #f7f8fa */
+  --foreground: 222 47% 11%;          /* #0f172a */
+
+  --card: 0 0% 100%;                  /* #ffffff */
+  --card-foreground: 222 47% 11%;
+
+  --popover: 0 0% 100%;
+  --popover-foreground: 222 47% 11%;
+
+  --primary: 217 33% 17%;             /* #1e293b */
+  --primary-foreground: 0 0% 100%;
+
+  --secondary: 214 27% 95%;           /* #eef1f5 */
+  --secondary-foreground: 222 47% 11%;
+
+  --muted: 214 27% 95%;               /* #eef1f5 */
+  --muted-foreground: 215 16% 47%;    /* #64748b */
+
+  --accent: 215 19% 35%;              /* #475569 */
+  --accent-foreground: 0 0% 100%;
+
+  --destructive: 4 76% 40%;           /* #b42318 */
+  --destructive-foreground: 0 0% 100%;
+
+  --success: 142 71% 29%;             /* #15803d */
+  --success-foreground: 0 0% 100%;
+
+  --warning: 27 91% 37%;              /* #b45309 */
+  --warning-foreground: 0 0% 100%;
+
+  --border: 214 32% 91%;              /* #e2e8f0 */
+  --input: 214 32% 91%;
+  --ring: 217 33% 17%;                /* #1e293b */
+
+  --radius: 0.5rem;
 }
 
+/* =============================================================
+   Dark theme.
+   ============================================================= */
 html[data-theme="dark"] {
-  --aw-bg: #0f1319;
-  --aw-surface: #171c24;
-  --aw-surface-muted: #1d2430;
-  --aw-border: rgba(226, 232, 240, 0.14);
-  --aw-border-soft: rgba(226, 232, 240, 0.1);
+  --aw-bg: #0b1220;
+  --aw-surface: #111a2b;
+  --aw-surface-muted: #18223a;
+  --aw-surface-container: #1e2a44;
+  --aw-surface-high: #243150;
+  --aw-surface-sunken: #0a111e;
 
-  --aw-text: #f8fafc;
-  --aw-muted: #a8b3c4;
+  --aw-border: #1f2a3c;
+  --aw-border-soft: #182236;
+  --aw-border-strong: #2c3a55;
 
-  --aw-primary: #48a8d1;
-  --aw-primary-dark: #0f6f98;
-  --aw-primary-strong: #0b1622;
-  --aw-primary-soft: rgba(72, 168, 209, 0.16);
-  --aw-sidebar: #0d1b27;
+  --aw-text: #e6ebf2;
+  --aw-text-strong: #f4f7fb;
+  --aw-text-soft: #cbd5e1;
+  --aw-muted: #94a3b8;
+  --aw-muted-strong: #b8c2d2;
+
+  --aw-primary: #7796c6;
+  --aw-primary-dark: #5c7aab;
+  --aw-primary-strong: #4a648e;
+  --aw-primary-soft: rgba(119, 150, 198, 0.16);
+  --aw-primary-softer: rgba(119, 150, 198, 0.08);
+  --aw-primary-contrast: #0b1220;
+  --aw-sidebar: #111a2b;
+  --aw-sidebar-dark: #0b1220;
+
+  --aw-accent: #94a3b8;
+  --aw-accent-soft: rgba(148, 163, 184, 0.12);
+  --aw-accent-strong: #cbd5e1;
+  --aw-yellow: #f59e0b;
+  --aw-yellow-text: #fbbf24;
+  --aw-yellow-bg: rgba(245, 158, 11, 0.14);
+
+  --aw-magenta: #e11d48;
+  --aw-magenta-bg: rgba(225, 29, 72, 0.14);
+
+  --aw-success: #4ade80;
+  --aw-success-bg: rgba(74, 222, 128, 0.14);
+  --aw-success-soft: rgba(74, 222, 128, 0.10);
+  --aw-warning: #f59e0b;
+  --aw-warning-bg: rgba(245, 158, 11, 0.14);
+  --aw-danger: #f87171;
+  --aw-danger-bg: rgba(248, 113, 113, 0.14);
+  --aw-info: #60a5fa;
+  --aw-info-bg: rgba(96, 165, 250, 0.14);
+
+  --aw-flag-green: #4ade80;
+  --aw-flag-yellow: #f59e0b;
+  --aw-flag-red: #f87171;
+
+  --aw-shadow-xs: 0 1px 1px rgba(0, 0, 0, 0.25);
+  --aw-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.30);
+  --aw-shadow-md: 0 2px 4px rgba(0, 0, 0, 0.32), 0 4px 12px rgba(0, 0, 0, 0.30);
+  --aw-shadow-lg: 0 10px 28px rgba(0, 0, 0, 0.40);
+  --aw-shadow-xl: 0 20px 48px rgba(0, 0, 0, 0.50);
+  --aw-shadow-ring: 0 0 0 1px rgba(119, 150, 198, 0.22);
+  --aw-shadow-focus: 0 0 0 2px rgba(119, 150, 198, 0.40);
+
+  --overlay-scrim: rgba(2, 6, 12, 0.66);
   --overlay-scrim-strong: rgba(2, 6, 12, 0.82);
-  --primary-darkest: #0b1622;
+  --primary-darkest: var(--aw-primary-strong);
 
-  --aw-yellow-text: #f4d35e;
-  --aw-yellow-bg: rgba(255, 209, 0, 0.14);
-  --aw-magenta-bg: rgba(236, 0, 140, 0.18);
-  --aw-success-bg: rgba(13, 110, 77, 0.22);
-  --aw-danger-bg: rgba(186, 26, 26, 0.22);
-  --aw-warning-bg: rgba(255, 209, 0, 0.14);
-  --aw-surface-container: #151b23;
-  --aw-surface-high: #202734;
+  /* ---------------------------------------------------------
+     shadcn/ui theme contract (dark).  Real HSL triplets so
+     the alpha modifier pattern keeps working.
+     --------------------------------------------------------- */
+  --background: 219 50% 8%;           /* #0b1220 */
+  --foreground: 215 29% 93%;          /* #e6ebf2 */
+
+  --card: 219 43% 12%;                /* #111a2b */
+  --card-foreground: 215 29% 93%;
+
+  --popover: 219 43% 12%;
+  --popover-foreground: 215 29% 93%;
+
+  --primary: 217 41% 62%;             /* #7796c6 */
+  --primary-foreground: 219 50% 8%;
+
+  --secondary: 219 36% 15%;           /* #182236 */
+  --secondary-foreground: 215 29% 93%;
+
+  --muted: 219 36% 15%;
+  --muted-foreground: 215 20% 65%;    /* #94a3b8 */
+
+  --accent: 215 20% 65%;              /* #94a3b8 */
+  --accent-foreground: 219 50% 8%;
+
+  --destructive: 0 91% 71%;           /* #f87171 */
+  --destructive-foreground: 219 50% 8%;
+
+  --success: 142 69% 58%;             /* #4ade80 */
+  --success-foreground: 219 50% 8%;
+
+  --warning: 38 92% 50%;              /* #f59e0b */
+  --warning-foreground: 219 50% 8%;
+
+  --border: 218 31% 18%;              /* #1f2a3c */
+  --input: 218 31% 18%;
+  --ring: 217 41% 62%;
+}
+
+/* Reduced motion respect. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --aw-duration-fast: 0.001ms;
+    --aw-duration-base: 0.001ms;
+    --aw-duration-slow: 0.001ms;
+  }
 }

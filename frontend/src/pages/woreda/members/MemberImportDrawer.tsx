@@ -1,6 +1,9 @@
 import { useMemo, useState } from "react";
 import { Download, Upload, X } from "lucide-react";
+import { toast } from "sonner";
 import * as XLSX from "xlsx";
+import { Button } from "@/components/ui/shadcn/button";
+import { Badge } from "@/components/ui/shadcn/badge";
 import {
   commitMemberImport,
   previewMemberImport,
@@ -182,8 +185,6 @@ export function MemberImportDrawer({
 }: MemberImportDrawerProps) {
   const [rows, setRows] = useState<MemberImportPreviewRow[]>([]);
   const [summary, setSummary] = useState({ total: 0, valid: 0, invalid: 0 });
-  const [resultMessage, setResultMessage] = useState("");
-  const [error, setError] = useState("");
   const [isPreviewing, setIsPreviewing] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [showInvalidOnly, setShowInvalidOnly] = useState(false);
@@ -207,14 +208,12 @@ export function MemberImportDrawer({
     if (!file) return;
 
     setIsPreviewing(true);
-    setError("");
-    setResultMessage("");
 
     try {
       const csvText = await readImportFile(file);
       await previewCsv(csvText);
     } catch (err: any) {
-      setError(err?.response?.data?.message || "Unable to preview import file.");
+      toast.error(err?.response?.data?.message || "Unable to preview import file.");
     } finally {
       setIsPreviewing(false);
     }
@@ -222,13 +221,11 @@ export function MemberImportDrawer({
 
   async function handleRevalidateRows(nextRows = rows) {
     setIsPreviewing(true);
-    setError("");
-    setResultMessage("");
 
     try {
       await previewCsv(editableRowsToCsv(nextRows));
     } catch (err: any) {
-      setError(err?.response?.data?.message || "Unable to revalidate edited rows.");
+      toast.error(err?.response?.data?.message || "Unable to revalidate edited rows.");
     } finally {
       setIsPreviewing(false);
     }
@@ -268,22 +265,20 @@ export function MemberImportDrawer({
 
   async function handleImport() {
     if (validRows.length === 0) {
-      setError("No valid rows to import.");
+      toast.error("No valid rows to import.");
       return;
     }
 
     setIsImporting(true);
-    setError("");
-    setResultMessage("");
 
     try {
       const result = await commitMemberImport(validRows);
-      setResultMessage(
-        `${result.message} Created: ${result.createdCount}. Failed: ${result.failedCount}.`
+      toast.success(
+        `${result.message} Created: ${result.createdCount}. Failed: ${result.failedCount}.`,
       );
       await onImported();
     } catch (err: any) {
-      setError(err?.response?.data?.message || "Unable to import members.");
+      toast.error(err?.response?.data?.message || "Unable to import members.");
     } finally {
       setIsImporting(false);
     }
@@ -305,28 +300,18 @@ export function MemberImportDrawer({
             </p>
           </div>
 
-          <button
+          <Button
             type="button"
+            variant="outline"
+            size="icon"
             onClick={onClose}
-            className="border border-woreda-border bg-woreda-surface p-2 text-woreda-text hover:border-woreda-primary hover:text-woreda-primary"
+            aria-label="Close"
           >
-            <X size={18} />
-          </button>
+            <X aria-hidden />
+          </Button>
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto p-6">
-          {error ? (
-            <div className="mb-4 border border-woreda-danger bg-woreda-dangerBg px-4 py-3 text-sm font-semibold text-woreda-danger">
-              {error}
-            </div>
-          ) : null}
-
-          {resultMessage ? (
-            <div className="mb-4 border border-woreda-primary/20 bg-woreda-primarySoft px-4 py-3 text-sm font-semibold text-woreda-primary">
-              {resultMessage}
-            </div>
-          ) : null}
-
           <div className="form-grid">
             <div className="border border-woreda-border/70 bg-woreda-surfaceLow p-4">
               <h3 className="font-bold text-woreda-text">Upload CSV or Excel</h3>
@@ -353,32 +338,37 @@ export function MemberImportDrawer({
               </p>
 
               <div className="mt-4 flex flex-wrap gap-2">
-                <button
+                <Button
                   type="button"
+                  variant="outline"
+                  size="default"
                   onClick={downloadTemplate}
-                  className="inline-flex min-h-10 items-center gap-2 rounded border border-woreda-primary bg-woreda-primarySoft px-4 py-2 text-sm font-bold text-woreda-primary hover:bg-woreda-primary hover:text-white"
                 >
-                  <Download size={16} />
+                  <Download aria-hidden />
                   Download Template
-                </button>
+                </Button>
 
-                <button
+                <Button
                   type="button"
+                  variant="outline"
+                  size="default"
                   disabled={rows.length === 0}
-                  onClick={() => downloadCsv("member-import-edited-preview.csv", editableRowsToCsv(rows))}
-                  className="inline-flex min-h-10 items-center gap-2 rounded border border-woreda-border bg-woreda-surface px-4 py-2 text-sm font-bold text-woreda-text hover:border-woreda-primary hover:text-woreda-primary disabled:cursor-not-allowed disabled:opacity-50"
+                  onClick={() =>
+                    downloadCsv("member-import-edited-preview.csv", editableRowsToCsv(rows))
+                  }
                 >
                   Export Edited Preview
-                </button>
+                </Button>
 
-                <button
+                <Button
                   type="button"
+                  variant="destructive"
+                  size="default"
                   disabled={summary.invalid === 0}
                   onClick={() => downloadErrorReport(rows)}
-                  className="inline-flex min-h-10 items-center gap-2 rounded border border-woreda-danger bg-woreda-dangerBg px-4 py-2 text-sm font-bold text-woreda-danger disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   Download Errors
-                </button>
+                </Button>
               </div>
             </div>
           </div>
@@ -398,22 +388,24 @@ export function MemberImportDrawer({
             </div>
 
             <div className="flex flex-wrap gap-2">
-              <button
+              <Button
                 type="button"
+                variant="outline"
+                size="sm"
                 onClick={() => setShowInvalidOnly((value) => !value)}
-                className="min-h-10 rounded border border-woreda-border bg-woreda-surface px-4 py-2 text-xs font-bold text-woreda-text hover:border-woreda-primary hover:text-woreda-primary"
               >
                 {showInvalidOnly ? "Show All Rows" : "Show Invalid Only"}
-              </button>
+              </Button>
 
-              <button
+              <Button
                 type="button"
+                variant="outline"
+                size="sm"
                 disabled={rows.length === 0 || isPreviewing}
                 onClick={() => handleRevalidateRows()}
-                className="min-h-10 rounded border border-woreda-primary bg-woreda-primarySoft px-4 py-2 text-xs font-bold text-woreda-primary hover:bg-woreda-primary hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isPreviewing ? "Validating..." : "Revalidate Preview"}
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -450,15 +442,9 @@ export function MemberImportDrawer({
                       </td>
 
                       <td className="border-b border-woreda-borderLight/40 px-3 py-2">
-                        <span
-                          className={
-                            row.isValid
-                              ? "rounded border border-woreda-success/20 bg-woreda-successBg px-2 py-1 text-[10px] font-bold text-woreda-success"
-                              : "rounded border border-woreda-danger/20 bg-woreda-dangerBg px-2 py-1 text-[10px] font-bold text-woreda-danger"
-                          }
-                        >
+                        <Badge variant={row.isValid ? "success" : "destructive"}>
                           {row.isValid ? "Valid" : "Invalid"}
-                        </span>
+                        </Badge>
                       </td>
 
                       {editableFields.map((field) => (
@@ -478,13 +464,14 @@ export function MemberImportDrawer({
                       </td>
 
                       <td className="border-b border-woreda-borderLight/40 px-3 py-2">
-                        <button
+                        <Button
                           type="button"
+                          variant="destructive"
+                          size="sm"
                           onClick={() => removeRow(row.rowNumber)}
-                          className="rounded border border-woreda-danger bg-woreda-dangerBg px-3 py-1.5 text-[11px] font-bold text-woreda-danger"
                         >
                           Remove
-                        </button>
+                        </Button>
                       </td>
                     </tr>
                   ))
@@ -494,32 +481,30 @@ export function MemberImportDrawer({
           </div>
         </div>
 
-        <div className="flex justify-end gap-3 border-t border-woreda-border bg-woreda-surfaceLow px-6 py-4">
-          <button
-            type="button"
-            onClick={onClose}
-            className="min-h-11 border border-woreda-border bg-woreda-surface px-5 py-2 text-sm font-bold text-woreda-text hover:border-woreda-primary hover:text-woreda-primary"
-          >
+        <div className="flex justify-end gap-3 border-t border-border bg-muted/30 px-6 py-4">
+          <Button type="button" variant="outline" size="default" onClick={onClose}>
             Close
-          </button>
+          </Button>
 
-          <button
+          <Button
             type="button"
+            variant="outline"
+            size="default"
             disabled={rows.length === 0 || isPreviewing}
             onClick={() => handleRevalidateRows()}
-            className="min-h-11 border border-woreda-primary bg-woreda-primarySoft px-5 py-2 text-sm font-bold text-woreda-primary hover:bg-woreda-primary hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
           >
             Revalidate
-          </button>
+          </Button>
 
-          <button
+          <Button
             type="button"
+            variant="default"
+            size="default"
             disabled={isImporting || validRows.length === 0}
             onClick={handleImport}
-            className="min-h-11 border border-woreda-primary bg-woreda-primary px-5 py-2 text-sm font-bold text-white hover:bg-woreda-sidebar disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isImporting ? "Importing..." : `Import ${validRows.length} Valid Rows`}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

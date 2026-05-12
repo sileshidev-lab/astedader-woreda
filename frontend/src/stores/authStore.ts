@@ -22,6 +22,7 @@ type AuthState = {
   ) => Promise<void | TwoFactorLoginResult>;
   completeTwoFactorLogin: (twoFactorToken: string, code: string) => Promise<void>;
   loadCurrentUser: () => Promise<void>;
+  applySession: (token: string, user: AuthUser) => void;
   logout: () => void;
   hasPrivilege: (privilege: string) => boolean;
 };
@@ -53,10 +54,12 @@ function buildDevBypassUser(email: string, role: UserRole): AuthUser {
       status: "ACTIVE",
       privileges: [
         "announcement.read",
-        "announcement.write",
+        "announcement.create",
+        "announcement.update",
         "member.read",
         "resource.read",
-        "chat.access",
+        "chat.read",
+        "chat.send",
       ],
       hibretId: "dev-hibret-1",
       memberId: null,
@@ -72,7 +75,7 @@ function buildDevBypassUser(email: string, role: UserRole): AuthUser {
       email: normalizedEmail,
       role,
       status: "ACTIVE",
-      privileges: [],
+      privileges: ["profile.read", "profile.update", "resource.read"],
       hibretId: "dev-hibret-1",
       memberId: "dev-member-1",
       hibretName: "Development Hibret",
@@ -211,6 +214,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         isLoading: false,
       });
     }
+  },
+
+  applySession: (token, user) => {
+    storeSession(token, user, set);
   },
 
   logout: () => {

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import {
   ArrowLeft,
   CalendarClock,
@@ -16,6 +17,16 @@ import {
   Video,
   X,
 } from "lucide-react";
+import { Button } from "@/components/ui/shadcn/button";
+import { Input } from "@/components/ui/shadcn/input";
+import { Textarea } from "@/components/ui/shadcn/textarea";
+import { Checkbox } from "@/components/ui/shadcn/checkbox";
+import {
+  Card,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/shadcn/card";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import LinkExtension from "@tiptap/extension-link";
@@ -62,8 +73,6 @@ export function BroadcastEditorPage() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const [bodyHtml, setBodyHtml] = useState("");
-  const [message, setMessage] = useState("");
-  const [error, setError] = useState("");
 
   const editor = useEditor({
     extensions: [
@@ -112,8 +121,6 @@ export function BroadcastEditorPage() {
   async function loadBroadcast() {
     if (!broadcastId || !editor) return;
 
-    setError("");
-
     try {
       const data = await getBroadcast(broadcastId);
       const remoteCover = extractCoverMarker(data.bodyHtml);
@@ -129,7 +136,7 @@ export function BroadcastEditorPage() {
       setBodyHtml(cleanBody);
       editor.commands.setContent(cleanBody);
     } catch {
-      setError(t("broadcasts.editor.errors.load"));
+      toast.error(t("broadcasts.editor.errors.load"));
     }
   }
 
@@ -156,13 +163,11 @@ export function BroadcastEditorPage() {
   ) {
     if (!file) return null;
     if (!canSave) {
-      setError(t("broadcasts.editor.errors.unauthorizedSave"));
+      toast.error(t("broadcasts.editor.errors.unauthorizedSave"));
       return null;
     }
 
     setIsUploading(true);
-    setError("");
-    setMessage("");
 
     try {
       const uploaded = await uploadBroadcastFile(file);
@@ -179,10 +184,10 @@ export function BroadcastEditorPage() {
         setCoverFileName(uploaded.originalName);
       }
 
-      setMessage(t("broadcasts.editor.messages.uploaded", { name: uploaded.originalName }));
+      toast.success(t("broadcasts.editor.messages.uploaded", { name: uploaded.originalName }));
       return uploaded;
     } catch (err: any) {
-      setError(err?.response?.data?.message || t("broadcasts.editor.errors.upload"));
+      toast.error(err?.response?.data?.message || t("broadcasts.editor.errors.upload"));
       return null;
     } finally {
       setIsUploading(false);
@@ -211,14 +216,14 @@ export function BroadcastEditorPage() {
     const url = coverUrl.trim();
 
     if (!/^https?:\/\//i.test(url)) {
-      setError(t("broadcasts.editor.errors.coverUrlProtocol"));
+      toast.error(t("broadcasts.editor.errors.coverUrlProtocol"));
       return;
     }
 
     setCoverFileId(null);
     setCoverFileName("");
     setCoverUrl(url);
-    setMessage(t("broadcasts.editor.messages.coverUrlSaved"));
+    toast.success(t("broadcasts.editor.messages.coverUrlSaved"));
   }
 
   function insertInlineImageLink() {
@@ -227,7 +232,7 @@ export function BroadcastEditorPage() {
     const url = inlineImageUrl.trim();
 
     if (!/^https?:\/\//i.test(url)) {
-      setError(t("broadcasts.editor.errors.inlineImageProtocol"));
+      toast.error(t("broadcasts.editor.errors.inlineImageProtocol"));
       return;
     }
 
@@ -272,20 +277,17 @@ export function BroadcastEditorPage() {
   async function saveBroadcast() {
     if (!editor) return;
     if (!canSave) {
-      setError(t("broadcasts.editor.errors.unauthorizedSave"));
+      toast.error(t("broadcasts.editor.errors.unauthorizedSave"));
       return;
     }
 
-    setError("");
-    setMessage("");
-
     if (!title.trim()) {
-      setError(t("broadcasts.editor.errors.titleRequired"));
+      toast.error(t("broadcasts.editor.errors.titleRequired"));
       return;
     }
 
     if (targetRoles.length === 0) {
-      setError(t("broadcasts.editor.errors.audienceRequired"));
+      toast.error(t("broadcasts.editor.errors.audienceRequired"));
       return;
     }
 
@@ -306,77 +308,64 @@ export function BroadcastEditorPage() {
     try {
       if (isEditMode && broadcastId) {
         await updateBroadcast(broadcastId, payload);
-        setMessage(t("broadcasts.editor.messages.updated"));
+        toast.success(t("broadcasts.editor.messages.updated"));
       } else {
         const created = await createBroadcast(payload);
-        setMessage(t("broadcasts.editor.messages.created"));
+        toast.success(t("broadcasts.editor.messages.created"));
         navigate(`/woreda/broadcasts/${created.id}/edit`, { replace: true });
       }
     } catch (err: any) {
-      setError(err?.response?.data?.message || t("broadcasts.editor.errors.save"));
+      toast.error(err?.response?.data?.message || t("broadcasts.editor.errors.save"));
     }
   }
 
   return (
-    <section className="aw-design-page aw-mobile-page flex min-h-0 flex-1 flex-col gap-4 overflow-visible md:overflow-hidden">
-      {error ? (
-        <div className="shrink-0 rounded-2xl border border-[var(--aw-danger)]/25 bg-[var(--aw-danger-bg)] px-4 py-3 text-sm font-bold text-[var(--aw-danger)]">
-          {error}
-        </div>
-      ) : null}
-
-      {message ? (
-        <div className="shrink-0 rounded-2xl border border-[var(--aw-primary)]/20 bg-[var(--aw-primary-soft)] px-4 py-3 text-sm font-bold text-[var(--aw-primary)]">
-          {message}
-        </div>
-      ) : null}
-
-      <header className="shrink-0 overflow-hidden rounded-[1.75rem] border border-[var(--aw-border-soft)] bg-[var(--aw-surface)] shadow-sm">
-        <div className="h-1.5 bg-gradient-to-r from-[var(--aw-primary)] via-[var(--aw-yellow)] to-[var(--aw-magenta)]" />
-
-        <div className="flex flex-col gap-4 p-4 sm:p-5 xl:flex-row xl:items-center xl:justify-between">
-          <div className="min-w-0">
-            <p className="text-[11px] font-black uppercase tracking-[0.2em] text-[var(--aw-primary)]">
+    <section className="flex min-h-0 flex-1 flex-col gap-4 overflow-visible md:overflow-hidden">
+      <Card>
+        <CardHeader className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+          <div className="min-w-0 space-y-1">
+            <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-primary">
               {t("broadcasts.editor.eyebrow")}
             </p>
-            <h1 className="mt-1 text-[clamp(1.35rem,2.2vw,2rem)] font-black tracking-tight text-[var(--aw-text)]">
+            <CardTitle>
               {isEditMode ? t("broadcasts.editor.editTitle") : t("broadcasts.editor.createTitle")}
-            </h1>
-            <p className="mt-1 max-w-3xl text-sm font-semibold leading-6 text-[var(--aw-muted)]">
-              {t("broadcasts.editor.subtitle")}
-            </p>
+            </CardTitle>
+            <CardDescription>{t("broadcasts.editor.subtitle")}</CardDescription>
           </div>
 
           <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-end">
-            <Link
-              to="/woreda/broadcasts"
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-[var(--aw-border)] bg-[var(--aw-surface)] px-4 py-2 text-sm font-black text-[var(--aw-text)] transition hover:border-[var(--aw-primary)] hover:text-[var(--aw-primary)]"
-            >
-              <ArrowLeft size={16} />
-              {t("common.previous")}
-            </Link>
+            <Button asChild variant="outline" size="default">
+              <Link to="/woreda/broadcasts">
+                <ArrowLeft aria-hidden />
+                {t("common.previous")}
+              </Link>
+            </Button>
 
-            <button
+            <Button
               type="button"
+              variant="outline"
+              size="default"
               onClick={() => setIsSettingsOpen((current) => !current)}
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-[var(--aw-border)] bg-[var(--aw-surface)] px-4 py-2 text-sm font-black text-[var(--aw-text)] transition hover:border-[var(--aw-primary)] hover:text-[var(--aw-primary)]"
             >
-              {isSettingsOpen ? <X size={16} /> : <Settings2 size={16} />}
-              {isSettingsOpen ? t("broadcasts.editor.actions.hideSettings") : t("broadcasts.editor.actions.showSettings")}
-            </button>
+              {isSettingsOpen ? <X aria-hidden /> : <Settings2 aria-hidden />}
+              {isSettingsOpen
+                ? t("broadcasts.editor.actions.hideSettings")
+                : t("broadcasts.editor.actions.showSettings")}
+            </Button>
 
-            <button
+            <Button
               type="button"
+              variant="default"
+              size="default"
               onClick={saveBroadcast}
               disabled={isUploading || !canSave}
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-[var(--aw-primary)] bg-[var(--aw-primary)] px-4 py-2 text-sm font-black text-white shadow-sm shadow-[var(--aw-primary)]/20 transition hover:-translate-y-0.5 hover:bg-[var(--aw-primary-strong)] disabled:cursor-not-allowed disabled:opacity-60"
             >
-              <Save size={16} />
+              <Save aria-hidden />
               {isUploading ? t("common.saving") : t("broadcasts.editor.actions.save")}
-            </button>
+            </Button>
           </div>
-        </div>
-      </header>
+        </CardHeader>
+      </Card>
 
       <div
         className={[
@@ -394,30 +383,63 @@ export function BroadcastEditorPage() {
             </p>
           </div>
 
-          <div className="shrink-0 space-y-3 border-b border-[var(--aw-border-soft)] p-4 sm:p-5">
-            <input
+          <div className="shrink-0 space-y-3 border-b border-border p-4 sm:p-5">
+            <Input
               value={title}
               onChange={(event) => setTitle(event.target.value)}
               placeholder={t("broadcasts.editor.content.titlePlaceholder")}
-              className="min-h-12 w-full rounded-2xl border border-[var(--aw-border)] bg-[var(--aw-surface)] px-4 text-lg font-black text-[var(--aw-text)] outline-none transition placeholder:text-[var(--aw-muted)] focus:border-[var(--aw-primary)] focus:ring-4 focus:ring-[var(--aw-primary)]/10"
+              className="h-12 text-lg font-semibold"
             />
 
-            <textarea
+            <Textarea
               value={summaryText}
               onChange={(event) => setSummaryText(event.target.value)}
               placeholder={t("broadcasts.editor.content.summaryPlaceholder")}
-              className="min-h-24 w-full resize-y rounded-2xl border border-[var(--aw-border)] bg-[var(--aw-surface)] px-4 py-3 text-sm font-semibold text-[var(--aw-text)] outline-none transition placeholder:text-[var(--aw-muted)] focus:border-[var(--aw-primary)] focus:ring-4 focus:ring-[var(--aw-primary)]/10"
+              rows={4}
             />
           </div>
 
-          <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-[var(--aw-border-soft)] bg-[var(--aw-surface-muted)] px-4 py-3 sm:px-5">
-            <button type="button" onClick={() => editor?.chain().focus().toggleBold().run()} className="rounded-xl border border-[var(--aw-border)] bg-[var(--aw-surface)] px-3 py-1.5 text-xs font-black text-[var(--aw-text)] hover:border-[var(--aw-primary)] hover:text-[var(--aw-primary)]">{t("broadcasts.editor.toolbar.bold")}</button>
-            <button type="button" onClick={() => editor?.chain().focus().toggleItalic().run()} className="rounded-xl border border-[var(--aw-border)] bg-[var(--aw-surface)] px-3 py-1.5 text-xs font-black text-[var(--aw-text)] hover:border-[var(--aw-primary)] hover:text-[var(--aw-primary)]">{t("broadcasts.editor.toolbar.italic")}</button>
-            <button type="button" onClick={() => editor?.chain().focus().toggleHeading({ level: 2 }).run()} className="rounded-xl border border-[var(--aw-border)] bg-[var(--aw-surface)] px-3 py-1.5 text-xs font-black text-[var(--aw-text)] hover:border-[var(--aw-primary)] hover:text-[var(--aw-primary)]">{t("broadcasts.editor.toolbar.heading")}</button>
-            <button type="button" onClick={() => editor?.chain().focus().toggleBulletList().run()} className="rounded-xl border border-[var(--aw-border)] bg-[var(--aw-surface)] px-3 py-1.5 text-xs font-black text-[var(--aw-text)] hover:border-[var(--aw-primary)] hover:text-[var(--aw-primary)]">{t("broadcasts.editor.toolbar.list")}</button>
+          <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-border bg-muted/30 px-4 py-3 sm:px-5">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => editor?.chain().focus().toggleBold().run()}
+            >
+              {t("broadcasts.editor.toolbar.bold")}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => editor?.chain().focus().toggleItalic().run()}
+            >
+              {t("broadcasts.editor.toolbar.italic")}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => editor?.chain().focus().toggleHeading({ level: 2 }).run()}
+            >
+              {t("broadcasts.editor.toolbar.heading")}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => editor?.chain().focus().toggleBulletList().run()}
+            >
+              {t("broadcasts.editor.toolbar.list")}
+            </Button>
 
-            <label className={["inline-flex cursor-pointer items-center gap-2 rounded-xl border border-[var(--aw-primary)] bg-[var(--aw-primary-soft)] px-3 py-1.5 text-xs font-black text-[var(--aw-primary)] transition hover:bg-[var(--aw-primary)] hover:text-white", !canSave ? "pointer-events-none opacity-60" : ""].join(" ")}>
-              <ImagePlus size={13} />
+            <label
+              className={[
+                "inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-md border border-primary/40 bg-primary/10 px-3 text-xs font-medium text-primary transition hover:bg-primary hover:text-primary-foreground",
+                !canSave ? "pointer-events-none opacity-60" : "",
+              ].join(" ")}
+            >
+              <ImagePlus size={13} aria-hidden />
               {t("broadcasts.editor.toolbar.addImage")}
               <input
                 type="file"
@@ -446,34 +468,28 @@ export function BroadcastEditorPage() {
               {t("broadcasts.editor.preview.title")}
             </div>
 
-            <div className="flex w-full rounded-2xl border border-[var(--aw-border)] bg-[var(--aw-surface)] p-1 sm:w-auto">
-              <button
+            <div className="flex w-full gap-1 rounded-md border border-border bg-background p-1 sm:w-auto">
+              <Button
                 type="button"
+                variant={previewMode === "desktop" ? "default" : "ghost"}
+                size="sm"
                 onClick={() => setPreviewMode("desktop")}
-                className={[
-                  "inline-flex min-h-9 flex-1 items-center justify-center gap-1 rounded-xl px-3 text-xs font-black transition sm:flex-none",
-                  previewMode === "desktop"
-                    ? "bg-[var(--aw-primary)] text-white"
-                    : "text-[var(--aw-muted)] hover:text-[var(--aw-primary)]",
-                ].join(" ")}
+                className="flex-1 sm:flex-none"
               >
-                <Monitor size={13} />
+                <Monitor aria-hidden />
                 {t("broadcasts.editor.preview.desktop")}
-              </button>
+              </Button>
 
-              <button
+              <Button
                 type="button"
+                variant={previewMode === "mobile" ? "default" : "ghost"}
+                size="sm"
                 onClick={() => setPreviewMode("mobile")}
-                className={[
-                  "inline-flex min-h-9 flex-1 items-center justify-center gap-1 rounded-xl px-3 text-xs font-black transition sm:flex-none",
-                  previewMode === "mobile"
-                    ? "bg-[var(--aw-primary)] text-white"
-                    : "text-[var(--aw-muted)] hover:text-[var(--aw-primary)]",
-                ].join(" ")}
+                className="flex-1 sm:flex-none"
               >
-                <Smartphone size={13} />
+                <Smartphone aria-hidden />
                 {t("broadcasts.editor.preview.mobile")}
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -537,21 +553,21 @@ export function BroadcastEditorPage() {
                 </p>
 
                 <div className="mt-3 space-y-2">
-                  <label className="flex items-center gap-3 rounded-2xl border border-[var(--aw-border)] bg-[var(--aw-surface)] px-3 py-2 text-sm font-black text-[var(--aw-text)]">
-                    <input
-                      type="checkbox"
+                  <label className="flex items-center gap-3 rounded-md border border-border bg-background px-3 py-2 text-sm font-medium text-foreground">
+                    <Checkbox
                       checked={targetRoles.includes("HIBRET_ADMIN")}
-                      onChange={(event) => toggleAudience("HIBRET_ADMIN", event.target.checked)}
+                      onCheckedChange={(checked) =>
+                        toggleAudience("HIBRET_ADMIN", Boolean(checked))
+                      }
                       disabled={!canSave}
                     />
                     {t("resources.form.targetHibretAdmins")}
                   </label>
 
-                  <label className="flex items-center gap-3 rounded-2xl border border-[var(--aw-border)] bg-[var(--aw-surface)] px-3 py-2 text-sm font-black text-[var(--aw-text)]">
-                    <input
-                      type="checkbox"
+                  <label className="flex items-center gap-3 rounded-md border border-border bg-background px-3 py-2 text-sm font-medium text-foreground">
+                    <Checkbox
                       checked={targetRoles.includes("MEMBER")}
-                      onChange={(event) => toggleAudience("MEMBER", event.target.checked)}
+                      onCheckedChange={(checked) => toggleAudience("MEMBER", Boolean(checked))}
                       disabled={!canSave}
                     />
                     {t("resources.form.targetMembers")}
@@ -587,7 +603,7 @@ export function BroadcastEditorPage() {
                   {t("broadcasts.editor.settings.coverLinkTitle")}
                 </p>
 
-                <input
+                <Input
                   value={coverUrl}
                   onChange={(event) => {
                     setCoverFileId(null);
@@ -595,18 +611,18 @@ export function BroadcastEditorPage() {
                     setCoverUrl(event.target.value);
                   }}
                   placeholder={t("broadcasts.editor.settings.coverLinkPlaceholder")}
-                  className="min-h-10 w-full rounded-2xl border border-[var(--aw-border)] bg-[var(--aw-surface)] px-3 text-sm font-semibold text-[var(--aw-text)] outline-none focus:border-[var(--aw-primary)] focus:ring-4 focus:ring-[var(--aw-primary)]/10"
                 />
 
-                <button
+                <Button
                   type="button"
+                  variant="outline"
+                  size="sm"
                   onClick={setMainPhotoLink}
                   disabled={!canSave}
-                  className="inline-flex min-h-9 items-center gap-2 rounded-2xl border border-[var(--aw-primary)] bg-[var(--aw-primary-soft)] px-3 py-1.5 text-xs font-black text-[var(--aw-primary)] hover:bg-[var(--aw-primary)] hover:text-white"
                 >
-                  <ImagePlus size={13} />
+                  <ImagePlus aria-hidden />
                   {t("broadcasts.editor.settings.coverLinkAction")}
-                </button>
+                </Button>
               </section>
 
               <section className="space-y-2 rounded-3xl border border-[var(--aw-border-soft)] bg-[var(--aw-surface-muted)] p-4">
@@ -614,22 +630,22 @@ export function BroadcastEditorPage() {
                   {t("broadcasts.editor.settings.inlineImageTitle")}
                 </p>
 
-                <input
+                <Input
                   value={inlineImageUrl}
                   onChange={(event) => setInlineImageUrl(event.target.value)}
                   placeholder={t("broadcasts.editor.settings.inlineImagePlaceholder")}
-                  className="min-h-10 w-full rounded-2xl border border-[var(--aw-border)] bg-[var(--aw-surface)] px-3 text-sm font-semibold text-[var(--aw-text)] outline-none focus:border-[var(--aw-primary)] focus:ring-4 focus:ring-[var(--aw-primary)]/10"
                 />
 
-                <button
+                <Button
                   type="button"
+                  variant="outline"
+                  size="sm"
                   onClick={insertInlineImageLink}
                   disabled={!canSave}
-                  className="inline-flex min-h-9 items-center gap-2 rounded-2xl border border-[var(--aw-primary)] bg-[var(--aw-primary-soft)] px-3 py-1.5 text-xs font-black text-[var(--aw-primary)] hover:bg-[var(--aw-primary)] hover:text-white"
                 >
-                  <ImagePlus size={13} />
+                  <ImagePlus aria-hidden />
                   {t("broadcasts.editor.settings.inlineImageAction")}
-                </button>
+                </Button>
               </section>
 
               <section className="space-y-2 rounded-3xl border border-[var(--aw-border-soft)] bg-[var(--aw-surface-muted)] p-4">
@@ -637,22 +653,22 @@ export function BroadcastEditorPage() {
                   {t("broadcasts.editor.settings.videoTitle")}
                 </p>
 
-                <input
+                <Input
                   value={videoUrl}
                   onChange={(event) => setVideoUrl(event.target.value)}
                   placeholder={t("broadcasts.editor.settings.videoPlaceholder")}
-                  className="min-h-10 w-full rounded-2xl border border-[var(--aw-border)] bg-[var(--aw-surface)] px-3 text-sm font-semibold text-[var(--aw-text)] outline-none focus:border-[var(--aw-primary)] focus:ring-4 focus:ring-[var(--aw-primary)]/10"
                 />
 
-                <button
+                <Button
                   type="button"
+                  variant="outline"
+                  size="sm"
                   onClick={insertVideoLink}
                   disabled={!canSave}
-                  className="inline-flex min-h-9 items-center gap-2 rounded-2xl border border-[var(--aw-primary)] bg-[var(--aw-primary-soft)] px-3 py-1.5 text-xs font-black text-[var(--aw-primary)] hover:bg-[var(--aw-primary)] hover:text-white"
                 >
-                  <Video size={13} />
+                  <Video aria-hidden />
                   {t("broadcasts.editor.settings.videoAction")}
-                </button>
+                </Button>
               </section>
 
               <section className="space-y-2 rounded-3xl border border-[var(--aw-border-soft)] bg-[var(--aw-surface-muted)] p-4">
@@ -660,29 +676,28 @@ export function BroadcastEditorPage() {
                   {t("broadcasts.editor.settings.linkTitle")}
                 </p>
 
-                <input
+                <Input
                   value={mediaLinkLabel}
                   onChange={(event) => setMediaLinkLabel(event.target.value)}
                   placeholder={t("broadcasts.editor.settings.linkLabelPlaceholder")}
-                  className="min-h-10 w-full rounded-2xl border border-[var(--aw-border)] bg-[var(--aw-surface)] px-3 text-sm font-semibold text-[var(--aw-text)] outline-none focus:border-[var(--aw-primary)] focus:ring-4 focus:ring-[var(--aw-primary)]/10"
                 />
 
-                <input
+                <Input
                   value={mediaLink}
                   onChange={(event) => setMediaLink(event.target.value)}
                   placeholder={t("broadcasts.editor.settings.linkPlaceholder")}
-                  className="min-h-10 w-full rounded-2xl border border-[var(--aw-border)] bg-[var(--aw-surface)] px-3 text-sm font-semibold text-[var(--aw-text)] outline-none focus:border-[var(--aw-primary)] focus:ring-4 focus:ring-[var(--aw-primary)]/10"
                 />
 
-                <button
+                <Button
                   type="button"
+                  variant="outline"
+                  size="sm"
                   onClick={insertMediaLink}
                   disabled={!canSave}
-                  className="inline-flex min-h-9 items-center gap-2 rounded-2xl border border-[var(--aw-primary)] bg-[var(--aw-primary-soft)] px-3 py-1.5 text-xs font-black text-[var(--aw-primary)] hover:bg-[var(--aw-primary)] hover:text-white"
                 >
-                  <LinkIcon size={13} />
+                  <LinkIcon aria-hidden />
                   {t("broadcasts.editor.settings.linkAction")}
-                </button>
+                </Button>
               </section>
 
               <section className="rounded-3xl border border-[var(--aw-border-soft)] bg-[var(--aw-surface-muted)] p-4">

@@ -12,6 +12,7 @@ import {
   X,
   Loader2,
 } from "lucide-react";
+import { toast } from "sonner";
 import { AUTH_TOKEN_KEY, apiClient } from "../../../services/apiClient";
 import { getApiBaseUrl } from "../../../services/runtimeConfig";
 import {
@@ -20,6 +21,7 @@ import {
   disconnectChatSocket,
 } from "../../../services/chatSocket";
 import { useAuthStore } from "../../../stores/authStore";
+import { Button } from "@/components/ui/shadcn/button";
 
 type ChatAttachment = {
   id: string;
@@ -130,9 +132,6 @@ export function ChatWorkspace({ contextLabel, recipientPlaceholder }: ChatWorksp
   const [files, setFiles] = useState<File[]>([]);
   const [typingEmail, setTypingEmail] = useState("");
 
-  const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
-
   const [loadingConversations, setLoadingConversations] = useState(true);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
@@ -145,7 +144,6 @@ export function ChatWorkspace({ contextLabel, recipientPlaceholder }: ChatWorksp
   const activeConversationIdRef = useRef<string | null>(null);
   const prevSelectedIdRef = useRef<string | null>(null);
   const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const noticeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   /* ---------- helpers ---------- */
 
@@ -155,16 +153,10 @@ export function ChatWorkspace({ contextLabel, recipientPlaceholder }: ChatWorksp
     });
   }, []);
 
-  const clearNotice = useCallback(() => {
-    if (noticeTimerRef.current) clearTimeout(noticeTimerRef.current);
-    noticeTimerRef.current = setTimeout(() => setNotice(""), 4000);
-  }, []);
-
   /* ---------- data ---------- */
 
   const openConversation = useCallback(
     async (conversation: ChatConversation) => {
-      setError("");
       setLoadingMessages(true);
       activeConversationIdRef.current = conversation.id;
 
@@ -196,7 +188,7 @@ export function ChatWorkspace({ contextLabel, recipientPlaceholder }: ChatWorksp
         scrollToBottom("auto");
       } catch (err: any) {
         if (activeConversationIdRef.current === conversation.id) {
-          setError(err?.response?.data?.message || "Unable to open conversation.");
+          toast.error(err?.response?.data?.message || "Unable to open conversation.");
         }
       } finally {
         if (activeConversationIdRef.current === conversation.id) {
@@ -210,7 +202,6 @@ export function ChatWorkspace({ contextLabel, recipientPlaceholder }: ChatWorksp
   const loadConversations = useCallback(
     async (keepSelection = false) => {
       setLoadingConversations(true);
-      setError("");
 
       try {
         const response = await apiClient.get<{ conversations: ChatConversation[] }>("/chat/conversations");
@@ -221,7 +212,7 @@ export function ChatWorkspace({ contextLabel, recipientPlaceholder }: ChatWorksp
           await openConversation(list[0]);
         }
       } catch (err: any) {
-        setError(err?.response?.data?.message || "Unable to load conversations.");
+        toast.error(err?.response?.data?.message || "Unable to load conversations.");
       } finally {
         setLoadingConversations(false);
       }
@@ -237,19 +228,17 @@ export function ChatWorkspace({ contextLabel, recipientPlaceholder }: ChatWorksp
 
   async function startConversation(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setError("");
-    setNotice("");
 
     const email = recipientEmail.trim();
     const subj = subject.trim() || "New conversation";
     const msg = firstMessage.trim();
 
     if (!email || !email.includes("@")) {
-      setError("Enter a valid recipient email.");
+      toast.error("Enter a valid recipient email.");
       return;
     }
     if (!msg) {
-      setError("First message is required.");
+      toast.error("First message is required.");
       return;
     }
 
@@ -265,13 +254,12 @@ export function ChatWorkspace({ contextLabel, recipientPlaceholder }: ChatWorksp
       setSubject("");
       setFirstMessage("");
       setShowComposer(false);
-      setNotice("Conversation started.");
-      clearNotice();
+      toast.success("Conversation started.");
 
       await loadConversations(true);
       await openConversation(response.data.conversation);
     } catch (err: any) {
-      setError(err?.response?.data?.message || "Unable to start conversation.");
+      toast.error(err?.response?.data?.message || "Unable to start conversation.");
     } finally {
       setIsStarting(false);
     }
@@ -285,12 +273,10 @@ export function ChatWorkspace({ contextLabel, recipientPlaceholder }: ChatWorksp
 
     const bodyText = reply.trim();
     if (!bodyText && files.length === 0) {
-      setError("Message or file is required.");
+      toast.error("Message or file is required.");
       return;
     }
 
-    setError("");
-    setNotice("");
     setIsSending(true);
 
     try {
@@ -314,7 +300,7 @@ export function ChatWorkspace({ contextLabel, recipientPlaceholder }: ChatWorksp
         typing: false,
       });
     } catch (err: any) {
-      setError(err?.response?.data?.message || "Unable to send message.");
+      toast.error(err?.response?.data?.message || "Unable to send message.");
     } finally {
       setIsSending(false);
     }
@@ -342,8 +328,7 @@ export function ChatWorkspace({ contextLabel, recipientPlaceholder }: ChatWorksp
         next.add(conversation.id);
         return next;
       });
-      setNotice("New conversation received.");
-      clearNotice();
+      toast.info("New conversation received.");
     }
 
     function handleConversationUpdate(conversation: ChatConversation) {
@@ -403,15 +388,13 @@ export function ChatWorkspace({ contextLabel, recipientPlaceholder }: ChatWorksp
       socket.off("chat:typing", handleTyping);
       disconnectChatSocket();
       if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
-      if (noticeTimerRef.current) clearTimeout(noticeTimerRef.current);
     };
-  }, [selectedConversation?.id, user?.email, scrollToBottom, clearNotice]);
+  }, [selectedConversation?.id, user?.email, scrollToBottom]);
 
   /* ---------- typing debounce ---------- */
 
   function handleReplyChange(value: string) {
     setReply(value);
-    if (error) setError("");
 
     if (!selectedConversation) return;
     const socket = getChatSocket();
@@ -449,23 +432,6 @@ export function ChatWorkspace({ contextLabel, recipientPlaceholder }: ChatWorksp
 
   return (
     <section className="aw-design-page aw-mobile-page chat-workspace">
-      {error ? (
-        <div className="chat-alert chat-alert-error">
-          {error}
-          <button type="button" className="chat-alert-close" onClick={() => setError("")}>
-            <X size={14} />
-          </button>
-        </div>
-      ) : null}
-      {notice ? (
-        <div className="chat-alert chat-alert-notice">
-          {notice}
-          <button type="button" className="chat-alert-close" onClick={() => setNotice("")}>
-            <X size={14} />
-          </button>
-        </div>
-      ) : null}
-
       <div className="chat-layout">
         {/* ---- sidebar ---- */}
         <aside className={["chat-sidebar", selectedConversation ? "chat-sidebar-has-selection" : ""].join(" ")}>
@@ -475,14 +441,15 @@ export function ChatWorkspace({ contextLabel, recipientPlaceholder }: ChatWorksp
               <p>Start by email and continue {contextLabel} communication here.</p>
             </div>
             {conversations.length > 0 ? (
-              <button
+              <Button
                 type="button"
+                size="sm"
                 onClick={() => setShowComposer((s) => !s)}
                 className="chat-new-button"
               >
-                {showComposer ? <X size={14} /> : <Plus size={14} />}
+                {showComposer ? <X aria-hidden /> : <Plus aria-hidden />}
                 New
-              </button>
+              </Button>
             ) : null}
           </div>
 
@@ -665,7 +632,7 @@ export function ChatWorkspace({ contextLabel, recipientPlaceholder }: ChatWorksp
 
                 <div className="chat-composer-actions">
                   <label className="chat-attach-button">
-                    <Paperclip size={15} />
+                    <Paperclip size={15} aria-hidden />
                     Attach files
                     <input
                       ref={fileInputRef}
@@ -676,10 +643,14 @@ export function ChatWorkspace({ contextLabel, recipientPlaceholder }: ChatWorksp
                     />
                   </label>
 
-                  <button type="submit" disabled={isSending || (!reply.trim() && files.length === 0)} className="chat-send-button">
-                    <Send size={15} />
-                    {isSending ? "Sending..." : "Send Reply"}
-                  </button>
+                  <Button
+                    type="submit"
+                    disabled={isSending || (!reply.trim() && files.length === 0)}
+                    className="chat-send-button"
+                  >
+                    <Send aria-hidden />
+                    {isSending ? "Sending..." : "Send reply"}
+                  </Button>
                 </div>
               </form>
             </>
@@ -735,10 +706,10 @@ export function ChatWorkspace({ contextLabel, recipientPlaceholder }: ChatWorksp
                 />
               </label>
 
-              <button type="submit" disabled={isStarting}>
-                <Send size={15} />
-                {isStarting ? "Starting..." : "Start Conversation"}
-              </button>
+              <Button type="submit" disabled={isStarting}>
+                <Send aria-hidden />
+                {isStarting ? "Starting..." : "Start conversation"}
+              </Button>
             </form>
           </aside>
         ) : null}

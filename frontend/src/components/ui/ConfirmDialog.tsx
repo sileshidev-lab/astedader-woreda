@@ -1,4 +1,15 @@
-import { Modal } from "./Modal";
+import { buttonVariants } from "@/components/ui/shadcn/button";
+import { cn } from "@/lib/utils";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/shadcn/alert-dialog";
 
 export function ConfirmDialog({
   isOpen,
@@ -20,28 +31,33 @@ export function ConfirmDialog({
   isDanger?: boolean;
 }) {
   return (
-    <Modal title={title} isOpen={isOpen} onClose={onCancel}>
-      <p className="text-sm font-semibold text-woreda-textMuted">{message}</p>
-      <div className="mt-5 flex flex-wrap justify-end gap-2">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="min-h-10 rounded-2xl border border-woreda-border bg-woreda-surface px-4 text-sm font-black text-woreda-text"
-        >
-          {cancelLabel || "Cancel"}
-        </button>
-        <button
-          type="button"
-          onClick={onConfirm}
-          className={[
-            "min-h-10 rounded-2xl px-4 text-sm font-black text-white",
-            isDanger ? "bg-[var(--aw-danger)]" : "bg-woreda-primary",
-          ].join(" ")}
-        >
-          {confirmLabel || "Confirm"}
-        </button>
-      </div>
-    </Modal>
+    <AlertDialog
+      open={isOpen}
+      onOpenChange={(next) => {
+        if (!next) onCancel();
+      }}
+    >
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{title}</AlertDialogTitle>
+          <AlertDialogDescription className="text-sm font-medium leading-relaxed text-[var(--aw-muted)]">
+            {message}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel onClick={onCancel}>
+            {cancelLabel || "Cancel"}
+          </AlertDialogCancel>
+          <AlertDialogAction
+            onClick={onConfirm}
+            className={cn(
+              buttonVariants({ variant: isDanger ? "destructive" : "default" }),
+            )}
+          >
+            {confirmLabel || "Confirm"}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }
-

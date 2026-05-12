@@ -1,4 +1,11 @@
 import { Newspaper } from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/shadcn/card";
 import { PublishedBroadcastsPage } from "./PublishedBroadcastsPage";
 
 type RoleBroadcastsShellProps = {
@@ -17,34 +24,36 @@ export function RoleBroadcastsShell({
   detailBasePath,
 }: RoleBroadcastsShellProps) {
   return (
-    <section className="aw-design-page aw-mobile-page aw-broadcasts-page flex min-h-0 flex-1 flex-col gap-4 overflow-visible md:overflow-hidden">
-      <header className="shrink-0 overflow-hidden rounded-[1.75rem] border border-[var(--aw-border-soft)] bg-[var(--aw-surface)] shadow-sm">
-        <div className="h-1.5 bg-gradient-to-r from-[var(--aw-primary)] via-[var(--aw-yellow)] to-[var(--aw-magenta)]" />
-
-        <div className="flex flex-col gap-4 p-4 sm:p-5 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex min-w-0 gap-3 sm:gap-4">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[var(--aw-primary-soft)] text-[var(--aw-primary)] ring-1 ring-[var(--aw-primary)]/15 sm:h-14 sm:w-14">
-              <Newspaper size={24} />
-            </div>
-
-            <div className="min-w-0">
-              <p className="text-[11px] font-black uppercase tracking-[0.2em] text-[var(--aw-primary)]">
-                {eyebrow}
-              </p>
-              <h1 className="mt-1 text-[clamp(1.35rem,2.2vw,2rem)] font-black tracking-tight text-[var(--aw-text)]">
-                {title}
-              </h1>
-              <p className="mt-1 max-w-3xl text-sm font-semibold leading-6 text-[var(--aw-muted)]">
-                {description}
-              </p>
-            </div>
+    <section className="flex min-h-0 flex-1 flex-col space-y-6 overflow-visible md:overflow-hidden">
+      <Card className="shrink-0 overflow-hidden">
+        <CardHeader className="flex flex-row items-start gap-4">
+          <span
+            aria-hidden
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary sm:h-14 sm:w-14"
+          >
+            <Newspaper size={24} />
+          </span>
+          <div className="min-w-0 space-y-1">
+            <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-primary">
+              {eyebrow}
+            </p>
+            <CardTitle className="text-base font-semibold sm:text-lg">{title}</CardTitle>
+            <CardDescription className="max-w-3xl text-sm text-muted-foreground">
+              {description}
+            </CardDescription>
           </div>
-        </div>
-      </header>
+        </CardHeader>
+      </Card>
 
-      <div className="min-h-0 flex-1 overflow-visible rounded-[1.75rem] border border-[var(--aw-border-soft)] bg-[var(--aw-surface)] shadow-sm md:overflow-hidden">
-        <PublishedBroadcastsPage title={title} subtitle={subtitle} detailBasePath={detailBasePath} />
-      </div>
+      <Card className="min-h-0 flex-1 overflow-visible md:overflow-hidden">
+        <CardContent className="px-0 py-0">
+          <PublishedBroadcastsPage
+            title={title}
+            subtitle={subtitle}
+            detailBasePath={detailBasePath}
+          />
+        </CardContent>
+      </Card>
     </section>
   );
 }

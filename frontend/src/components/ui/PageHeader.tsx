@@ -11,14 +11,20 @@ export function PageHeader({
 }) {
   return (
     <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-      <div>
-        <h1 className="text-xl font-black tracking-tight text-woreda-text md:text-2xl">{title}</h1>
+      <div className="min-w-0">
+        <h1
+          className="font-display text-[20px] font-semibold leading-snug text-[var(--aw-text)] md:text-[22px]"
+          style={{ letterSpacing: "-0.01em" }}
+        >
+          {title}
+        </h1>
         {subtitle ? (
-          <p className="mt-1 text-sm font-semibold text-woreda-textMuted">{subtitle}</p>
+          <p className="mt-1 max-w-2xl text-[13px] font-normal text-[var(--aw-muted)]">
+            {subtitle}
+          </p>
         ) : null}
       </div>
       {actions ? <div className="flex flex-wrap gap-2">{actions}</div> : null}
     </div>
   );
 }
-

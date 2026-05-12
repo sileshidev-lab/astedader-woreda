@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Eye, EyeOff, Moon, Sun } from "lucide-react";
-import { apiClient } from "../../services/apiClient";
+import { resetPassword } from "../../services/authService";
 import { AuthShell } from "./AuthShell";
 import { useThemeStore } from "../../stores/themeStore";
 import { AUTH_SPLIT_HERO_IMAGES } from "./authHeroImages";
@@ -44,12 +44,9 @@ export function ResetPasswordPage() {
     setIsSaving(true);
 
     try {
-      const response = await apiClient.post<{ message: string }>("/auth/reset-password", {
-        token,
-        password,
-      });
+      const result = await resetPassword(token, password);
 
-      setMessage(response.data.message || "Password reset successfully.");
+      setMessage(result.message || "Password reset successfully.");
       setPassword("");
       setConfirmPassword("");
       setTimeout(() => navigate("/login", { replace: true }), 900);

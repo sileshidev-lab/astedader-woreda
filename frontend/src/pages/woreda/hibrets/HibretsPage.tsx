@@ -12,11 +12,22 @@ import {
   SlidersHorizontal,
   X,
 } from "lucide-react";
+import { toast } from "sonner";
 import {
   createHibret,
   getWoredaHibrets,
 } from "../../../services/woredaHibretService";
 import type { WoredaHibretListItem } from "../../../services/woredaHibretService";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+} from "@/components/ui/shadcn/card";
+import { Button } from "@/components/ui/shadcn/button";
+import { Badge } from "@/components/ui/shadcn/badge";
+import { Input } from "@/components/ui/shadcn/input";
+import { Label } from "@/components/ui/shadcn/label";
+import { statusToBadgeVariant } from "@/lib/badge";
 
 type SortOrder =
   | "name"
@@ -29,48 +40,26 @@ function StatCard({
   label,
   value,
   sub,
-  tone = "primary",
 }: {
   label: string;
   value: string | number;
   sub: string;
   tone?: "primary" | "success" | "warning" | "magenta";
 }) {
-  const toneClass = {
-    primary: {
-      soft: "bg-[var(--aw-primary-soft)]",
-      value: "text-[var(--aw-primary)]",
-      bar: "bg-[var(--aw-primary)]",
-    },
-    success: {
-      soft: "bg-[var(--aw-success-bg)]",
-      value: "text-[var(--aw-success)]",
-      bar: "bg-[var(--aw-success)]",
-    },
-    warning: {
-      soft: "bg-[var(--aw-yellow-bg)]",
-      value: "text-[var(--aw-yellow-text)]",
-      bar: "bg-[var(--aw-yellow)]",
-    },
-    magenta: {
-      soft: "bg-[var(--aw-magenta-bg)]",
-      value: "text-[var(--aw-magenta)]",
-      bar: "bg-[var(--aw-magenta)]",
-    },
-  }[tone];
-
   return (
-    <article className="aw-stat-card relative overflow-hidden rounded-3xl border border-[var(--aw-border-soft)] bg-[var(--aw-surface)] p-5 shadow-sm">
-      <div className={`absolute right-0 top-0 h-24 w-24 rounded-bl-full ${toneClass.soft}`} aria-hidden />
-      <div className="relative min-w-0">
-        <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[var(--aw-muted)]">{label}</p>
-        <p className={`mt-2 text-[clamp(1.75rem,2.7vw,2.5rem)] font-black leading-none ${toneClass.value}`}>
+    <Card>
+      <CardHeader className="px-4 py-3">
+        <span className="text-[11px] font-medium uppercase tracking-[0.06em] text-muted-foreground">
+          {label}
+        </span>
+      </CardHeader>
+      <CardContent className="space-y-2 px-4 pb-4 pt-0">
+        <p className="text-2xl font-semibold tabular-nums leading-none tracking-tight text-foreground">
           {value}
         </p>
-        <p className="mt-2 truncate text-[12px] font-semibold text-[var(--aw-muted)]">{sub}</p>
-      </div>
-      <div className={`relative mt-4 h-1.5 rounded-full ${toneClass.bar}`} />
-    </article>
+        <p className="truncate text-xs text-muted-foreground">{sub}</p>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -78,16 +67,9 @@ function StatusPill({ value }: { value?: string | null }) {
   const normalized = value || "active";
 
   return (
-    <span
-      className={[
-        "inline-flex min-h-7 items-center rounded-full border px-2.5 text-[11px] font-black uppercase tracking-[0.08em]",
-        normalized === "active"
-          ? "border-[var(--aw-success)] bg-[var(--aw-success-bg)] text-[var(--aw-success)]"
-          : "border-[var(--aw-border)] bg-[var(--aw-surface-muted)] text-[var(--aw-muted)]",
-      ].join(" ")}
-    >
+    <Badge variant={statusToBadgeVariant(normalized)} className="uppercase">
       {normalized}
-    </span>
+    </Badge>
   );
 }
 
@@ -101,7 +83,6 @@ export function HibretsPage() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
   const [newName, setNewName] = useState("");
-  const [listError, setListError] = useState("");
   const [createError, setCreateError] = useState("");
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
@@ -109,13 +90,12 @@ export function HibretsPage() {
 
   async function loadHibrets() {
     setIsLoading(true);
-    setListError("");
 
     try {
       const data = await getWoredaHibrets();
       setHibrets(data);
     } catch {
-      setListError("Unable to load Hibrets.");
+      toast.error("Unable to load Hibrets.");
     } finally {
       setIsLoading(false);
     }
@@ -228,12 +208,6 @@ export function HibretsPage() {
 
   return (
     <section className="aw-hibrets-page aw-mobile-natural-scroll flex min-h-0 flex-1 flex-col gap-4 overflow-hidden">
-      {listError ? (
-        <div role="alert" className="aw-hibret-alert">
-          {listError}
-        </div>
-      ) : null}
-
       <div className="grid shrink-0 gap-3 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-stretch">
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <StatCard
@@ -261,17 +235,18 @@ export function HibretsPage() {
           />
         </div>
 
-        <button
+        <Button
           type="button"
+          variant="default"
+          size="default"
           onClick={() => {
             resetForm();
             setIsCreateOpen(true);
           }}
-          className="aw-hibret-new-button"
         >
-          <Plus size={17} />
+          <Plus aria-hidden />
           New Hibret
-        </button>
+        </Button>
       </div>
 
       <div className="aw-hibret-list-panel">
@@ -297,15 +272,17 @@ export function HibretsPage() {
               />
             </div>
 
-            <button
+            <Button
               type="button"
-              className="aw-hibret-mobile-filter"
+              variant="outline"
+              size="default"
+              className="md:hidden"
               onClick={() => setMobileFiltersOpen((open) => !open)}
               aria-expanded={mobileFiltersOpen}
             >
-              <SlidersHorizontal size={16} />
+              <SlidersHorizontal aria-hidden />
               Filters
-            </button>
+            </Button>
 
             <div
               className={[
@@ -480,23 +457,27 @@ export function HibretsPage() {
               <option value={100}>100 / page</option>
             </select>
 
-            <button
+            <Button
               type="button"
+              variant="outline"
+              size="sm"
               disabled={safePage <= 1}
               onClick={() => setPage((current) => Math.max(1, current - 1))}
             >
-              <ChevronLeft size={14} />
+              <ChevronLeft aria-hidden />
               Previous
-            </button>
+            </Button>
 
-            <button
+            <Button
               type="button"
+              variant="outline"
+              size="sm"
               disabled={safePage >= totalPages}
               onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
             >
               Next
-              <ChevronRight size={14} />
-            </button>
+              <ChevronRight aria-hidden />
+            </Button>
           </div>
         </div>
       </div>
@@ -581,40 +562,43 @@ function CreateHibretDrawer({
             <span>Create a Hibret record under Woreda administration.</span>
           </div>
 
-          <button
+          <Button
             type="button"
+            variant="outline"
+            size="icon"
             onClick={onClose}
             aria-label="Close create Hibret form"
           >
-            <X size={18} aria-hidden />
-          </button>
+            <X aria-hidden />
+          </Button>
         </div>
 
         <div className="aw-hibret-drawer-body">
           {createError ? (
-            <div role="alert" className="aw-hibret-alert">
+            <div role="alert" className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
               {createError}
             </div>
           ) : null}
 
-          <label className="aw-hibret-field">
-            <span>Hibret name</span>
-            <input
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="hibret-name">Hibret name</Label>
+            <Input
+              id="hibret-name"
               value={newName}
               onChange={(event) => setNewName(event.target.value)}
               placeholder="Enter Hibret name"
               autoFocus
             />
-          </label>
+          </div>
         </div>
 
         <div className="aw-hibret-drawer-footer">
-          <button type="button" onClick={onClose} className="aw-hibret-secondary-button">
+          <Button type="button" variant="outline" size="default" onClick={onClose}>
             Cancel
-          </button>
-          <button type="submit" disabled={isSaving} className="aw-hibret-primary-button">
+          </Button>
+          <Button type="submit" variant="default" size="default" disabled={isSaving}>
             {isSaving ? "Saving..." : "Create Hibret"}
-          </button>
+          </Button>
         </div>
       </form>
     </div>

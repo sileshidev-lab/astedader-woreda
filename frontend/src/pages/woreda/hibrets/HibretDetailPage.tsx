@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import { Link, useLocation, useParams, useSearchParams } from "react-router-dom";
+import { toast } from "sonner";
 import {ArrowLeft,
   Edit3,
   Phone,
@@ -10,6 +11,19 @@ import {ArrowLeft,
   Trash2,
   UserRound,
   X} from "lucide-react";
+import { Button } from "@/components/ui/shadcn/button";
+import { Badge } from "@/components/ui/shadcn/badge";
+import { Input } from "@/components/ui/shadcn/input";
+import { Label } from "@/components/ui/shadcn/label";
+import { Card, CardContent, CardHeader } from "@/components/ui/shadcn/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/shadcn/select";
+import { statusToBadgeVariant } from "@/lib/badge";
 import {
   assignMembersToFamily,
   bulkUpdateHibretAccountStatus,
@@ -50,24 +64,13 @@ function formatDate(value?: string | null) {
   return new Date(value).toLocaleString();
 }
 
-function statusClass(status?: string | null) {
-  if (status === "approved" || status === "active" || status === "submitted" || status === "ACTIVE") {
-    return "rounded border border-[var(--aw-success)]/20 bg-[var(--aw-success-bg)] px-2.5 py-1 text-xs font-bold text-[var(--aw-success)]";
-  }
-
-  if (status === "published" || status === "PENDING_SETUP") {
-    return "rounded border border-[var(--aw-primary)]/20 bg-[var(--aw-primary-soft)] px-2.5 py-1 text-xs font-bold text-[var(--aw-primary)]";
-  }
-
-  if (status === "rejected" || status === "inactive" || status === "DISABLED") {
-    return "rounded border border-[var(--aw-danger)]/20 bg-[var(--aw-danger-bg)] px-2.5 py-1 text-xs font-bold text-[var(--aw-danger)]";
-  }
-
-  if (status === "changes_requested") {
-    return "rounded border border-[var(--aw-warning)] bg-[var(--aw-warning-bg)] px-2.5 py-1 text-xs font-bold text-[var(--aw-warning)]";
-  }
-
-  return "rounded border border-[var(--aw-border)] bg-[var(--aw-surface-muted)] px-2.5 py-1 text-xs font-bold text-[var(--aw-muted)]";
+function StatusBadge({ status }: { status?: string | null }) {
+  const value = status || "unknown";
+  return (
+    <Badge variant={statusToBadgeVariant(value)} className="uppercase">
+      {value}
+    </Badge>
+  );
 }
 
 function directiveTypeLabel(value: string) {
@@ -150,7 +153,9 @@ export function HibretDetailPage() {
       const data = await getWoredaHibret(hibretId);
       setHibret(data);
     } catch {
-      setError("Unable to load Hibret detail.");
+      const msg = "Unable to load Hibret detail.";
+      setError(msg);
+      toast.error(msg);
     } finally {
       if (isInitialLoad) {
         setIsLoading(false);
@@ -188,40 +193,36 @@ export function HibretDetailPage() {
 
   if (isLoading) {
     return (
-      <section className="aw-design-page rounded-3xl border border-[var(--aw-border-soft)] bg-[var(--aw-surface)] p-5 shadow-sm">
-        <p className="text-sm font-semibold text-[var(--aw-muted)]">
-          Loading Hibret detail.
-        </p>
-      </section>
+      <Card>
+        <CardContent className="px-5 py-5">
+          <p className="text-sm text-muted-foreground">Loading Hibret detail.</p>
+        </CardContent>
+      </Card>
     );
   }
 
   if (error && !hibret) {
     return (
-      <section className="aw-design-page rounded-3xl border border-[var(--aw-danger)] bg-[var(--aw-danger-bg)] p-5 shadow-sm">
-        <p className="text-sm font-semibold text-[var(--aw-danger)]">{error}</p>
-      </section>
+      <Card>
+        <CardContent className="px-5 py-5">
+          <p className="text-sm text-destructive">{error}</p>
+        </CardContent>
+      </Card>
     );
   }
 
   if (!hibret) {
     return (
-      <section className="aw-design-page rounded-3xl border border-[var(--aw-border-soft)] bg-[var(--aw-surface)] p-5 shadow-sm">
-        <p className="text-sm font-semibold text-[var(--aw-muted)]">
-          Hibret not found.
-        </p>
-      </section>
+      <Card>
+        <CardContent className="px-5 py-5">
+          <p className="text-sm text-muted-foreground">Hibret not found.</p>
+        </CardContent>
+      </Card>
     );
   }
 
   return (
     <section className="aw-hibret-detail-page aw-mobile-natural-scroll flex min-h-0 flex-1 flex-col gap-4 overflow-hidden">
-      {error ? (
-        <div className="border border-[var(--aw-danger)] bg-[var(--aw-danger-bg)] px-4 py-3 text-sm font-semibold text-[var(--aw-danger)]">
-          {error}
-        </div>
-      ) : null}
-
       <div className="aw-hibret-detail-panel flex min-h-0 flex-1 flex-col overflow-hidden border border-[var(--aw-border-soft)] bg-[var(--aw-surface)] shadow-sm">
         {side === "political" ? (
           <div className="aw-hibret-detail-toolbar shrink-0 border-b border-[var(--aw-border-soft)] bg-[var(--aw-surface-muted)] px-4 py-4">
@@ -342,7 +343,7 @@ function PoliticalWorkspace({
                   </td>
 
                   <td className="border-b border-[var(--aw-border-soft)] px-4 py-4">
-                    <span className={statusClass(directive.status)}>{directive.status}</span>
+                    <StatusBadge status={directive.status} />
                   </td>
 
                   <td className="border-b border-[var(--aw-border-soft)] px-4 py-4 text-[var(--aw-muted)]">
@@ -350,39 +351,34 @@ function PoliticalWorkspace({
                   </td>
 
                   <td className="border-b border-[var(--aw-border-soft)] px-4 py-4">
-                    <span
-                      className={statusClass(
+                    <StatusBadge
+                      status={
                         directive.report?.status ||
-                          (directive.status === "closed" ? "Unsubmitted" : "Pending")
-                      )}
-                    >
-                      {directive.report?.status ||
-                        (directive.status === "closed" ? "Unsubmitted" : "Pending")}
-                    </span>
+                        (directive.status === "closed" ? "Unsubmitted" : "Pending")
+                      }
+                    />
                   </td>
 
                   <td className="border-b border-[var(--aw-border-soft)] px-4 py-4">
-                    <span
-                      className={statusClass(
+                    <StatusBadge
+                      status={
                         directive.report?.reviewDecision ||
-                          (directive.status === "closed" ? "Unsubmitted" : "Pending")
-                      )}
-                    >
-                      {directive.report?.reviewDecision ||
-                        (directive.status === "closed" ? "Unsubmitted" : "Pending")}
-                    </span>
+                        (directive.status === "closed" ? "Unsubmitted" : "Pending")
+                      }
+                    />
                   </td>
 
                   <td className="border-b border-[var(--aw-border-soft)] px-4 py-4 text-right">
                     {directive.report?.submittedAt ? (
-                      <Link
-                        to={`/woreda/announcements/${directive.id}/hibrets/${hibret.id}/report?returnTo=${encodeURIComponent(returnTo)}`}
-                        className="aw-hibret-report-link"
-                      >
-                        Open Report
-                      </Link>
+                      <Button asChild variant="link" size="sm">
+                        <Link
+                          to={`/woreda/announcements/${directive.id}/hibrets/${hibret.id}/report?returnTo=${encodeURIComponent(returnTo)}`}
+                        >
+                          Open Report
+                        </Link>
+                      </Button>
                     ) : (
-                      <span className="text-xs font-bold text-[var(--aw-muted)]">
+                      <span className="text-xs font-medium text-muted-foreground">
                         {directive.status === "closed" ? "Unsubmitted" : "Pending"}
                       </span>
                     )}
@@ -466,41 +462,45 @@ function AccountBulkToolbar({
       </p>
 
       <div className="flex flex-wrap gap-2">
-        <button
+        <Button
           type="button"
+          variant="destructive"
+          size="sm"
           disabled={disabled || selectedCount === 0}
           onClick={onDisable}
-          className="rounded border border-[var(--aw-danger)] bg-[var(--aw-danger-bg)] px-3 py-1.5 text-xs font-bold text-[var(--aw-danger)] disabled:cursor-not-allowed disabled:border-[var(--aw-border)] disabled:bg-[var(--aw-surface)] disabled:text-[var(--aw-muted)] disabled:opacity-60"
         >
           Disable Selected
-        </button>
+        </Button>
 
-        <button
+        <Button
           type="button"
+          variant="outline"
+          size="sm"
           disabled={disabled || selectedCount === 0}
           onClick={onReactivate}
-          className="rounded border border-[var(--aw-success)] bg-[var(--aw-success-bg)] px-3 py-1.5 text-xs font-bold text-[var(--aw-success)] disabled:cursor-not-allowed disabled:border-[var(--aw-border)] disabled:bg-[var(--aw-surface)] disabled:text-[var(--aw-muted)] disabled:opacity-60"
         >
           Reactivate Selected
-        </button>
+        </Button>
 
-        <button
+        <Button
           type="button"
+          variant="outline"
+          size="sm"
           disabled={disabled || selectedCount === 0}
           onClick={onPending}
-          className="rounded border border-[var(--aw-border)] bg-[var(--aw-surface)] px-3 py-1.5 text-xs font-bold text-[var(--aw-text)] disabled:cursor-not-allowed disabled:bg-[var(--aw-surface-muted)] disabled:text-[var(--aw-muted)] disabled:opacity-60"
         >
           Mark Pending
-        </button>
+        </Button>
 
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="sm"
           disabled={selectedCount === 0}
           onClick={onClear}
-          className="rounded border border-[var(--aw-border)] bg-[var(--aw-surface)] px-3 py-1.5 text-xs font-bold text-[var(--aw-muted)] disabled:cursor-not-allowed disabled:opacity-50"
         >
           Clear Selection
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -516,8 +516,6 @@ export function AdminsPanel({
   const [busyUserId, setBusyUserId] = useState<string | null>(null);
   const [selectedAdminIds, setSelectedAdminIds] = useState<string[]>([]);
   const [accountStatusFilter, setAccountStatusFilter] = useState("");
-  const [message, setMessage] = useState("");
-  const [localError, setLocalError] = useState("");
 
   const admins = hibret.admins.filter((admin) => admin.role === "HIBRET_ADMIN");
   const filteredAdmins = accountStatusFilter
@@ -535,15 +533,13 @@ export function AdminsPanel({
 
   async function changeStatus(userId: string, status: "ACTIVE" | "DISABLED" | "PENDING_SETUP") {
     setBusyUserId(userId);
-    setMessage("");
-    setLocalError("");
 
     try {
       const result = await updateHibretAccountStatus(hibret.id, userId, status);
-      setMessage(result.message);
+      toast.success(result.message);
       await onReload();
     } catch (err: any) {
-      setLocalError(err?.response?.data?.message || "Unable to update account.");
+      toast.error(err?.response?.data?.message || "Unable to update account.");
     } finally {
       setBusyUserId(null);
     }
@@ -553,16 +549,14 @@ export function AdminsPanel({
     if (selectedAdminIds.length === 0) return;
 
     setBusyUserId("bulk");
-    setMessage("");
-    setLocalError("");
 
     try {
       const result = await bulkUpdateHibretAccountStatus(hibret.id, selectedAdminIds, status);
-      setMessage(`${result.message} Updated: ${result.updated}.`);
+      toast.success(`${result.message} Updated: ${result.updated}.`);
       setSelectedAdminIds([]);
       await onReload();
     } catch (err: any) {
-      setLocalError(err?.response?.data?.message || "Unable to update selected accounts.");
+      toast.error(err?.response?.data?.message || "Unable to update selected accounts.");
     } finally {
       setBusyUserId(null);
     }
@@ -584,18 +578,6 @@ export function AdminsPanel({
         />
       </div>
 
-      {localError ? (
-        <div className="rounded border border-[var(--aw-danger)] bg-[var(--aw-danger-bg)] px-4 py-3 text-sm font-semibold text-[var(--aw-danger)]">
-          {localError}
-        </div>
-      ) : null}
-
-      {message ? (
-        <div className="rounded border border-[var(--aw-primary)]/20 bg-[var(--aw-primary-soft)] px-4 py-3 text-sm font-semibold text-[var(--aw-primary)]">
-          {message}
-        </div>
-      ) : null}
-
       <div className="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
         <div className="flex flex-col gap-2 md:flex-row md:items-end">
           <SectionHeader
@@ -604,24 +586,28 @@ export function AdminsPanel({
             count={filteredAdmins.length}
           />
 
-          <label className="w-full md:min-w-[12rem]">
-            <span className="text-xs font-bold uppercase tracking-wide text-[var(--aw-muted)]">
+          <div className="w-full md:min-w-[12rem]">
+            <Label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
               Account status
-            </span>
-            <select
-              value={accountStatusFilter}
-              onChange={(event) => {
-                setAccountStatusFilter(event.target.value);
+            </Label>
+            <Select
+              value={accountStatusFilter || "ALL"}
+              onValueChange={(value) => {
+                setAccountStatusFilter(value === "ALL" ? "" : value);
                 setSelectedAdminIds([]);
               }}
-              className="mt-1 min-h-10 w-full rounded border border-[var(--aw-border)] bg-[var(--aw-surface)] px-3 py-2 text-sm outline-none focus:border-[var(--aw-primary)]"
             >
-              <option value="">All statuses</option>
-              <option value="ACTIVE">Active</option>
-              <option value="PENDING_SETUP">Pending setup</option>
-              <option value="DISABLED">Disabled</option>
-            </select>
-          </label>
+              <SelectTrigger className="mt-1">
+                <SelectValue placeholder="All statuses" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">All statuses</SelectItem>
+                <SelectItem value="ACTIVE">Active</SelectItem>
+                <SelectItem value="PENDING_SETUP">Pending setup</SelectItem>
+                <SelectItem value="DISABLED">Disabled</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         <AccountBulkToolbar
@@ -681,9 +667,7 @@ export function AdminsPanel({
                   </td>
 
                   <td className="border-b border-[var(--aw-border-soft)] px-4 py-4">
-                    <span className={statusClass(admin.status)}>
-                      {admin.status}
-                    </span>
+                    <StatusBadge status={admin.status} />
                   </td>
 
                   <td className="border-b border-[var(--aw-border-soft)] px-4 py-4 text-sm font-semibold text-[var(--aw-muted)]">
@@ -697,34 +681,37 @@ export function AdminsPanel({
                   <td className="border-b border-[var(--aw-border-soft)] px-4 py-4 text-right">
                     <div className="flex justify-end gap-2">
                       {admin.status === "DISABLED" ? (
-                        <button
+                        <Button
                           type="button"
+                          variant="outline"
+                          size="sm"
                           disabled={busyUserId === admin.id}
                           onClick={() => changeStatus(admin.id, "ACTIVE")}
-                          className="rounded border border-[var(--aw-success)] bg-[var(--aw-success-bg)] px-3 py-1.5 text-xs font-bold text-[var(--aw-success)]"
                         >
                           Reactivate
-                        </button>
+                        </Button>
                       ) : (
-                        <button
+                        <Button
                           type="button"
+                          variant="destructive"
+                          size="sm"
                           disabled={busyUserId === admin.id}
                           onClick={() => changeStatus(admin.id, "DISABLED")}
-                          className="rounded border border-[var(--aw-danger)] bg-[var(--aw-danger-bg)] px-3 py-1.5 text-xs font-bold text-[var(--aw-danger)]"
                         >
                           Disable
-                        </button>
+                        </Button>
                       )}
 
                       {admin.status !== "PENDING_SETUP" ? (
-                        <button
+                        <Button
                           type="button"
+                          variant="outline"
+                          size="sm"
                           disabled={busyUserId === admin.id}
                           onClick={() => changeStatus(admin.id, "PENDING_SETUP")}
-                          className="rounded border border-[var(--aw-border)] bg-[var(--aw-surface)] px-3 py-1.5 text-xs font-bold text-[var(--aw-text)]"
                         >
                           Mark Pending
-                        </button>
+                        </Button>
                       ) : null}
                     </div>
                   </td>
@@ -752,8 +739,6 @@ function FamiliesPanel({
   const [editingFamily, setEditingFamily] = useState<WoredaHibretFamily | null>(null);
   const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
   const [unassignedSearch, setUnassignedSearch] = useState("");
-  const [familyMessage, setFamilyMessage] = useState("");
-  const [familyError, setFamilyError] = useState("");
   const [isBusy, setIsBusy] = useState(false);
 
   const currentFamily =
@@ -802,24 +787,22 @@ function FamiliesPanel({
 
   async function handleSaveFamily(payload: FamilyPayload) {
     setIsBusy(true);
-    setFamilyError("");
-    setFamilyMessage("");
 
     try {
       if (editingFamily) {
         await updateHibretFamily(hibret.id, editingFamily.id, payload);
-        setFamilyMessage("Family updated.");
+        toast.success("Family updated.");
       } else {
         const family = await createHibretFamily(hibret.id, payload);
         setSelectedFamily(family);
-        setFamilyMessage("Family created.");
+        toast.success("Family created.");
       }
 
       setIsFamilyFormOpen(false);
       setEditingFamily(null);
       await onReload();
     } catch (err: any) {
-      setFamilyError(err?.response?.data?.message || "Unable to save family.");
+      toast.error(err?.response?.data?.message || "Unable to save family.");
     } finally {
       setIsBusy(false);
     }
@@ -835,16 +818,14 @@ function FamiliesPanel({
     if (!confirmed) return;
 
     setIsBusy(true);
-    setFamilyError("");
-    setFamilyMessage("");
 
     try {
       const result = await deleteHibretFamily(hibret.id, family.id);
-      setFamilyMessage(result.message);
+      toast.success(result.message);
       setSelectedFamily(null);
       await onReload();
     } catch (err: any) {
-      setFamilyError(err?.response?.data?.message || "Unable to remove family.");
+      toast.error(err?.response?.data?.message || "Unable to remove family.");
     } finally {
       setIsBusy(false);
     }
@@ -854,16 +835,14 @@ function FamiliesPanel({
     if (!currentFamily || selectedMemberIds.length === 0) return;
 
     setIsBusy(true);
-    setFamilyError("");
-    setFamilyMessage("");
 
     try {
       const result = await assignMembersToFamily(hibret.id, currentFamily.id, selectedMemberIds);
-      setFamilyMessage(`${result.assigned} members assigned to ${currentFamily.name}.`);
+      toast.success(`${result.assigned} members assigned to ${currentFamily.name}.`);
       setSelectedMemberIds([]);
       await onReload();
     } catch (err: any) {
-      setFamilyError(err?.response?.data?.message || "Unable to assign members.");
+      toast.error(err?.response?.data?.message || "Unable to assign members.");
     } finally {
       setIsBusy(false);
     }
@@ -873,15 +852,13 @@ function FamiliesPanel({
     if (memberIds.length === 0) return;
 
     setIsBusy(true);
-    setFamilyError("");
-    setFamilyMessage("");
 
     try {
       const result = await unassignMembersFromFamily(hibret.id, memberIds);
-      setFamilyMessage(`${result.unassigned} members removed from family.`);
+      toast.success(`${result.unassigned} members removed from family.`);
       await onReload();
     } catch (err: any) {
-      setFamilyError(err?.response?.data?.message || "Unable to remove members from family.");
+      toast.error(err?.response?.data?.message || "Unable to remove members from family.");
     } finally {
       setIsBusy(false);
     }
@@ -904,18 +881,6 @@ function FamiliesPanel({
         <AdminSmallMetric label="Unassigned members" value={hibret.members.length - membersInFamilies} tone="magenta" />
       </div>
 
-      {familyError ? (
-        <div className="rounded border border-[var(--aw-danger)] bg-[var(--aw-danger-bg)] px-4 py-3 text-sm font-semibold text-[var(--aw-danger)]">
-          {familyError}
-        </div>
-      ) : null}
-
-      {familyMessage ? (
-        <div className="rounded border border-[var(--aw-primary)]/20 bg-[var(--aw-primary-soft)] px-4 py-3 text-sm font-semibold text-[var(--aw-primary)]">
-          {familyMessage}
-        </div>
-      ) : null}
-
       <div className="grid min-h-[var(--aw-panel-min-h)] gap-5 xl:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
         <section className="flex min-h-0 flex-col overflow-hidden rounded-3xl border border-[var(--aw-border)]/70 bg-[var(--aw-surface-muted)] shadow-none">
           <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[var(--aw-border)]/60 px-5 py-4">
@@ -926,14 +891,15 @@ function FamiliesPanel({
               </p>
             </div>
 
-            <button
+            <Button
               type="button"
+              variant="default"
+              size="default"
               onClick={openCreateFamily}
-              className="inline-flex min-h-10 items-center justify-center gap-2 rounded border border-[var(--aw-primary)] bg-woreda-primary px-4 py-2 text-sm font-bold text-woreda-onPrimary hover:bg-woreda-primaryStrong"
             >
-              <Plus size={16} />
+              <Plus aria-hidden />
               Create Family
-            </button>
+            </Button>
           </div>
 
           <div className="min-h-0 flex-1 overflow-y-auto p-4">
@@ -964,9 +930,7 @@ function FamiliesPanel({
                           </p>
                         </div>
 
-                        <span className={statusClass(family.status || "unknown")}>
-                          {family.status || "unknown"}
-                        </span>
+                        <StatusBadge status={family.status || "unknown"} />
                       </div>
 
                       <div className="mt-4 space-y-2 text-xs font-semibold text-[var(--aw-muted)]">
@@ -994,9 +958,7 @@ function FamiliesPanel({
                 <div>
                   <div className="flex flex-wrap items-center gap-3">
                     <h3 className="text-2xl font-bold text-[var(--aw-text)]">{currentFamily.name}</h3>
-                    <span className={statusClass(currentFamily.status || "unknown")}>
-                      {currentFamily.status || "unknown"}
-                    </span>
+                    <StatusBadge status={currentFamily.status || "unknown"} />
                   </div>
 
                   <p className="mt-2 text-sm font-semibold text-[var(--aw-muted)]">
@@ -1005,25 +967,27 @@ function FamiliesPanel({
                 </div>
 
                 <div className="flex flex-wrap gap-2">
-                  <button
+                  <Button
                     type="button"
+                    variant="outline"
+                    size="default"
                     disabled={isBusy}
                     onClick={() => openEditFamily(currentFamily)}
-                    className="inline-flex min-h-10 items-center gap-2 rounded border border-[var(--aw-primary)] bg-[var(--aw-primary-soft)] px-4 py-2 text-sm font-bold text-[var(--aw-primary)] hover:bg-woreda-primary hover:text-woreda-onPrimary"
                   >
-                    <Edit3 size={15} />
+                    <Edit3 aria-hidden />
                     Edit
-                  </button>
+                  </Button>
 
-                  <button
+                  <Button
                     type="button"
+                    variant="destructive"
+                    size="default"
                     disabled={isBusy}
                     onClick={() => handleDeleteFamily(currentFamily)}
-                    className="inline-flex min-h-10 items-center gap-2 rounded border border-[var(--aw-danger)] bg-[var(--aw-danger-bg)] px-4 py-2 text-sm font-bold text-[var(--aw-danger)]"
                   >
-                    <Trash2 size={15} />
+                    <Trash2 aria-hidden />
                     Remove
-                  </button>
+                  </Button>
                 </div>
               </div>
 
@@ -1077,14 +1041,15 @@ function FamiliesPanel({
                         </td>
 
                         <td className="border-b border-[var(--aw-border-soft)] px-4 py-3 text-right">
-                          <button
+                          <Button
                             type="button"
+                            variant="outline"
+                            size="sm"
                             disabled={isBusy}
                             onClick={() => handleUnassignMembers([member.id])}
-                            className="rounded border border-[var(--aw-border)] bg-[var(--aw-surface)] px-3 py-1.5 text-xs font-bold text-[var(--aw-text)] hover:border-[var(--aw-danger)] hover:text-[var(--aw-danger)]"
                           >
                             Unassign
-                          </button>
+                          </Button>
                         </td>
                       </tr>
                     ))}
@@ -1104,26 +1069,25 @@ function FamiliesPanel({
               </div>
 
               <div className="flex flex-col gap-2 md:flex-row md:items-center">
-                <div className="flex min-h-10 w-full border border-[var(--aw-border)] bg-[var(--aw-surface)] md:max-w-[18rem]">
-                  <span className="flex items-center px-3 text-[var(--aw-muted)]">
-                    <Search size={14} />
-                  </span>
-                  <input
+                <div className="relative w-full md:max-w-[18rem]">
+                  <Search aria-hidden className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
                     value={unassignedSearch}
                     onChange={(event) => setUnassignedSearch(event.target.value)}
                     placeholder="Search members"
-                    className="w-full bg-transparent px-2 py-2 text-sm outline-none"
+                    className="pl-9"
                   />
                 </div>
 
-                <button
+                <Button
                   type="button"
+                  variant="default"
+                  size="default"
                   disabled={isBusy || !currentFamily || selectedMemberIds.length === 0}
                   onClick={handleAssignMembers}
-                  className="min-h-10 rounded border border-[var(--aw-primary)] bg-[var(--aw-primary-soft)] px-4 py-2 text-xs font-bold text-[var(--aw-primary)] hover:bg-woreda-primary hover:text-woreda-onPrimary disabled:cursor-not-allowed disabled:border-[var(--aw-border)] disabled:bg-[var(--aw-surface-muted)] disabled:text-[var(--aw-muted)] disabled:opacity-60"
                 >
                   Assign Selected
-                </button>
+                </Button>
               </div>
             </div>
 
@@ -1292,19 +1256,20 @@ function FamilyFormModal({
             </h2>
           </div>
 
-          <button
+          <Button
             type="button"
+            variant="outline"
+            size="icon"
             onClick={onClose}
             aria-label="Close family form"
-            className="border border-[var(--aw-border)] bg-[var(--aw-surface)] p-2 text-[var(--aw-text)] hover:border-[var(--aw-primary)] hover:text-[var(--aw-primary)]"
           >
-            <X size={18} aria-hidden />
-          </button>
+            <X aria-hidden />
+          </Button>
         </div>
 
         <div className="space-y-4 p-5">
           {localError ? (
-            <div className="border border-[var(--aw-danger)] bg-[var(--aw-danger-bg)] px-4 py-3 text-sm font-semibold text-[var(--aw-danger)]">
+            <div className="rounded-md border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
               {localError}
             </div>
           ) : null}
@@ -1328,37 +1293,31 @@ function FamilyFormModal({
             onChange={(value) => setForm((current) => ({ ...current, phone: value }))}
           />
 
-          <label>
-            <span className="text-xs font-bold uppercase tracking-wide text-[var(--aw-muted)]">
-              Status
-            </span>
-            <select
+          <div className="flex flex-col gap-1.5">
+            <Label>Status</Label>
+            <Select
               value={form.status || "active"}
-              onChange={(event) => setForm((current) => ({ ...current, status: event.target.value }))}
-              className="mt-2 min-h-11 w-full border border-[var(--aw-border)] bg-[var(--aw-surface)] px-3 py-2 text-sm outline-none focus:border-[var(--aw-primary)]"
+              onValueChange={(value) => setForm((current) => ({ ...current, status: value }))}
             >
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-            </select>
-          </label>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="inactive">Inactive</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         <div className="flex justify-end gap-3 border-t border-[var(--aw-border)] bg-[var(--aw-surface-muted)] px-5 py-4">
-          <button
-            type="button"
-            onClick={onClose}
-            className="min-h-11 border border-[var(--aw-border)] bg-[var(--aw-surface)] px-5 py-2 text-sm font-bold text-[var(--aw-text)] hover:border-[var(--aw-primary)] hover:text-[var(--aw-primary)]"
-          >
+          <Button type="button" variant="outline" size="default" onClick={onClose}>
             Cancel
-          </button>
+          </Button>
 
-          <button
-            type="submit"
-            disabled={isSaving}
-            className="min-h-11 border border-[var(--aw-primary)] bg-woreda-primary px-5 py-2 text-sm font-bold text-woreda-onPrimary hover:bg-woreda-primaryStrong disabled:cursor-not-allowed disabled:opacity-60"
-          >
+          <Button type="submit" variant="default" size="default" disabled={isSaving}>
             {isSaving ? "Saving..." : "Save Family"}
-          </button>
+          </Button>
         </div>
       </form>
     </div>
@@ -1377,58 +1336,51 @@ function TextInput({
   required?: boolean;
 }) {
   return (
-    <label className="block">
-      <span className="text-xs font-bold uppercase tracking-wide text-[var(--aw-muted)]">
-        {label}
-      </span>
-      <input
+    <div className="flex flex-col gap-1.5">
+      <Label>{label}</Label>
+      <Input
         required={required}
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="mt-2 min-h-11 w-full border border-[var(--aw-border)] bg-[var(--aw-surface)] px-3 py-2 text-sm outline-none focus:border-[var(--aw-primary)]"
       />
-    </label>
+    </div>
   );
 }
 
 function AdminSmallMetric({
   label,
   value,
-  tone = "default"
 }: {
   label: string;
   value: number;
   tone?: "default" | "primary" | "success" | "magenta";
 }) {
-  const valueClass =
-    tone === "primary"
-      ? "text-[var(--aw-primary)]"
-      : tone === "success"
-        ? "text-[var(--aw-success)]"
-        : tone === "magenta"
-          ? "text-woreda-magenta"
-          : "text-[var(--aw-text)]";
-
   return (
-    <div className="border border-[var(--aw-border)]/70 bg-[var(--aw-surface-muted)] p-4">
-      <p className="text-xs font-bold uppercase tracking-wide text-[var(--aw-muted)]">
-        {label}
-      </p>
-      <p className={`mt-2 text-2xl font-bold ${valueClass}`}>{value}</p>
-    </div>
+    <Card>
+      <CardHeader className="px-4 py-3">
+        <span className="text-[11px] font-medium uppercase tracking-[0.06em] text-muted-foreground">
+          {label}
+        </span>
+      </CardHeader>
+      <CardContent className="px-4 pb-4 pt-0">
+        <p className="text-2xl font-semibold tabular-nums leading-none tracking-tight text-foreground">
+          {value}
+        </p>
+      </CardContent>
+    </Card>
   );
 }
 
 function AdminInfo({ label, value }: { label: string; value: string }) {
   return (
-    <div className="border border-[var(--aw-border)]/60 bg-[var(--aw-surface)] p-3">
-      <p className="text-xs font-bold uppercase tracking-wide text-[var(--aw-muted)]">
-        {label}
-      </p>
-      <p className="mt-1 truncate text-sm font-bold text-[var(--aw-text)]">
-        {value}
-      </p>
-    </div>
+    <Card>
+      <CardContent className="space-y-1 px-3 py-3">
+        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          {label}
+        </p>
+        <p className="truncate text-sm font-medium text-foreground">{value}</p>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -1444,12 +1396,10 @@ function SectionHeader({
   return (
     <div>
       <div className="flex flex-wrap items-center gap-3">
-        <h2 className="text-lg font-bold text-[var(--aw-text)]">{title}</h2>
-        <span className="rounded border border-[var(--aw-primary)]/20 bg-[var(--aw-primary-soft)] px-2.5 py-1 text-xs font-bold text-[var(--aw-primary)]">
-          {count}
-        </span>
+        <h2 className="text-lg font-semibold text-foreground">{title}</h2>
+        <Badge variant="secondary">{count}</Badge>
       </div>
-      <p className="mt-1 text-sm text-[var(--aw-muted)]">{description}</p>
+      <p className="mt-1 text-sm text-muted-foreground">{description}</p>
     </div>
   );
 }
@@ -1457,28 +1407,24 @@ function SectionHeader({
 function MiniMetric({
   label,
   value,
-  tone = "default"
 }: {
   label: string;
   value: number;
   tone?: "default" | "primary" | "success" | "magenta";
 }) {
-  const valueClass =
-    tone === "success"
-      ? "text-[var(--aw-success)]"
-      : tone === "primary"
-        ? "text-[var(--aw-primary)]"
-        : tone === "magenta"
-          ? "text-woreda-magenta"
-          : "text-[var(--aw-text)]";
-
   return (
-    <div className="border border-[var(--aw-border)]/70 bg-[var(--aw-surface-muted)] p-4">
-      <p className="text-xs font-bold uppercase tracking-wide text-[var(--aw-muted)]">
-        {label}
-      </p>
-      <p className={`mt-2 text-2xl font-bold ${valueClass}`}>{value}</p>
-    </div>
+    <Card>
+      <CardHeader className="px-4 py-3">
+        <span className="text-[11px] font-medium uppercase tracking-[0.06em] text-muted-foreground">
+          {label}
+        </span>
+      </CardHeader>
+      <CardContent className="px-4 pb-4 pt-0">
+        <p className="text-2xl font-semibold tabular-nums leading-none tracking-tight text-foreground">
+          {value}
+        </p>
+      </CardContent>
+    </Card>
   );
 }
 

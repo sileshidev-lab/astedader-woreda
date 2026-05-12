@@ -1,14 +1,38 @@
 import { useEffect, useMemo, useState } from "react";
-import { ChevronDown, ChevronUp, Download, ExternalLink, FileText, Search } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronUp,
+  Download,
+  ExternalLink,
+  FileText,
+  Search,
+} from "lucide-react";
+import { toast } from "sonner";
 import { getResources } from "../../../services/contentService";
 import type { ResourceItem } from "../../../services/contentService";
-import { getFileDownloadUrl, getFilePreviewUrl } from "../../../services/announcementService";
 import {
-  AdminMetricCard,
-  AdminSectionPanel,
-  AdminStatusPill,
-  AdminEmptyState,
-} from "../../../components/ui/AdminPagePrimitives";
+  getFileDownloadUrl,
+  getFilePreviewUrl,
+} from "../../../services/announcementService";
+import { EmptyState } from "../../../components/ui/EmptyState";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/shadcn/card";
+import { Button } from "@/components/ui/shadcn/button";
+import { Badge } from "@/components/ui/shadcn/badge";
+import { Input } from "@/components/ui/shadcn/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/shadcn/select";
+import { statusToBadgeVariant } from "@/lib/badge";
 
 function formatDate(value?: string | null) {
   if (!value) return "-";
@@ -20,9 +44,53 @@ function fileKind(mimeType?: string | null) {
   if (mimeType.includes("pdf")) return "PDF";
   if (mimeType.includes("image")) return "Image";
   if (mimeType.includes("word")) return "Word";
-  if (mimeType.includes("spreadsheet") || mimeType.includes("excel")) return "Spreadsheet";
+  if (mimeType.includes("spreadsheet") || mimeType.includes("excel"))
+    return "Spreadsheet";
   if (mimeType.includes("presentation")) return "Presentation";
   return "Document";
+}
+
+const ALL_CATEGORIES = "__all__";
+
+function MetricTile({
+  label,
+  value,
+  note,
+  tone = "default",
+}: {
+  label: string;
+  value: string | number;
+  note?: string;
+  tone?: "default" | "success" | "warning";
+}) {
+  const labelToneClass =
+    tone === "success"
+      ? "text-[var(--aw-success)]"
+      : tone === "warning"
+        ? "text-[var(--aw-warning)]"
+        : "text-muted-foreground";
+
+  return (
+    <Card>
+      <CardHeader className="px-4 py-3">
+        <span
+          className={`text-[11px] font-medium uppercase tracking-[0.06em] ${labelToneClass}`}
+        >
+          {label}
+        </span>
+      </CardHeader>
+      <CardContent className="px-4 pb-4 pt-0">
+        <p className="text-2xl font-semibold tabular-nums leading-none tracking-tight text-foreground">
+          {value}
+        </p>
+        {note ? (
+          <p className="mt-2 text-xs font-normal text-muted-foreground">
+            {note}
+          </p>
+        ) : null}
+      </CardContent>
+    </Card>
+  );
 }
 
 export function MemberResourcesPage() {
@@ -30,20 +98,18 @@ export function MemberResourcesPage() {
   const [searchText, setSearchText] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
-  const [error, setError] = useState("");
 
   async function loadResources() {
-    setError("");
-
     try {
       const data = await getResources();
       setResources(
         data.resources.filter(
-          (item) => item.status === "published" && item.targetRoles.includes("MEMBER")
-        )
+          (item) =>
+            item.status === "published" && item.targetRoles.includes("MEMBER"),
+        ),
       );
     } catch {
-      setError("Unable to load resources.");
+      toast.error("Unable to load resources.");
     }
   }
 
@@ -52,7 +118,9 @@ export function MemberResourcesPage() {
   }, []);
 
   const categories = useMemo(() => {
-    return Array.from(new Set(resources.map((item) => item.category).filter(Boolean))).sort();
+    return Array.from(
+      new Set(resources.map((item) => item.category).filter(Boolean)),
+    ).sort();
   }, [resources]);
 
   const filteredResources = useMemo(() => {
@@ -62,7 +130,12 @@ export function MemberResourcesPage() {
       if (categoryFilter && resource.category !== categoryFilter) return false;
       if (!query) return true;
 
-      return [resource.title, resource.description, resource.category, resource.file?.originalName]
+      return [
+        resource.title,
+        resource.description,
+        resource.category,
+        resource.file?.originalName,
+      ]
         .filter(Boolean)
         .join(" ")
         .toLowerCase()
@@ -71,137 +144,181 @@ export function MemberResourcesPage() {
   }, [categoryFilter, resources, searchText]);
 
   return (
-    <section className="aw-design-page aw-mobile-page aw-mobile-filterable flex min-h-0 flex-1 flex-col gap-5">
-      {error ? (
-        <div className="border border-woreda-danger bg-woreda-dangerBg px-4 py-3 text-sm font-semibold text-woreda-danger">
-          {error}
-        </div>
-      ) : null}
-
-      <div className="stat-grid shrink-0">
-        <AdminMetricCard label="Available resources" value={resources.length} note="Published items ready to open" />
-        <AdminMetricCard label="Categories" value={categories.length} note="Topics represented in the library" />
-        <AdminMetricCard label="Matching results" value={filteredResources.length} note="Current filtered view" tone="success" />
+    <section className="aw-design-page aw-mobile-page aw-mobile-filterable flex min-h-0 flex-1 flex-col space-y-6">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <MetricTile
+          label="Available resources"
+          value={resources.length}
+          note="Published items ready to open"
+        />
+        <MetricTile
+          label="Categories"
+          value={categories.length}
+          note="Topics represented in the library"
+        />
+        <MetricTile
+          label="Matching results"
+          value={filteredResources.length}
+          note="Current filtered view"
+          tone="success"
+        />
       </div>
 
-      <AdminSectionPanel
-        title="Resource Library"
-        description="Published official files and documents available to members."
-        actions={
-          <div className="aw-toolbar mt-0">
-            <div className="aw-search-wrap">
-              <span className="flex items-center px-3 text-woreda-textMuted">
-                <Search size={15} />
-              </span>
-              <input
+      <Card className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        <CardHeader className="flex flex-col gap-3 border-b border-border xl:flex-row xl:items-start xl:justify-between">
+          <div className="space-y-1">
+            <CardTitle className="text-base font-semibold">
+              Resource Library
+            </CardTitle>
+            <CardDescription className="text-sm text-muted-foreground">
+              Published official files and documents available to members.
+            </CardDescription>
+          </div>
+
+          <div className="ml-auto flex w-full flex-col gap-2 sm:flex-row sm:items-center xl:w-auto">
+            <div className="relative flex-1 sm:min-w-[220px]">
+              <Search
+                size={15}
+                aria-hidden
+                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+              />
+              <Input
                 value={searchText}
                 onChange={(event) => setSearchText(event.target.value)}
                 placeholder="Search resources"
-                className="aw-search-input"
+                className="pl-9"
               />
             </div>
 
-            <button
+            <Button
               type="button"
-              className="aw-btn aw-btn-outline aw-mobile-filters-toggle md:hidden"
+              variant="outline"
+              size="default"
+              className="sm:hidden"
               onClick={() => setMobileFiltersOpen((open) => !open)}
               aria-expanded={mobileFiltersOpen}
               aria-controls="member-resources-mobile-filters"
             >
               Filters
-              {mobileFiltersOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-            </button>
+              {mobileFiltersOpen ? <ChevronUp aria-hidden /> : <ChevronDown aria-hidden />}
+            </Button>
 
             <div
               id="member-resources-mobile-filters"
-              className={["aw-toolbar-filter-group", mobileFiltersOpen ? "aw-toolbar-filter-group-open" : ""].join(" ")}
+              className={
+                mobileFiltersOpen
+                  ? "flex flex-col gap-2 sm:flex sm:flex-row sm:items-center"
+                  : "hidden sm:flex sm:flex-row sm:items-center sm:gap-2"
+              }
             >
-              <select
-                value={categoryFilter}
-                onChange={(event) => setCategoryFilter(event.target.value)}
-                className="aw-filter-select"
+              <Select
+                value={categoryFilter || ALL_CATEGORIES}
+                onValueChange={(value) =>
+                  setCategoryFilter(value === ALL_CATEGORIES ? "" : value)
+                }
               >
-                <option value="">All categories</option>
-                {categories.map((category) => (
-                  <option key={category} value={category || ""}>
-                    {category}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger className="w-full sm:w-[200px]">
+                  <SelectValue placeholder="All categories" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={ALL_CATEGORIES}>All categories</SelectItem>
+                  {categories.map((category) => (
+                    <SelectItem key={category} value={category || ALL_CATEGORIES}>
+                      {category}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
 
-              <button
+              <Button
                 type="button"
+                variant="outline"
+                size="default"
                 onClick={() => {
                   setSearchText("");
                   setCategoryFilter("");
                 }}
-                className="aw-btn aw-btn-outline"
               >
                 Clear
-              </button>
+              </Button>
             </div>
           </div>
-        }
-      >
+        </CardHeader>
 
-        <div className="min-h-0 flex-1 overflow-auto p-5">
+        <CardContent className="min-h-0 flex-1 overflow-auto p-5">
           {filteredResources.length === 0 ? (
-            <AdminEmptyState title="No published resources found" description="Try changing the search or category filters." />
+            <EmptyState
+              title="No published resources found"
+              message="Try changing the search or category filters."
+            />
           ) : (
-            <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               {filteredResources.map((resource) => (
-                <article key={resource.id} className="rounded-3xl border border-[var(--aw-border-soft)] bg-[var(--aw-surface)] p-5 shadow-sm">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-woreda-primary/20 bg-woreda-primarySoft text-woreda-primary">
-                      <FileText size={22} />
+                <Card key={resource.id} className="flex flex-col">
+                  <CardHeader className="flex flex-row items-start justify-between gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-md border border-border bg-muted text-muted-foreground">
+                      <FileText size={20} aria-hidden />
                     </div>
-                    <AdminStatusPill label="Published" tone="success" />
-                  </div>
+                    <Badge variant={statusToBadgeVariant("published")}>
+                      Published
+                    </Badge>
+                  </CardHeader>
 
-                  <h2 className="mt-4 line-clamp-2 text-xl font-black text-woreda-text">
-                    {resource.title}
-                  </h2>
+                  <CardContent className="flex flex-1 flex-col gap-3">
+                    <h2 className="line-clamp-2 text-base font-semibold text-foreground">
+                      {resource.title}
+                    </h2>
 
-                  <p className="mt-2 line-clamp-3 text-sm leading-6 text-woreda-textMuted">
-                    {resource.description || "No description recorded."}
-                  </p>
+                    <p className="line-clamp-3 text-sm font-normal leading-6 text-muted-foreground">
+                      {resource.description || "No description recorded."}
+                    </p>
 
-                  <div className="mt-4 space-y-1 text-xs font-semibold text-woreda-textMuted">
-                    <p>Category: {resource.category || "-"}</p>
-                    <p>Published: {formatDate(resource.publishedAt || resource.createdAt)}</p>
-                    <p>File type: {fileKind(resource.file?.mimeType)}</p>
-                    <p className="break-all">File: {resource.file?.originalName || "-"}</p>
-                  </div>
-
-                  {resource.file ? (
-                    <div className="mt-5 flex flex-wrap gap-2">
-                      <a
-                        href={getFilePreviewUrl(resource.file.id)}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex min-h-9 items-center gap-2 border border-woreda-primary bg-woreda-primary px-3 py-1.5 text-xs font-bold text-white hover:bg-woreda-sidebar"
-                      >
-                        <ExternalLink size={13} />
-                        View
-                      </a>
-
-                      <a
-                        href={getFileDownloadUrl(resource.file.id)}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex min-h-9 items-center gap-2 border border-woreda-primary bg-woreda-primary px-3 py-1.5 text-xs font-bold text-white hover:bg-woreda-sidebar"
-                      >
-                        <Download size={13} />
-                        Download
-                      </a>
+                    <div className="space-y-1 text-xs font-normal text-muted-foreground">
+                      <p>Category: {resource.category || "-"}</p>
+                      <p>
+                        Published:{" "}
+                        {formatDate(resource.publishedAt || resource.createdAt)}
+                      </p>
+                      <p>File type: {fileKind(resource.file?.mimeType)}</p>
+                      <p className="break-all">
+                        File: {resource.file?.originalName || "-"}
+                      </p>
                     </div>
-                  ) : null}
-                </article>
+
+                    {resource.file ? (
+                      <div className="mt-auto flex flex-wrap items-center gap-2 pt-1">
+                        <Button asChild variant="default" size="sm">
+                          <a
+                            href={getFilePreviewUrl(resource.file.id)}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1.5"
+                          >
+                            <ExternalLink aria-hidden />
+                            View
+                          </a>
+                        </Button>
+
+                        <Button asChild variant="outline" size="sm">
+                          <a
+                            href={getFileDownloadUrl(resource.file.id)}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1.5"
+                          >
+                            <Download aria-hidden />
+                            Download
+                          </a>
+                        </Button>
+                      </div>
+                    ) : null}
+                  </CardContent>
+                </Card>
               ))}
             </div>
           )}
-        </div>
-      </AdminSectionPanel>
+        </CardContent>
+      </Card>
     </section>
   );
 }

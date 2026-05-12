@@ -16,6 +16,21 @@ import {
 } from "lucide-react";
 import { PageButton } from "../../../components/ui/PageButton";
 import {
+  Card,
+  CardContent,
+  CardHeader,
+} from "@/components/ui/shadcn/card";
+import { Button } from "@/components/ui/shadcn/button";
+import { Badge } from "@/components/ui/shadcn/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/shadcn/select";
+import { statusToBadgeVariant } from "@/lib/badge";
+import {
   getGalleryReportAlbum,
   getGalleryReportAlbums,
 } from "../../../services/galleryService";
@@ -49,65 +64,27 @@ function isImage(mimeType: string) {
   return mimeType.startsWith("image/");
 }
 
-function reviewClass(value?: string | null) {
-  if (value === "approved") {
-    return "border-woreda-success/20 bg-woreda-successBg text-woreda-success";
-  }
-
-  if (value === "rejected") {
-    return "border-woreda-danger/20 bg-woreda-dangerBg text-woreda-danger";
-  }
-
-  if (value === "changes_requested") {
-    return "border-woreda-yellow bg-woreda-yellowBg text-woreda-yellowText";
-  }
-
-  return "border-woreda-border bg-woreda-surfaceLow text-woreda-textMuted";
-}
-
 function GalleryKpiCard({
   label,
   value,
-  tone = "primary",
 }: {
   label: string;
   value: number;
   tone?: "primary" | "success" | "magenta" | "muted";
 }) {
-  const toneClass =
-    tone === "success"
-      ? {
-          soft: "bg-[var(--aw-success-bg)]",
-          value: "text-[var(--aw-success)]",
-          bar: "bg-[var(--aw-success)]",
-        }
-      : tone === "magenta"
-        ? {
-            soft: "bg-[var(--aw-magenta-bg)]",
-            value: "text-[var(--aw-magenta)]",
-            bar: "bg-[var(--aw-magenta)]",
-          }
-        : tone === "muted"
-          ? {
-              soft: "bg-[var(--aw-surface-muted)]",
-              value: "text-[var(--aw-muted)]",
-              bar: "bg-[var(--aw-muted)]",
-            }
-          : {
-              soft: "bg-[var(--aw-primary-soft)]",
-              value: "text-[var(--aw-primary)]",
-              bar: "bg-[var(--aw-primary)]",
-            };
-
   return (
-    <article className="aw-stat-card relative overflow-hidden rounded-3xl border border-[var(--aw-border-soft)] bg-[var(--aw-surface)] p-4 shadow-sm">
-      <div className={`absolute right-0 top-0 h-20 w-20 rounded-bl-full ${toneClass.soft}`} aria-hidden />
-      <p className="relative text-[10px] font-black uppercase tracking-[0.16em] text-[var(--aw-muted)]">{label}</p>
-      <p className={`relative mt-2 text-[clamp(1.35rem,2vw,2rem)] font-black leading-none ${toneClass.value}`}>
-        {value}
-      </p>
-      <div className={`relative mt-3 h-1.5 rounded-full ${toneClass.bar}`} />
-    </article>
+    <Card>
+      <CardHeader className="px-4 py-3">
+        <span className="text-[11px] font-medium uppercase tracking-[0.06em] text-muted-foreground">
+          {label}
+        </span>
+      </CardHeader>
+      <CardContent className="px-4 pb-4 pt-0">
+        <p className="text-2xl font-semibold tabular-nums leading-none tracking-tight text-foreground">
+          {value}
+        </p>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -374,16 +351,18 @@ export function GalleryPage() {
                 className="w-full bg-transparent px-2 py-2.5 text-sm outline-none"
               />
             </div>
-            <button
+            <Button
               type="button"
-              className="aw-btn aw-btn-outline aw-mobile-filters-toggle md:hidden"
+              variant="outline"
+              size="default"
+              className="md:hidden"
               onClick={() => setMobileFiltersOpen((open) => !open)}
               aria-expanded={mobileFiltersOpen}
               aria-controls="gallery-mobile-filters"
             >
               Filters
-              {mobileFiltersOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-            </button>
+              {mobileFiltersOpen ? <ChevronUp aria-hidden /> : <ChevronDown aria-hidden />}
+            </Button>
             <div
               id="gallery-mobile-filters"
               className={[
@@ -510,22 +489,16 @@ export function GalleryPage() {
                         </div>
 
                         <div className="flex flex-wrap gap-2">
-                          <span
-                            className={[
-                              "inline-flex rounded border px-2.5 py-1 text-xs font-bold capitalize",
-                              reviewClass(album.reviewDecision),
-                            ].join(" ")}
+                          <Badge
+                            variant={statusToBadgeVariant(album.reviewDecision)}
+                            className="capitalize"
                           >
                             {album.reviewDecision || "Pending review"}
-                          </span>
+                          </Badge>
 
-                          <span className="inline-flex border border-woreda-border/70 bg-woreda-surfaceLow px-2.5 py-1 text-xs font-bold text-woreda-textMuted">
-                            {album.mediaCount} media
-                          </span>
+                          <Badge variant="muted">{album.mediaCount} media</Badge>
 
-                          <span className="inline-flex border border-woreda-border/70 bg-woreda-surfaceLow px-2.5 py-1 text-xs font-bold text-woreda-textMuted">
-                            {album.documentCount} documents
-                          </span>
+                          <Badge variant="muted">{album.documentCount} documents</Badge>
                         </div>
 
                         <p className="text-xs font-semibold text-woreda-textMuted">
@@ -539,30 +512,46 @@ export function GalleryPage() {
             </div>
           )}
         </div>
-        <div className="flex flex-col gap-3 border-t border-woreda-border bg-woreda-surfaceLow px-5 py-3 sm:flex-row sm:items-center sm:justify-between">
-          <span className="text-sm font-semibold text-woreda-textMuted">
+        <div className="flex flex-col gap-3 border-t border-border bg-muted/30 px-5 py-3 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+          <span>
             Page {Math.min(page, Math.max(1, Math.ceil(albums.length / pageSize)))} of {Math.max(1, Math.ceil(albums.length / pageSize))} · {albums.length} total
           </span>
           <div className="flex w-full flex-wrap items-center justify-start gap-2 sm:w-auto sm:justify-end">
-            <select
-              className="aw-filter-select"
-              value={pageSize}
-              onChange={(event) => {
-                setPageSize(Number(event.target.value));
+            <Select
+              value={String(pageSize)}
+              onValueChange={(value) => {
+                setPageSize(Number(value));
                 setPage(1);
               }}
             >
-              <option value={6}>6 / page</option>
-              <option value={12}>12 / page</option>
-              <option value={24}>24 / page</option>
-              <option value={48}>48 / page</option>
-            </select>
-            <button type="button" className="aw-btn aw-btn-outline-strong" disabled={Math.min(page, Math.max(1, Math.ceil(albums.length / pageSize))) <= 1} onClick={() => setPage((current) => Math.max(1, current - 1))}>
+              <SelectTrigger className="h-8 w-auto px-2 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="6">6 / page</SelectItem>
+                <SelectItem value="12">12 / page</SelectItem>
+                <SelectItem value="24">24 / page</SelectItem>
+                <SelectItem value="48">48 / page</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={Math.min(page, Math.max(1, Math.ceil(albums.length / pageSize))) <= 1}
+              onClick={() => setPage((current) => Math.max(1, current - 1))}
+            >
               Previous
-            </button>
-            <button type="button" className="aw-btn aw-btn-outline-strong" disabled={Math.min(page, Math.max(1, Math.ceil(albums.length / pageSize))) >= Math.max(1, Math.ceil(albums.length / pageSize))} onClick={() => setPage((current) => Math.min(Math.max(1, Math.ceil(albums.length / pageSize)), current + 1))}>
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={Math.min(page, Math.max(1, Math.ceil(albums.length / pageSize))) >= Math.max(1, Math.ceil(albums.length / pageSize))}
+              onClick={() => setPage((current) => Math.min(Math.max(1, Math.ceil(albums.length / pageSize)), current + 1))}
+            >
               Next
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -584,23 +573,15 @@ export function GalleryPage() {
                   </p>
 
                   <div className="mt-3 flex flex-wrap gap-2">
-                    <span
-                      className={[
-                        "inline-flex rounded border px-2.5 py-1 text-xs font-bold capitalize",
-                        reviewClass(selectedAlbum.reviewDecision),
-                      ].join(" ")}
+                    <Badge
+                      variant={statusToBadgeVariant(selectedAlbum.reviewDecision)}
+                      className="capitalize"
                     >
                       {selectedAlbum.reviewDecision || "Pending review"}
-                    </span>
-                    <span className="inline-flex border border-woreda-border/70 bg-woreda-surface px-2.5 py-1 text-xs font-bold text-woreda-textMuted">
-                      {selectedAlbum.mediaCount} media
-                    </span>
-                    <span className="inline-flex border border-woreda-border/70 bg-woreda-surface px-2.5 py-1 text-xs font-bold text-woreda-textMuted">
-                      {selectedAlbum.documentCount} documents
-                    </span>
-                    <span className="inline-flex border border-woreda-border/70 bg-woreda-surface px-2.5 py-1 text-xs font-bold text-woreda-textMuted">
-                      Submitted {formatDate(selectedAlbum.submittedAt)}
-                    </span>
+                    </Badge>
+                    <Badge variant="muted">{selectedAlbum.mediaCount} media</Badge>
+                    <Badge variant="muted">{selectedAlbum.documentCount} documents</Badge>
+                    <Badge variant="muted">Submitted {formatDate(selectedAlbum.submittedAt)}</Badge>
                   </div>
                 </div>
 

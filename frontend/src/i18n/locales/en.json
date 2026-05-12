@@ -46,10 +46,15 @@
     "forgotPasswordForm": "Forgot password form",
     "twoFactorInstruction": "Enter the verification code sent to your email.",
     "twoFactorSent": "A verification code was sent to your email.",
+    "openTestInbox": "View test inbox",
     "loginFailed": "Incorrect email or password. Try again or reset your password.",
     "invalidCode": "Invalid or expired verification code. Check your email and try again.",
     "resetSent": "Password reset instructions were sent if this account exists.",
-    "resetSendFailed": "Unable to send reset link. Check the email and try again."
+    "resetSendFailed": "Unable to send reset link. Check the email and try again.",
+    "demoMode": {
+      "title": "Demo mode — choose a role to sign in",
+      "hint": "Any email and password also works while demo mode is on."
+    }
   },
   "sidebar": {
     "announcements": "Directives",
@@ -89,7 +94,10 @@
     "paginationLine": "Page {{page}} of {{pages}} · {{total}} total",
     "pageSize": "{{size}} / page",
     "dark": "Dark",
-    "light": "Light"
+    "light": "Light",
+    "viewAll": "View all",
+    "myProfile": "My profile",
+    "refresh": "Refresh"
   },
   "admins": {
     "loading": "Loading admins.",

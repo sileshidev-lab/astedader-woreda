@@ -1,10 +1,20 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import { ArrowRight } from "lucide-react";
 import { getHibretReport } from "../../../services/reportService";
 import { ErrorState } from "../../../components/ui/ErrorState";
 import { LoadingState } from "../../../components/ui/LoadingState";
 import { FilePreviewCard } from "../../../components/ui/FilePreviewCard";
-import { StatusBadge } from "../../../components/ui/StatusBadge";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/shadcn/card";
+import { Button } from "@/components/ui/shadcn/button";
+import { Badge } from "@/components/ui/shadcn/badge";
+import { statusToBadgeVariant } from "@/lib/badge";
 
 export function HibretReportDetailPage() {
   const { reportId } = useParams();
@@ -37,62 +47,68 @@ export function HibretReportDetailPage() {
   if (!report) return <ErrorState message="Report not found." />;
 
   return (
-    <section className="aw-design-page aw-mobile-page flex min-h-0 flex-1 flex-col gap-5">
-      <div className="rounded-3xl border border-woreda-border/70 bg-woreda-surface px-5 py-5">
-        <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
-          <div>
-            <p className="text-[11px] font-black uppercase tracking-[0.16em] text-woreda-textMuted">
+    <section className="flex min-h-0 flex-1 flex-col space-y-6">
+      <Card>
+        <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0 space-y-1">
+            <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
               {report.announcement?.title || "Directive report"}
             </p>
-            <h2 className="mt-1 text-xl font-black text-woreda-text">{report.title}</h2>
-            <div className="mt-3">
-              <StatusBadge value={report.status} />
-            </div>
+            <CardTitle className="text-base font-semibold">{report.title}</CardTitle>
+            <CardDescription className="text-sm text-muted-foreground">
+              <Badge variant={statusToBadgeVariant(report.status)}>
+                {report.status || "-"}
+              </Badge>
+            </CardDescription>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <Link
-              to={`/hibret/announcements/${report.announcementId}`}
-              className="min-h-10 rounded-2xl border border-woreda-border bg-woreda-surface px-4 text-sm font-black text-woreda-text hover:border-woreda-primary hover:text-woreda-primary"
-            >
-              Open directive
-            </Link>
+          <div className="ml-auto flex flex-wrap items-center gap-2">
+            <Button asChild variant="outline" size="sm">
+              <Link
+                to={`/hibret/announcements/${report.announcementId}`}
+                className="inline-flex items-center gap-1.5"
+              >
+                Open directive
+                <ArrowRight aria-hidden />
+              </Link>
+            </Button>
           </div>
-        </div>
-      </div>
+        </CardHeader>
+      </Card>
 
-      <div className="grid gap-5 lg:grid-cols-[1.2fr,0.8fr]">
-        <article className="overflow-hidden rounded-3xl border border-woreda-border/70 bg-woreda-surface">
-          <div className="border-b border-woreda-border/70 bg-woreda-surfaceLow px-5 py-4">
-            <h3 className="text-base font-black text-woreda-text">Report body</h3>
-          </div>
-          <div className="px-5 py-5">
-            <p className="whitespace-pre-wrap text-sm font-semibold leading-relaxed text-woreda-text">
+      <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base font-semibold">Report body</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
               {report.body || "-"}
             </p>
-          </div>
-        </article>
+          </CardContent>
+        </Card>
 
-        <aside className="flex flex-col gap-4">
-          <div className="rounded-3xl border border-woreda-border/70 bg-woreda-surface px-5 py-5">
-            <h3 className="text-base font-black text-woreda-text">Submitted files</h3>
-            <p className="mt-1 text-sm font-semibold text-woreda-textMuted">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base font-semibold">Submitted files</CardTitle>
+            <CardDescription className="text-sm text-muted-foreground">
               Media and attachments uploaded for this report.
-            </p>
-          </div>
-          {report.attachments?.length ? (
-            <div className="flex flex-col gap-3">
-              {report.attachments.map((attachment: any) => (
-                <FilePreviewCard key={attachment.id} file={attachment.file} />
-              ))}
-            </div>
-          ) : (
-            <div className="rounded-3xl border border-woreda-border/70 bg-woreda-surface px-5 py-8 text-sm font-semibold text-woreda-textMuted">
-              No files have been uploaded for this report yet.
-            </div>
-          )}
-        </aside>
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {report.attachments?.length ? (
+              <div className="flex flex-col gap-3">
+                {report.attachments.map((attachment: any) => (
+                  <FilePreviewCard key={attachment.id} file={attachment.file} />
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                No files have been uploaded for this report yet.
+              </p>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </section>
   );
 }
-

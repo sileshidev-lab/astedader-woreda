@@ -4,6 +4,23 @@ import { getActivity } from "../../../services/activityService";
 import { ErrorState } from "../../../components/ui/ErrorState";
 import { LoadingState } from "../../../components/ui/LoadingState";
 import type { ActivityLogItem } from "../../../services/activityService";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/shadcn/card";
+import { Button } from "@/components/ui/shadcn/button";
+import { Input } from "@/components/ui/shadcn/input";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/shadcn/table";
 
 function formatDate(value: string) {
   return new Date(value).toLocaleString();
@@ -41,112 +58,93 @@ export function AdminActivityDetailPage() {
   }, []);
 
   return (
-    <section className="aw-design-page aw-mobile-page flex min-h-0 flex-1 flex-col gap-5">
-      <div className="flex flex-col gap-3 rounded-3xl border border-woreda-border/70 bg-woreda-surface px-5 py-5">
-        <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-          <div>
-            <p className="text-[11px] font-black uppercase tracking-[0.16em] text-woreda-textMuted">
+    <section className="flex min-h-0 flex-1 flex-col gap-5">
+      <Card>
+        <CardHeader className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+          <div className="space-y-1">
+            <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
               Monitoring
             </p>
-            <h2 className="mt-1 text-xl font-black text-woreda-text">{title}</h2>
-            <p className="mt-2 text-sm font-semibold text-woreda-textMuted">
+            <CardTitle>{title}</CardTitle>
+            <CardDescription>
               Filter by admin email, operation name, or target to locate relevant actions.
-            </p>
+            </CardDescription>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Link
-              to="/woreda/activity"
-              className="min-h-10 rounded-2xl border border-woreda-border bg-woreda-surface px-4 text-sm font-black text-woreda-text hover:border-woreda-primary hover:text-woreda-primary"
-            >
-              Back to activity
-            </Link>
+            <Button asChild variant="outline" size="default">
+              <Link to="/woreda/activity">Back to activity</Link>
+            </Button>
           </div>
-        </div>
-
-        <div className="mt-3 grid gap-2 md:grid-cols-[1fr,auto]">
-          <input
+        </CardHeader>
+        <CardContent className="grid gap-2 md:grid-cols-[1fr,auto]">
+          <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by email, operation, target..."
-            className="min-h-10 rounded-2xl border border-woreda-border bg-woreda-surface px-3 text-sm font-semibold text-woreda-text outline-none placeholder:text-woreda-textMuted focus:border-woreda-primary"
           />
-          <button
-            type="button"
-            onClick={() => void load(1)}
-            className="min-h-10 rounded-2xl bg-woreda-primary px-4 text-sm font-black text-white hover:brightness-105"
-          >
+          <Button type="button" variant="default" size="default" onClick={() => void load(1)}>
             Search
-          </button>
-        </div>
-      </div>
+          </Button>
+        </CardContent>
+      </Card>
 
       {isLoading ? <LoadingState label="Loading activity..." /> : null}
       {error ? <ErrorState message={error} onRetry={() => void load(1)} /> : null}
 
       {!isLoading && !error ? (
-        <div className="overflow-x-auto rounded-3xl border border-woreda-border/70 bg-woreda-surface">
-          <table className="min-w-full text-left text-sm">
-            <thead className="bg-woreda-surfaceLow">
-              <tr>
-                <th className="px-4 py-3 text-xs font-black uppercase tracking-wide text-woreda-textMuted">
-                  Time
-                </th>
-                <th className="px-4 py-3 text-xs font-black uppercase tracking-wide text-woreda-textMuted">
-                  Actor
-                </th>
-                <th className="px-4 py-3 text-xs font-black uppercase tracking-wide text-woreda-textMuted">
-                  Operation
-                </th>
-                <th className="px-4 py-3 text-xs font-black uppercase tracking-wide text-woreda-textMuted">
-                  Target
-                </th>
-                <th className="px-4 py-3 text-xs font-black uppercase tracking-wide text-woreda-textMuted">
-                  Description
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {activity.length ? (
-                activity.map((row) => (
-                  <tr key={row.id} className="border-t border-woreda-border/60">
-                    <td className="whitespace-nowrap px-4 py-3 font-semibold text-woreda-text">
-                      {formatDate(row.createdAt)}
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-3 font-semibold text-woreda-text">
-                      <div className="flex flex-col">
-                        <span className="font-black">{row.actorEmail || "-"}</span>
-                        <span className="text-xs font-semibold text-woreda-textMuted">
-                          {row.actorRole || "-"}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-3 font-semibold text-woreda-text">
-                      {row.operation}
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-3 font-semibold text-woreda-text">
-                      {[row.targetType, row.targetName].filter(Boolean).join(": ") || "-"}
-                    </td>
-                    <td className="min-w-[18rem] px-4 py-3 font-semibold text-woreda-text">
-                      {row.description || "-"}
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={5} className="px-4 py-10 text-center text-sm font-semibold text-woreda-textMuted">
-                    No activity records match the current filters.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-          {pagination ? (
-            <div className="border-t border-woreda-border/60 px-4 py-3 text-sm font-semibold text-woreda-textMuted">
-              Showing page <span className="font-black text-woreda-text">{pagination.page}</span> of{" "}
-              <span className="font-black text-woreda-text">{pagination.totalPages}</span>.
+        <Card>
+          <CardContent className="px-0 pb-0 pt-0">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Time</TableHead>
+                    <TableHead>Actor</TableHead>
+                    <TableHead>Operation</TableHead>
+                    <TableHead>Target</TableHead>
+                    <TableHead>Description</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {activity.length ? (
+                    activity.map((row) => (
+                      <TableRow key={row.id}>
+                        <TableCell className="whitespace-nowrap">
+                          {formatDate(row.createdAt)}
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap">
+                          <div className="flex flex-col">
+                            <span className="text-sm font-medium text-foreground">{row.actorEmail || "-"}</span>
+                            <span className="text-xs text-muted-foreground">
+                              {row.actorRole || "-"}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap">{row.operation}</TableCell>
+                        <TableCell className="whitespace-nowrap">
+                          {[row.targetType, row.targetName].filter(Boolean).join(": ") || "-"}
+                        </TableCell>
+                        <TableCell className="min-w-[18rem]">{row.description || "-"}</TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={5} className="py-10 text-center text-sm text-muted-foreground">
+                        No activity records match the current filters.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
             </div>
-          ) : null}
-        </div>
+            {pagination ? (
+              <div className="border-t border-border px-4 py-3 text-sm text-muted-foreground">
+                Showing page <span className="font-medium text-foreground">{pagination.page}</span> of{" "}
+                <span className="font-medium text-foreground">{pagination.totalPages}</span>.
+              </div>
+            ) : null}
+          </CardContent>
+        </Card>
       ) : null}
     </section>
   );

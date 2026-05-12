@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 
 type PageButtonProps = {
   children: ReactNode;
-  variant?: "primary" | "default" | "danger";
+  variant?: "primary" | "default" | "danger" | "ghost";
   onClick?: () => void;
   type?: "button" | "submit";
   disabled?: boolean;
@@ -17,13 +17,15 @@ export function PageButton({
   disabled,
   className = "",
 }: PageButtonProps) {
-  const variants = {
+  const variants: Record<NonNullable<PageButtonProps["variant"]>, string> = {
     primary:
-      "border-woreda-primary bg-woreda-primary text-white hover:bg-woreda-primaryStrong",
+      "border-[var(--aw-primary)] bg-[var(--aw-primary)] text-white hover:bg-[var(--aw-primary-dark)] hover:border-[var(--aw-primary-dark)]",
     default:
-      "border-woreda-border bg-woreda-surface text-woreda-primary hover:border-woreda-primary hover:bg-woreda-primarySoft",
+      "border-[var(--aw-border)] bg-[var(--aw-surface)] text-[var(--aw-text)] hover:border-[var(--aw-primary)] hover:bg-[var(--aw-primary-softer)] hover:text-[var(--aw-primary)]",
     danger:
-      "border-woreda-danger bg-woreda-surface text-woreda-danger hover:bg-woreda-dangerBg",
+      "border-[var(--aw-danger)] bg-[var(--aw-surface)] text-[var(--aw-danger)] hover:bg-[var(--aw-danger-bg)]",
+    ghost:
+      "border-transparent bg-transparent text-[var(--aw-text)] hover:bg-[var(--aw-surface-muted)]",
   };
 
   return (
@@ -32,9 +34,9 @@ export function PageButton({
       onClick={onClick}
       disabled={disabled}
       className={[
-        "aw-btn inline-flex min-h-10 items-center justify-center gap-2 border px-4 py-2 text-xs font-black uppercase tracking-[0.04em] leading-none transition",
-        "focus:outline-none focus:ring-1 focus:ring-woreda-primary",
-        "disabled:cursor-not-allowed disabled:border-woreda-border disabled:bg-woreda-surfaceContainer disabled:text-woreda-textMuted disabled:opacity-60",
+        "inline-flex min-h-10 items-center justify-center gap-2 rounded-md border px-4 py-2 text-sm font-semibold leading-none transition",
+        "focus:outline-none focus-visible:shadow-focus",
+        "disabled:cursor-not-allowed disabled:opacity-55",
         variants[variant],
         className,
       ].join(" ")}

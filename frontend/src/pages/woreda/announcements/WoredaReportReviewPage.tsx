@@ -21,6 +21,10 @@ import {
   getFileViewUrl,
 } from "../../../services/announcementService";
 import type { HibretReport } from "../../../services/hibretService";
+import { Badge } from "@/components/ui/shadcn/badge";
+import { Button } from "@/components/ui/shadcn/button";
+import { Textarea } from "@/components/ui/shadcn/textarea";
+import { statusToBadgeVariant } from "@/lib/badge";
 
 Chart.register(BarController, BarElement, CategoryScale, LinearScale, Tooltip);
 
@@ -94,26 +98,6 @@ function statusLabel(value?: string | null) {
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
-function statusClass(value?: string | null) {
-  if (value === "approved") {
-    return "border-[var(--aw-success)] bg-[var(--aw-success-bg)] text-[var(--aw-success)]";
-  }
-
-  if (value === "submitted") {
-    return "border-[var(--aw-primary)] bg-[color:color-mix(in_srgb,var(--aw-primary)_12%,var(--aw-surface))] text-[var(--aw-primary)]";
-  }
-
-  if (value === "changes_requested") {
-    return "border-[var(--aw-warning)] bg-[var(--aw-warning-bg)] text-[var(--aw-warning)]";
-  }
-
-  if (value === "rejected") {
-    return "border-[var(--aw-danger)] bg-[var(--aw-danger-bg)] text-[var(--aw-danger)]";
-  }
-
-  return "border-[var(--aw-border)] bg-[var(--aw-surface-muted)] text-[var(--aw-muted)]";
-}
-
 function openDownload(url: string, index: number) {
   window.setTimeout(() => {
     window.open(url, "_blank", "noopener,noreferrer");
@@ -122,10 +106,10 @@ function openDownload(url: string, index: number) {
 
 function StatusPill({ value, prefix }: { value?: string | null; prefix?: string }) {
   return (
-    <span className={["inline-flex rounded-full border px-2.5 py-1 text-xs font-black", statusClass(value)].join(" ")}>
+    <Badge variant={statusToBadgeVariant(value)}>
       {prefix ? `${prefix}: ` : ""}
       {statusLabel(value)}
-    </span>
+    </Badge>
   );
 }
 
@@ -327,34 +311,18 @@ function AttendanceVerticalChart({ attendance }: { attendance: WoredaReportAtten
 
 function AttendanceStatusBadge({ status }: { status: AttendanceStatus | null }) {
   if (status === "present") {
-    return (
-      <span className="inline-flex border border-[var(--aw-success)] bg-[var(--aw-success-bg)] px-2.5 py-1 text-xs font-black text-[var(--aw-success)]">
-        Present
-      </span>
-    );
+    return <Badge variant="success">Present</Badge>;
   }
 
   if (status === "absent") {
-    return (
-      <span className="inline-flex border border-[var(--aw-danger)] bg-[var(--aw-danger-bg)] px-2.5 py-1 text-xs font-black text-[var(--aw-danger)]">
-        Absent
-      </span>
-    );
+    return <Badge variant="destructive">Absent</Badge>;
   }
 
   if (status === "excused") {
-    return (
-      <span className="inline-flex border border-[var(--aw-warning)] bg-[var(--aw-warning-bg)] px-2.5 py-1 text-xs font-black text-[var(--aw-warning)]">
-        Excused
-      </span>
-    );
+    return <Badge variant="warning">Excused</Badge>;
   }
 
-  return (
-    <span className="inline-flex border border-[var(--aw-border)] bg-[var(--aw-surface-muted)] px-2.5 py-1 text-xs font-black text-[var(--aw-muted)]">
-      Unmarked
-    </span>
-  );
+  return <Badge variant="muted">Unmarked</Badge>;
 }
 
 function AttachmentCard({
@@ -1114,47 +1082,50 @@ export function WoredaReportReviewPage() {
 
               <div className="space-y-4 p-4">
                 <label className="block">
-                  <span className="text-sm font-black text-[var(--aw-text)]">Review comment</span>
-                  <textarea
+                  <span className="text-sm font-medium text-foreground">Review comment</span>
+                  <Textarea
                     value={comment}
                     onChange={(event) => setComment(event.target.value)}
                     rows={5}
                     disabled={!canReview}
-                    className="mt-2 w-full resize-y border border-[var(--aw-border)] bg-[var(--aw-surface)] px-3 py-2.5 text-sm font-semibold text-[var(--aw-text)] outline-none focus:border-[var(--aw-primary)] disabled:opacity-60"
+                    className="mt-2"
                   />
                 </label>
 
                 {canReview ? (
                   <div className="grid gap-2">
-                    <button
+                    <Button
                       type="button"
+                      variant="success"
+                      size="default"
                       disabled={isReviewing}
                       onClick={() => reviewReport("approved")}
-                      className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-[var(--aw-success)] bg-[var(--aw-success)] px-3 text-sm font-black text-white disabled:opacity-60"
                     >
-                      <CheckCircle2 size={16} />
+                      <CheckCircle2 aria-hidden />
                       Approve
-                    </button>
+                    </Button>
 
-                    <button
+                    <Button
                       type="button"
+                      variant="outline"
+                      size="default"
                       disabled={isReviewing}
                       onClick={() => reviewReport("changes_requested")}
-                      className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-[var(--aw-warning)] bg-[var(--aw-warning-bg)] px-3 text-sm font-black text-[var(--aw-warning)] disabled:opacity-60"
                     >
-                      <RotateCcw size={16} />
+                      <RotateCcw aria-hidden />
                       Request Changes
-                    </button>
+                    </Button>
 
-                    <button
+                    <Button
                       type="button"
+                      variant="destructive"
+                      size="default"
                       disabled={isReviewing}
                       onClick={() => reviewReport("rejected")}
-                      className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-[var(--aw-danger)] bg-[var(--aw-danger)] px-3 text-sm font-black text-white disabled:opacity-60"
                     >
-                      <XCircle size={16} />
+                      <XCircle aria-hidden />
                       Reject
-                    </button>
+                    </Button>
                   </div>
                 ) : (
                   <div className="border border-[var(--aw-border)] bg-[var(--aw-surface-muted)] px-4 py-3 text-sm font-bold text-[var(--aw-muted)]">

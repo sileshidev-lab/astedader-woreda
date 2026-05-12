@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Archive, Download, Eye, FileText, Plus, Send, Upload } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import {
   archiveResource,
   createResource,
@@ -10,8 +11,39 @@ import {
   uploadResourceFile,
 } from "../../../services/contentService";
 import type { ResourceItem } from "../../../services/contentService";
-import {getAuthenticatedExportUrl, getFileDownloadUrl} from "../../../services/announcementService";
+import {
+  getAuthenticatedExportUrl,
+  getFileDownloadUrl,
+} from "../../../services/announcementService";
 import { useAuthStore } from "../../../stores/authStore";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/shadcn/card";
+import { Button } from "@/components/ui/shadcn/button";
+import { Badge } from "@/components/ui/shadcn/badge";
+import { Input } from "@/components/ui/shadcn/input";
+import { Textarea } from "@/components/ui/shadcn/textarea";
+import { Label } from "@/components/ui/shadcn/label";
+import { Checkbox } from "@/components/ui/shadcn/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/shadcn/select";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/shadcn/sheet";
+import { statusToBadgeVariant } from "@/lib/badge";
 
 function readableFileName(value?: string | null) {
   const text = String(value || "").trim();
@@ -27,20 +59,30 @@ function readableFileName(value?: string | null) {
   return text;
 }
 
-function statusClass(status: string) {
-  if (status === "published") return "rounded border border-woreda-success/20 bg-woreda-successBg px-2.5 py-1 text-xs font-bold text-woreda-success";
-  if (status === "archived") return "rounded border border-woreda-border bg-woreda-surfaceLow px-2.5 py-1 text-xs font-bold text-woreda-textMuted";
-  return "rounded border border-woreda-primary/20 bg-woreda-primarySoft px-2.5 py-1 text-xs font-bold text-woreda-primary";
-}
-
-
 function openResourcePreview(fileId?: string | null) {
   if (!fileId) return;
 
   window.open(
     getFileDownloadUrl(fileId) + "&inline=true",
     "_blank",
-    "noopener,noreferrer"
+    "noopener,noreferrer",
+  );
+}
+
+function Metric({ label, value }: { label: string; value: number }) {
+  return (
+    <Card>
+      <CardHeader className="px-4 py-3">
+        <span className="text-[11px] font-medium uppercase tracking-[0.06em] text-muted-foreground">
+          {label}
+        </span>
+      </CardHeader>
+      <CardContent className="px-4 pb-4 pt-0">
+        <p className="text-2xl font-semibold tabular-nums leading-none tracking-tight text-foreground">
+          {value}
+        </p>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -60,19 +102,16 @@ export function ResourcesPage() {
   const [targetRoles, setTargetRoles] = useState<string[]>(["HIBRET_ADMIN", "MEMBER"]);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
-  const [message, setMessage] = useState("");
-  const [error, setError] = useState("");
 
   const canManage = hasPrivilege("resource.create") || hasPrivilege("resource.update");
 
   async function loadResources() {
-    setError("");
     try {
       const data = await getResources();
       setResources(data.resources);
       setSummary(data.summary);
     } catch {
-      setError(t("resources.errors.load"));
+      toast.error(t("resources.errors.load"));
     }
   }
 
@@ -106,16 +145,18 @@ export function ResourcesPage() {
     if (!file) return;
 
     setIsUploadingFile(true);
-    setError("");
-    setMessage("");
 
     try {
       const uploaded = await uploadResourceFile(file);
       setFileId(uploaded.id);
       setFileName(readableFileName(uploaded.originalName));
-      setMessage(t("resources.messages.fileUploaded", { name: readableFileName(uploaded.originalName) }));
+      toast.success(
+        t("resources.messages.fileUploaded", {
+          name: readableFileName(uploaded.originalName),
+        }),
+      );
     } catch (err: any) {
-      setError(err?.response?.data?.message || t("resources.errors.upload"));
+      toast.error(err?.response?.data?.message || t("resources.errors.upload"));
       setFileId("");
       setFileName("");
     } finally {
@@ -124,9 +165,6 @@ export function ResourcesPage() {
   }
 
   async function saveResource() {
-    setError("");
-    setMessage("");
-
     const payload = {
       title,
       description,
@@ -138,22 +176,22 @@ export function ResourcesPage() {
     try {
       if (editing) {
         await updateResource(editing.id, payload);
-        setMessage(t("resources.messages.updated"));
+        toast.success(t("resources.messages.updated"));
       } else {
         await createResource(payload);
-        setMessage(t("resources.messages.created"));
+        toast.success(t("resources.messages.created"));
       }
 
       setIsFormOpen(false);
       await loadResources();
     } catch (err: any) {
-      setError(err?.response?.data?.message || t("resources.errors.save"));
+      toast.error(err?.response?.data?.message || t("resources.errors.save"));
     }
   }
 
   const categories = useMemo(
     () => [...new Set(resources.map((item) => item.category).filter(Boolean))],
-    [resources]
+    [resources],
   );
 
   useEffect(() => {
@@ -165,241 +203,331 @@ export function ResourcesPage() {
   const paginatedResources = resources.slice((safePage - 1) * pageSize, safePage * pageSize);
 
   return (
-    <section className="aw-design-page aw-design-resources aw-mobile-page aw-mobile-filterable flex min-h-0 flex-1 flex-col gap-5">
-      {error ? <div className="rounded border border-woreda-danger bg-woreda-dangerBg px-4 py-3 text-sm font-semibold text-woreda-danger">{error}</div> : null}
-      {message ? <div className="rounded border border-woreda-primary/20 bg-woreda-primarySoft px-4 py-3 text-sm font-semibold text-woreda-primary">{message}</div> : null}
-
+    <section className="flex min-h-0 flex-1 flex-col gap-5">
       <div className="hidden shrink-0 grid-cols-2 gap-3 md:grid md:grid-cols-4">
         <Metric label={t("resources.kpi.total")} value={summary.total} />
-        <Metric label={t("resources.kpi.published")} value={summary.published} tone="success" />
-        <Metric label={t("resources.kpi.draft")} value={summary.drafts} tone="primary" />
+        <Metric label={t("resources.kpi.published")} value={summary.published} />
+        <Metric label={t("resources.kpi.draft")} value={summary.drafts} />
         <Metric label={t("resources.kpi.archived")} value={summary.archived} />
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-3xl border border-woreda-border/70 bg-woreda-surface shadow-none">
-        <div className="flex shrink-0 flex-col gap-4 border-b border-woreda-border/60 bg-woreda-surfaceLow px-5 py-4 xl:flex-row xl:items-center xl:justify-between">
-          <p className="text-sm font-semibold text-woreda-textMuted">
-            {t("resources.countLine", { count: resources.length })}
-          </p>
+      <Card className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        <CardHeader className="flex shrink-0 flex-col gap-2 xl:flex-row xl:items-center xl:justify-between">
+          <div className="space-y-1">
+            <CardTitle>{t("sidebar.resources", { defaultValue: "Resources" })}</CardTitle>
+            <CardDescription>
+              {t("resources.countLine", { count: resources.length })}
+            </CardDescription>
+          </div>
 
           {canManage ? (
-            <button onClick={openCreate} className="inline-flex min-h-10 items-center gap-2 rounded-2xl border border-woreda-primary bg-woreda-primary px-4 py-2 text-sm font-bold text-white hover:bg-woreda-sidebar">
-              <Plus size={16} />
+            <Button type="button" variant="default" size="default" onClick={openCreate}>
+              <Plus aria-hidden />
               {t("resources.actions.create")}
-            </button>
+            </Button>
           ) : null}
-        </div>
+        </CardHeader>
 
-        <div className="min-h-0 flex-1 overflow-auto p-4 sm:p-5">
+        <CardContent className="min-h-0 flex-1 overflow-auto p-4 sm:p-5">
           {resources.length === 0 ? (
-            <EmptyMessage message={t("resources.empty")} />
+            <div className="rounded-md border border-dashed border-border bg-muted/30 px-4 py-10 text-center text-sm text-muted-foreground">
+              {t("resources.empty")}
+            </div>
           ) : (
-            <div className="form-grid">
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               {paginatedResources.map((item) => (
-                <article
+                <Card
                   key={item.id}
                   onClick={() => openResourcePreview(item.fileId)}
-                  className={[
-                    "rounded-2xl border border-woreda-border/70 bg-woreda-surfaceLow p-5 transition",
-                    item.fileId
-                      ? "cursor-pointer hover:border-woreda-primary hover:bg-woreda-primarySoft/30"
-                      : "",
-                  ].join(" ")}
+                  className={item.fileId ? "cursor-pointer transition-colors hover:border-primary/50" : ""}
                 >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex min-w-0 gap-3">
-                      <div className="flex h-11 w-11 items-center justify-center rounded border border-woreda-primary/20 bg-woreda-primarySoft text-woreda-primary">
-                        <FileText size={18} />
+                  <CardHeader>
+                    <div className="flex items-start gap-3">
+                      <div className="flex h-11 w-11 items-center justify-center rounded-md border border-primary/20 bg-primary/10 text-primary">
+                        <FileText size={18} aria-hidden />
                       </div>
-                      <div className="min-w-0">
-                        <h2 className="truncate text-lg font-bold text-woreda-text">{item.title}</h2>
-                        <p className="mt-1 text-sm text-woreda-textMuted">
+                      <div className="min-w-0 flex-1">
+                        <CardTitle className="truncate">{item.title}</CardTitle>
+                        <CardDescription className="mt-1">
                           {item.description || t("resources.noDescription")}
-                        </p>
+                        </CardDescription>
                         <div className="mt-3 flex flex-wrap gap-2">
-                          <span className={statusClass(item.status)}>{item.status}</span>
-                          {item.category ? <span className="rounded border border-woreda-border bg-woreda-surface px-2.5 py-1 text-xs font-bold text-woreda-textMuted">{item.category}</span> : null}
+                          <Badge variant={statusToBadgeVariant(item.status)}>{item.status}</Badge>
+                          {item.category ? (
+                            <Badge variant="muted">{item.category}</Badge>
+                          ) : null}
                         </div>
                       </div>
                     </div>
-                  </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {item.file ? (
+                      <div className="rounded-md border border-border bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
+                        {readableFileName(item.file.originalName)}
+                      </div>
+                    ) : null}
 
-                  {item.file ? (
-                    <div className="mt-4 rounded border border-woreda-border/60 bg-woreda-surface px-4 py-3 text-sm font-semibold text-woreda-textMuted">
-                      {readableFileName(item.file.originalName)}
+                    <div
+                      className="flex flex-wrap justify-end gap-2"
+                      onClick={(event) => event.stopPropagation()}
+                    >
+                      {item.fileId ? (
+                        <>
+                          <Button asChild variant="default" size="sm">
+                            <a
+                              href={getFileDownloadUrl(item.fileId) + "&inline=true"}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              <Eye aria-hidden />
+                              {t("common.open")}
+                            </a>
+                          </Button>
+
+                          <Button asChild variant="outline" size="sm">
+                            <a
+                              href={getAuthenticatedExportUrl(`/files/${item.fileId}/download`)}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              <Download aria-hidden />
+                              {t("resources.actions.download")}
+                            </a>
+                          </Button>
+                        </>
+                      ) : null}
+
+                      {canManage ? (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openEdit(item)}
+                        >
+                          {t("common.edit")}
+                        </Button>
+                      ) : null}
+
+                      {item.status !== "published" && hasPrivilege("resource.publish") ? (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={async () => {
+                            await publishResource(item.id);
+                            await loadResources();
+                          }}
+                        >
+                          <Send aria-hidden />
+                          {t("common.publish")}
+                        </Button>
+                      ) : null}
+
+                      {item.status !== "archived" && hasPrivilege("resource.archive") ? (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={async () => {
+                            await archiveResource(item.id);
+                            await loadResources();
+                          }}
+                        >
+                          <Archive aria-hidden />
+                          {t("common.archive")}
+                        </Button>
+                      ) : null}
                     </div>
-                  ) : null}
-
-                  <div
-                    className="mt-4 flex flex-wrap justify-end gap-2"
-                    onClick={(event) => event.stopPropagation()}
-                  >
-                    {item.fileId ? (
-                      <>
-                        <a
-                          href={getFileDownloadUrl(item.fileId) + "&inline=true"}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex min-h-9 items-center gap-2 rounded border border-woreda-primary bg-woreda-primary px-3 py-1.5 text-xs font-bold text-white hover:bg-woreda-sidebar"
-                        >
-                          <Eye size={13} />
-                          {t("common.open")}
-                        </a>
-
-                        <a
-                          href={getAuthenticatedExportUrl(`/files/${item.fileId}/download`)}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex min-h-9 items-center gap-2 rounded border border-woreda-primary bg-woreda-primarySoft px-3 py-1.5 text-xs font-bold text-woreda-primary"
-                        >
-                          <Download size={13} />
-                          {t("resources.actions.download")}
-                        </a>
-                      </>
-                    ) : null}
-
-                    {canManage ? (
-                      <button onClick={() => openEdit(item)} className="rounded-2xl border border-woreda-primary bg-woreda-primarySoft px-3 py-1.5 text-xs font-bold text-woreda-primary">
-                        {t("common.edit")}
-                      </button>
-                    ) : null}
-
-                    {item.status !== "published" && hasPrivilege("resource.publish") ? (
-                      <button onClick={async () => { await publishResource(item.id); await loadResources(); }} className="inline-flex min-h-9 items-center gap-2 rounded border border-woreda-success bg-woreda-successBg px-3 py-1.5 text-xs font-bold text-woreda-success">
-                        <Send size={13} />
-                        {t("common.publish")}
-                      </button>
-                    ) : null}
-
-                    {item.status !== "archived" && hasPrivilege("resource.archive") ? (
-                      <button onClick={async () => { await archiveResource(item.id); await loadResources(); }} className="inline-flex min-h-9 items-center gap-2 rounded border border-woreda-border bg-woreda-surface px-3 py-1.5 text-xs font-bold text-woreda-text">
-                        <Archive size={13} />
-                        {t("common.archive")}
-                      </button>
-                    ) : null}
-                  </div>
-                </article>
+                  </CardContent>
+                </Card>
               ))}
             </div>
           )}
-        </div>
-        <div className="flex flex-col gap-3 border-t border-woreda-border bg-woreda-surfaceLow px-5 py-3 sm:flex-row sm:items-center sm:justify-between">
-          <span className="text-sm font-semibold text-woreda-textMuted">
-            {t("common.paginationLine", { page: safePage, pages: totalPages, total: resources.length })}
+        </CardContent>
+
+        <div className="flex flex-col gap-3 border-t border-border bg-muted/30 px-5 py-3 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+          <span>
+            {t("common.paginationLine", {
+              page: safePage,
+              pages: totalPages,
+              total: resources.length,
+            })}
           </span>
           <div className="flex w-full flex-wrap items-center justify-start gap-2 sm:w-auto sm:justify-end">
-            <select
-              className="aw-filter-select"
-              value={pageSize}
-              onChange={(event) => {
-                setPageSize(Number(event.target.value));
+            <Select
+              value={String(pageSize)}
+              onValueChange={(value) => {
+                setPageSize(Number(value));
                 setPage(1);
               }}
             >
-              <option value={10}>{t("common.pageSize", { size: 10 })}</option>
-              <option value={20}>{t("common.pageSize", { size: 20 })}</option>
-              <option value={50}>{t("common.pageSize", { size: 50 })}</option>
-              <option value={100}>{t("common.pageSize", { size: 100 })}</option>
-            </select>
-            <button type="button" className="aw-btn aw-btn-outline-strong" disabled={safePage <= 1} onClick={() => setPage((current) => Math.max(1, current - 1))}>
+              <SelectTrigger className="h-8 w-auto px-2 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="10">{t("common.pageSize", { size: 10 })}</SelectItem>
+                <SelectItem value="20">{t("common.pageSize", { size: 20 })}</SelectItem>
+                <SelectItem value="50">{t("common.pageSize", { size: 50 })}</SelectItem>
+                <SelectItem value="100">{t("common.pageSize", { size: 100 })}</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={safePage <= 1}
+              onClick={() => setPage((current) => Math.max(1, current - 1))}
+            >
               {t("common.previous")}
-            </button>
-            <button type="button" className="aw-btn aw-btn-outline-strong" disabled={safePage >= totalPages} onClick={() => setPage((current) => Math.min(totalPages, current + 1))}>
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={safePage >= totalPages}
+              onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
+            >
               {t("common.next")}
-            </button>
+            </Button>
           </div>
         </div>
-      </div>
+      </Card>
 
-      {isFormOpen ? (
-        <div className="aw-resource-drawer fixed inset-0 z-50 flex justify-end bg-[var(--overlay-scrim)]">
-          <div className="aw-resource-drawer-sheet flex h-full w-full max-w-xl flex-col rounded-l-3xl bg-woreda-surface shadow-none max-md:rounded-none">
-            <div className="border-b border-woreda-border bg-woreda-surfaceLow px-5 py-4">
-              <h2 className="text-xl font-bold text-woreda-text">
-                {editing ? t("resources.form.editTitle") : t("resources.form.createTitle")}
-              </h2>
+      <Sheet open={isFormOpen} onOpenChange={setIsFormOpen}>
+        <SheetContent
+          side="right"
+          className="flex w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-[540px]"
+        >
+          <SheetHeader className="border-b border-border bg-muted/30">
+            <SheetTitle>
+              {editing ? t("resources.form.editTitle") : t("resources.form.createTitle")}
+            </SheetTitle>
+            <SheetDescription>
+              {editing ? t("resources.form.editTitle") : t("resources.form.createTitle")}
+            </SheetDescription>
+          </SheetHeader>
+
+          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-6 py-5">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="resource-title">{t("resources.form.titlePlaceholder")}</Label>
+              <Input
+                id="resource-title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder={t("resources.form.titlePlaceholder")}
+              />
             </div>
 
-            <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-5">
-              <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t("resources.form.titlePlaceholder")} className="min-h-11 w-full rounded border border-woreda-border bg-woreda-surface px-3 text-sm outline-none focus:border-woreda-primary" />
-              <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder={t("resources.form.descriptionPlaceholder")} className="min-h-24 w-full rounded border border-woreda-border bg-woreda-surface px-3 py-2 text-sm outline-none focus:border-woreda-primary" />
-              <input value={category} onChange={(e) => setCategory(e.target.value)} placeholder={t("resources.form.categoryPlaceholder")} list="resource-categories" className="min-h-11 w-full rounded border border-woreda-border bg-woreda-surface px-3 text-sm outline-none focus:border-woreda-primary" />
-              <datalist id="resource-categories">{categories.map((item) => <option key={item} value={item || ""} />)}</datalist>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="resource-description">
+                {t("resources.form.descriptionPlaceholder")}
+              </Label>
+              <Textarea
+                id="resource-description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder={t("resources.form.descriptionPlaceholder")}
+                rows={4}
+              />
+            </div>
 
-              <div className="rounded border border-dashed border-woreda-border bg-woreda-surfaceLow p-3">
-                <label className="flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded border border-woreda-border bg-woreda-surface px-3 py-2 text-sm font-bold text-woreda-text hover:border-woreda-primary hover:text-woreda-primary">
-                  <Upload size={16} />
-                  {isUploadingFile
-                    ? t("resources.form.uploadingSelected")
-                    : fileName
-                      ? t("resources.form.changeFile")
-                      : t("resources.form.chooseFile")}
-                  <input
-                    type="file"
-                    className="sr-only"
-                    onChange={(event) => {
-                      void handleFile(event.currentTarget.files?.[0]);
-                      event.currentTarget.value = "";
-                    }}
-                  />
-                </label>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="resource-category">
+                {t("resources.form.categoryPlaceholder")}
+              </Label>
+              <Input
+                id="resource-category"
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                placeholder={t("resources.form.categoryPlaceholder")}
+                list="resource-categories"
+              />
+              <datalist id="resource-categories">
+                {categories.map((item) => (
+                  <option key={item} value={item || ""} />
+                ))}
+              </datalist>
+            </div>
 
-                <div className="mt-3 rounded border border-woreda-border/60 bg-woreda-surface px-3 py-2">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-woreda-textMuted">
-                    {t("resources.form.selectedFile")}
-                  </p>
-                  <p className="mt-1 break-all text-sm font-semibold text-woreda-text">
-                    {fileName || t("resources.form.noFile")}
-                  </p>
-                </div>
-              </div>
+            <div className="rounded-md border border-dashed border-border bg-muted/30 p-3">
+              <label className="flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-sm font-medium text-foreground hover:border-primary/50 hover:text-primary">
+                <Upload size={16} aria-hidden />
+                {isUploadingFile
+                  ? t("resources.form.uploadingSelected")
+                  : fileName
+                    ? t("resources.form.changeFile")
+                    : t("resources.form.chooseFile")}
+                <input
+                  type="file"
+                  className="sr-only"
+                  onChange={(event) => {
+                    void handleFile(event.currentTarget.files?.[0]);
+                    event.currentTarget.value = "";
+                  }}
+                />
+              </label>
 
-              <div className="flex flex-wrap gap-3 rounded border border-woreda-border bg-woreda-surfaceLow px-3 py-2 text-sm font-semibold">
-                <label className="flex items-center gap-2">
-                  <input type="checkbox" checked={targetRoles.includes("HIBRET_ADMIN")} onChange={(e) => setTargetRoles((current) => e.target.checked ? [...new Set([...current, "HIBRET_ADMIN"])] : current.filter((role) => role !== "HIBRET_ADMIN"))} />
-                  {t("resources.form.targetHibretAdmins")}
-                </label>
-                <label className="flex items-center gap-2">
-                  <input type="checkbox" checked={targetRoles.includes("MEMBER")} onChange={(e) => setTargetRoles((current) => e.target.checked ? [...new Set([...current, "MEMBER"])] : current.filter((role) => role !== "MEMBER"))} />
-                  {t("resources.form.targetMembers")}
-                </label>
+              <div className="mt-3 rounded-md border border-border bg-background px-3 py-2">
+                <p className="text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
+                  {t("resources.form.selectedFile")}
+                </p>
+                <p className="mt-1 break-all text-sm text-foreground">
+                  {fileName || t("resources.form.noFile")}
+                </p>
               </div>
             </div>
 
-            <div className="flex justify-end gap-3 border-t border-woreda-border bg-woreda-surfaceLow px-5 py-4">
-              <button onClick={() => setIsFormOpen(false)} className="min-h-10 rounded border border-woreda-border bg-woreda-surface px-4 py-2 text-sm font-bold">{t("common.cancel")}</button>
-              <button
-                onClick={saveResource}
-                disabled={isUploadingFile}
-                className="min-h-10 rounded border border-woreda-primary bg-woreda-primary px-4 py-2 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {isUploadingFile ? t("resources.form.uploading") : t("resources.actions.save")}
-              </button>
+            <div className="flex flex-wrap gap-3 rounded-md border border-border bg-muted/30 px-3 py-2 text-sm">
+              <label className="flex items-center gap-2">
+                <Checkbox
+                  checked={targetRoles.includes("HIBRET_ADMIN")}
+                  onCheckedChange={(checked) =>
+                    setTargetRoles((current) =>
+                      checked
+                        ? [...new Set([...current, "HIBRET_ADMIN"])]
+                        : current.filter((role) => role !== "HIBRET_ADMIN"),
+                    )
+                  }
+                />
+                {t("resources.form.targetHibretAdmins")}
+              </label>
+              <label className="flex items-center gap-2">
+                <Checkbox
+                  checked={targetRoles.includes("MEMBER")}
+                  onCheckedChange={(checked) =>
+                    setTargetRoles((current) =>
+                      checked
+                        ? [...new Set([...current, "MEMBER"])]
+                        : current.filter((role) => role !== "MEMBER"),
+                    )
+                  }
+                />
+                {t("resources.form.targetMembers")}
+              </label>
             </div>
           </div>
-        </div>
-      ) : null}
+
+          <div className="flex justify-end gap-3 border-t border-border bg-muted/30 px-5 py-4">
+            <Button
+              type="button"
+              variant="outline"
+              size="default"
+              onClick={() => setIsFormOpen(false)}
+            >
+              {t("common.cancel")}
+            </Button>
+            <Button
+              type="button"
+              variant="default"
+              size="default"
+              onClick={saveResource}
+              disabled={isUploadingFile}
+            >
+              {isUploadingFile ? t("resources.form.uploading") : t("resources.actions.save")}
+            </Button>
+          </div>
+        </SheetContent>
+      </Sheet>
     </section>
   );
-}
-
-function Metric({ label, value, tone = "default" }: { label: string; value: number; tone?: "default" | "primary" | "success" }) {
-  const toneClass =
-    tone === "primary"
-      ? { soft: "bg-[var(--aw-primary-soft)]", value: "text-[var(--aw-primary)]", bar: "bg-[var(--aw-primary)]" }
-      : tone === "success"
-        ? { soft: "bg-[var(--aw-success-bg)]", value: "text-[var(--aw-success)]", bar: "bg-[var(--aw-success)]" }
-        : { soft: "bg-[var(--aw-surface-muted)]", value: "text-[var(--aw-text)]", bar: "bg-[var(--aw-muted)]" };
-  return (
-    <article className="aw-stat-card relative overflow-hidden rounded-3xl border border-[var(--aw-border-soft)] bg-[var(--aw-surface)] p-4 shadow-sm">
-      <div className={`absolute right-0 top-0 h-20 w-20 rounded-bl-full ${toneClass.soft}`} aria-hidden />
-      <p className="relative text-[10px] font-black uppercase tracking-[0.16em] text-[var(--aw-muted)]">{label}</p>
-      <p className={`relative mt-2 text-[clamp(1.35rem,2vw,2rem)] font-black leading-none ${toneClass.value}`}>{value}</p>
-      <div className={`relative mt-3 h-1.5 rounded-full ${toneClass.bar}`} />
-    </article>
-  );
-}
-
-function EmptyMessage({ message }: { message: string }) {
-  return <div className="rounded border border-dashed border-woreda-border bg-woreda-surfaceLow px-4 py-10 text-center text-sm font-semibold text-woreda-textMuted">{message}</div>;
 }

@@ -1,10 +1,57 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { ArrowRight, BookOpen, FolderOpen, IdCard, Megaphone, UserCircle2 } from "lucide-react";
 import { getMyMemberProfile } from "../../services/woredaMemberService";
 import type { WoredaMember } from "../../services/woredaMemberService";
 import { ErrorState } from "../../components/ui/ErrorState";
 import { LoadingState } from "../../components/ui/LoadingState";
-import { StatCard } from "../../components/ui/StatCard";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/shadcn/card";
+import { Button } from "@/components/ui/shadcn/button";
+
+type StatTone = "default" | "success" | "warning";
+
+function StatTile({
+  label,
+  value,
+  icon: Icon,
+  tone = "default",
+}: {
+  label: string;
+  value: string | number;
+  icon: typeof IdCard;
+  tone?: StatTone;
+}) {
+  const labelToneClass =
+    tone === "success"
+      ? "text-[var(--aw-success)]"
+      : tone === "warning"
+        ? "text-[var(--aw-warning)]"
+        : "text-muted-foreground";
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between gap-2 px-4 py-3">
+        <span
+          className={`text-[11px] font-medium uppercase tracking-[0.06em] ${labelToneClass}`}
+        >
+          {label}
+        </span>
+        <Icon size={16} className="text-muted-foreground" aria-hidden />
+      </CardHeader>
+      <CardContent className="px-4 pb-4 pt-0">
+        <p className="text-2xl font-semibold tabular-nums leading-none tracking-tight text-foreground">
+          {value}
+        </p>
+      </CardContent>
+    </Card>
+  );
+}
 
 export function MemberDashboardPage() {
   const [member, setMember] = useState<WoredaMember | null>(null);
@@ -32,32 +79,65 @@ export function MemberDashboardPage() {
   if (error) return <ErrorState message={error} onRetry={load} />;
 
   return (
-    <section className="aw-design-page aw-mobile-page flex min-h-0 flex-1 flex-col gap-5">
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <StatCard label="Profile completion" value={`${member?.profileCompletion ?? 0}%`} />
-        <StatCard label="Hibret" value={member?.hibretName || "-"} />
-        <StatCard label="Family" value={member?.familyName || "-"} />
-        <StatCard label="Membership" value={member?.membershipStatus || "-"} />
+    <section className="aw-design-page aw-mobile-page flex min-h-0 flex-1 flex-col space-y-6">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatTile
+          label="Profile completion"
+          value={`${member?.profileCompletion ?? 0}%`}
+          icon={UserCircle2}
+          tone="success"
+        />
+        <StatTile
+          label="Hibret"
+          value={member?.hibretName || "-"}
+          icon={BookOpen}
+        />
+        <StatTile
+          label="Family"
+          value={member?.familyName || "-"}
+          icon={IdCard}
+        />
+        <StatTile
+          label="Membership"
+          value={member?.membershipStatus || "-"}
+          icon={IdCard}
+          tone="warning"
+        />
       </div>
 
-      <div className="rounded-3xl border border-woreda-border/70 bg-woreda-surface px-5 py-6">
-        <h2 className="text-lg font-black text-woreda-text">Quick actions</h2>
-        <p className="mt-1 text-sm font-semibold text-woreda-textMuted">
-          Open the modules available to member accounts on this system.
-        </p>
-        <div className="mt-4 flex flex-wrap gap-2">
-          <Link to="/member/broadcasts" className="min-h-10 rounded-2xl bg-woreda-primary px-4 text-sm font-black text-white hover:brightness-105">
-            Broadcasts
-          </Link>
-          <Link to="/member/resources" className="min-h-10 rounded-2xl border border-woreda-border bg-woreda-surface px-4 text-sm font-black text-woreda-text hover:border-woreda-primary hover:text-woreda-primary">
-            Resources
-          </Link>
-          <Link to="/member/profile" className="min-h-10 rounded-2xl border border-woreda-border bg-woreda-surface px-4 text-sm font-black text-woreda-text hover:border-woreda-primary hover:text-woreda-primary">
-            Profile
-          </Link>
-        </div>
-      </div>
+      <Card>
+        <CardHeader className="flex flex-row items-start justify-between gap-3">
+          <div className="space-y-1">
+            <CardTitle>Quick actions</CardTitle>
+            <CardDescription>
+              Open the modules available to member accounts on this system.
+            </CardDescription>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button asChild variant="default" size="default">
+              <Link to="/member/broadcasts" className="inline-flex items-center gap-2">
+                <Megaphone aria-hidden />
+                Broadcasts
+                <ArrowRight aria-hidden />
+              </Link>
+            </Button>
+            <Button asChild variant="outline" size="default">
+              <Link to="/member/resources" className="inline-flex items-center gap-2">
+                <FolderOpen aria-hidden />
+                Resources
+              </Link>
+            </Button>
+            <Button asChild variant="outline" size="default">
+              <Link to="/member/profile" className="inline-flex items-center gap-2">
+                <UserCircle2 aria-hidden />
+                Profile
+              </Link>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </section>
   );
 }
-

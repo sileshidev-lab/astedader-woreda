@@ -98,6 +98,13 @@ function addMinutes(minutes: number) {
 }
 
 function mapAuthUser(user: any) {
+  const hibretName = user.hibret?.name ?? null;
+  const memberName = user.member
+    ? [user.member.firstName, user.member.fatherName, user.member.grandfatherName]
+        .filter(Boolean)
+        .join(" ") || null
+    : null;
+
   return {
     id: user.id,
     email: user.email,
@@ -106,6 +113,8 @@ function mapAuthUser(user: any) {
     privileges: user.privileges,
     hibretId: user.hibretId,
     memberId: user.memberId,
+    hibretName,
+    memberName,
     twoFactorEnabled: Boolean(user.twoFactorEnabled),
   };
 }
@@ -195,12 +204,18 @@ router.post("/login", authRateLimiter, async (req, res) => {
     },
   });
 
-  let emailResult: { previewUrl?: string | null } = { previewUrl: null };
+  let emailResult: { previewUrl?: string | null; skipped?: boolean } = {
+    previewUrl: null,
+  };
 
   try {
     emailResult = await sendTwoFactorEmail(user.email, code);
   } catch (error) {
     console.error("Unable to send 2FA email:", error);
+  }
+
+  if (emailResult.skipped && !env.IS_PRODUCTION) {
+    console.warn(`[auth] OTP for ${user.email}: ${code}`);
   }
 
   return res.json({
@@ -630,6 +645,18 @@ router.post("/2fa/disable", authMiddleware, async (req, res) => {
 router.get("/me", authMiddleware, async (req, res) => {
   const user = await prisma.user.findUnique({
     where: { id: String(req.user?.id) },
+    include: {
+      hibret: {
+        select: { name: true },
+      },
+      member: {
+        select: {
+          firstName: true,
+          fatherName: true,
+          grandfatherName: true,
+        },
+      },
+    },
   });
 
   if (!user) {

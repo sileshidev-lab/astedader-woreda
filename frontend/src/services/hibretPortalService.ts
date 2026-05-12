@@ -1,6 +1,15 @@
 import { apiClient } from "./apiClient";
 import type { ResourceItem } from "./contentService";
 
+export type ChatMessage = {
+  id: string;
+  body: string;
+  senderName?: string | null;
+  senderEmail?: string | null;
+  createdAt: string;
+  mine?: boolean;
+};
+
 export type HibretFamilyMember = {
   id: string;
   name: string;
@@ -107,18 +116,9 @@ export type HibretPortalDetail = {
   }>;
 };
 
-export type ChatMessage = {
-  id: string;
-  body: string;
-  senderName?: string | null;
-  senderEmail?: string | null;
-  createdAt: string;
-  mine?: boolean;
-};
-
-export async function getMyHibretPortalDetail(hibretId?: string | null) {
+export async function getMyHibretPortalDetail(hibretId: string) {
   const response = await apiClient.get<{ hibret: HibretPortalDetail }>(
-    hibretId ? `/hibrets/${hibretId}` : "/hibret/detail"
+    `/hibrets/${hibretId}`
   );
 
   return response.data.hibret;
@@ -138,28 +138,4 @@ export async function getHibretResources() {
         (item.targetRoles.includes("HIBRET_ADMIN") || item.targetRoles.includes("MEMBER"))
     ),
   };
-}
-
-export async function getChatMessages() {
-  try {
-    const response = await apiClient.get<{ messages: ChatMessage[] }>("/chat/messages");
-    return response.data.messages;
-  } catch {
-    return [];
-  }
-}
-
-export async function sendChatMessage(body: string) {
-  try {
-    const response = await apiClient.post<{ message: ChatMessage }>("/chat/messages", { body });
-    return response.data.message;
-  } catch {
-    return {
-      id: `local-${Date.now()}`,
-      body,
-      senderName: "You",
-      createdAt: new Date().toISOString(),
-      mine: true,
-    };
-  }
 }

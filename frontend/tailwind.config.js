@@ -1,8 +1,19 @@
+import tailwindcssAnimate from "tailwindcss-animate";
+
 /** @type {import('tailwindcss').Config} */
 export default {
+  darkMode: ["class", "[data-theme='dark']"],
   content: ["./index.html", "./src/**/*.{js,jsx,ts,tsx}"],
 
   theme: {
+    container: {
+      center: true,
+      padding: "1rem",
+      screens: {
+        "2xl": "1400px",
+      },
+    },
+
     screens: {
       xs: "375px",
       sm: "640px",
@@ -16,8 +27,26 @@ export default {
 
     extend: {
       fontFamily: {
-        sans: ["Public Sans", "Inter", "system-ui", "sans-serif"],
-        mono: ["Cascadia Code", "Fira Code", "monospace"],
+        sans: [
+          "Inter",
+          "Public Sans",
+          "Noto Sans Ethiopic",
+          "system-ui",
+          "-apple-system",
+          "BlinkMacSystemFont",
+          "Segoe UI",
+          "sans-serif",
+        ],
+        display: [
+          "Inter",
+          "Public Sans",
+          "Noto Sans Ethiopic",
+          "SF Pro Display",
+          "system-ui",
+          "sans-serif",
+        ],
+        ethiopic: ["Noto Sans Ethiopic", "Inter", "sans-serif"],
+        mono: ["JetBrains Mono", "Cascadia Code", "Fira Code", "monospace"],
       },
 
       fontSize: {
@@ -78,11 +107,14 @@ export default {
         screen: "100dvh",
       },
 
+      // shadcn-friendly radius scale; backed by the --radius CSS var so
+      // tweaking the design system feels global.  Extras (xs, xl, 2xl, 3xl)
+      // remain available for legacy aw-* consumers.
       borderRadius: {
         xs: "2px",
-        sm: "4px",
-        md: "6px",
-        lg: "8px",
+        lg: "var(--radius)",
+        md: "calc(var(--radius) - 2px)",
+        sm: "calc(var(--radius) - 4px)",
         xl: "12px",
         "2xl": "16px",
         "3xl": "24px",
@@ -96,10 +128,59 @@ export default {
         toast: "500",
       },
 
+      // Two color systems share one source of truth:
+      // - shadcn theme contract (background, foreground, primary, …) is
+      //   exposed via hsl(var(--*) / <alpha-value>) so opacity modifiers
+      //   (e.g. bg-primary/80) work.
+      // - Legacy aw-* utility colors (woreda.*, surface, etc.) keep
+      //   resolving to the same --aw-* tokens.
       colors: {
-        bg: "var(--aw-bg)",
-        background: "var(--aw-bg)",
+        border: "hsl(var(--border) / <alpha-value>)",
+        input: "hsl(var(--input) / <alpha-value>)",
+        ring: "hsl(var(--ring) / <alpha-value>)",
+        background: "hsl(var(--background) / <alpha-value>)",
+        foreground: "hsl(var(--foreground) / <alpha-value>)",
+        primary: {
+          DEFAULT: "hsl(var(--primary) / <alpha-value>)",
+          foreground: "hsl(var(--primary-foreground) / <alpha-value>)",
+        },
+        secondary: {
+          DEFAULT: "hsl(var(--secondary) / <alpha-value>)",
+          foreground: "hsl(var(--secondary-foreground) / <alpha-value>)",
+        },
+        destructive: {
+          DEFAULT: "hsl(var(--destructive) / <alpha-value>)",
+          foreground: "hsl(var(--destructive-foreground) / <alpha-value>)",
+        },
+        muted: {
+          DEFAULT: "hsl(var(--muted) / <alpha-value>)",
+          foreground: "hsl(var(--muted-foreground) / <alpha-value>)",
+        },
+        accent: {
+          DEFAULT: "hsl(var(--accent) / <alpha-value>)",
+          foreground: "hsl(var(--accent-foreground) / <alpha-value>)",
+        },
+        popover: {
+          DEFAULT: "hsl(var(--popover) / <alpha-value>)",
+          foreground: "hsl(var(--popover-foreground) / <alpha-value>)",
+        },
+        card: {
+          DEFAULT: "hsl(var(--card) / <alpha-value>)",
+          foreground: "hsl(var(--card-foreground) / <alpha-value>)",
+        },
+        success: {
+          DEFAULT: "hsl(var(--success) / <alpha-value>)",
+          foreground: "hsl(var(--success-foreground) / <alpha-value>)",
+        },
+        warning: {
+          DEFAULT: "hsl(var(--warning) / <alpha-value>)",
+          foreground: "hsl(var(--warning-foreground) / <alpha-value>)",
+        },
 
+        // Legacy aw-* aliases.  Continue to point at --aw-* tokens so
+        // existing utility classes (bg-woreda-primary, etc.) keep
+        // rendering exactly as they did before.
+        bg: "var(--aw-bg)",
         surface: "var(--aw-surface)",
         "surface-low": "var(--aw-surface-muted)",
         "surface-container": "var(--aw-surface-container)",
@@ -113,22 +194,16 @@ export default {
         outline: "var(--aw-border-soft)",
         "outline-variant": "var(--aw-border)",
 
-        primary: "var(--aw-primary)",
         "primary-dark": "var(--aw-primary-dark)",
         "primary-strong": "var(--aw-primary-strong)",
         "primary-soft": "var(--aw-primary-soft)",
         "on-primary": "#ffffff",
 
-        secondary: "var(--aw-magenta)",
         "on-secondary": "#ffffff",
-
         tertiary: "var(--aw-yellow)",
         "on-tertiary": "var(--aw-primary-strong)",
-
         error: "var(--aw-danger)",
         "error-container": "var(--aw-danger-bg)",
-
-        success: "var(--aw-success)",
         "success-container": "var(--aw-success-bg)",
 
         white: "#ffffff",
@@ -179,11 +254,65 @@ export default {
       },
 
       boxShadow: {
-        soft: "0 10px 30px rgba(0, 76, 107, 0.08)",
-        panel: "0 1px 2px rgba(0, 76, 107, 0.08)",
+        xs: "var(--aw-shadow-xs)",
+        sm: "var(--aw-shadow-sm)",
+        md: "var(--aw-shadow-md)",
+        lg: "var(--aw-shadow-lg)",
+        xl: "var(--aw-shadow-xl)",
+        soft: "var(--aw-shadow-md)",
+        panel: "var(--aw-shadow-sm)",
+        focus: "var(--aw-shadow-focus)",
+        ring: "var(--aw-shadow-ring)",
+      },
+
+      transitionTimingFunction: {
+        standard: "cubic-bezier(0.2, 0, 0, 1)",
+        emphasized: "cubic-bezier(0.3, 0, 0, 1.15)",
+      },
+
+      transitionDuration: {
+        fast: "120ms",
+        base: "180ms",
+        slow: "260ms",
+      },
+
+      // Enterprise typography weights: cap at 600 so utility classes
+      // like font-bold / font-extrabold / font-black never produce
+      // shouty typography across the existing codebase.  font-semibold
+      // (600) remains untouched.
+      fontWeight: {
+        bold: "600",
+        extrabold: "600",
+        black: "600",
+      },
+
+      keyframes: {
+        "accordion-down": {
+          from: { height: "0" },
+          to: { height: "var(--radix-accordion-content-height)" },
+        },
+        "accordion-up": {
+          from: { height: "var(--radix-accordion-content-height)" },
+          to: { height: "0" },
+        },
+        "collapsible-down": {
+          from: { height: "0" },
+          to: { height: "var(--radix-collapsible-content-height)" },
+        },
+        "collapsible-up": {
+          from: { height: "var(--radix-collapsible-content-height)" },
+          to: { height: "0" },
+        },
+      },
+
+      animation: {
+        "accordion-down": "accordion-down 200ms cubic-bezier(0.2, 0, 0, 1)",
+        "accordion-up": "accordion-up 200ms cubic-bezier(0.2, 0, 0, 1)",
+        "collapsible-down": "collapsible-down 200ms cubic-bezier(0.2, 0, 0, 1)",
+        "collapsible-up": "collapsible-up 200ms cubic-bezier(0.2, 0, 0, 1)",
       },
     },
   },
 
-  plugins: [],
+  plugins: [tailwindcssAnimate],
 };

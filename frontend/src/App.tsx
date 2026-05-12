@@ -62,6 +62,7 @@ import { SettingsPage as WoredaSettingsPage } from "./pages/woreda/settings/Sett
 import { ProtectedRoute } from "./components/layout/ProtectedRoute";
 import { RoleRoute } from "./components/layout/RoleRoute";
 import { useAuthStore } from "./stores/authStore";
+import { Toaster } from "./components/ui/shadcn/sonner";
 
 function SettingsRedirect() {
   const { user } = useAuthStore();
@@ -89,7 +90,9 @@ function App() {
   }, [loadCurrentUser]);
 
   return (
-    <Routes>
+    <>
+      <Toaster richColors closeButton position="top-right" />
+      <Routes>
       <Route path="/setup-account" element={<SetupPasswordPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
@@ -177,7 +180,8 @@ function App() {
       </Route>
 
       <Route path="*" element={<Navigate to="/login" replace />} />
-    </Routes>
+      </Routes>
+    </>
   );
 }
 

@@ -34,11 +34,14 @@ export function AppSidebar({
   const { t } = useTranslation();
 
   return (
-    <aside className="aw-woreda-sidebar flex h-[100dvh] w-[var(--aw-sidebar-w)] flex-col overflow-hidden bg-[#004C6B] text-white">
+    <aside
+      className="aw-woreda-sidebar relative flex h-[100dvh] w-[var(--aw-sidebar-w)] flex-col overflow-hidden text-white"
+      style={{ background: "var(--aw-sidebar)" }}
+    >
       <div className="flex h-full min-h-0 flex-col">
-        <div className="flex shrink-0 items-center justify-between border-b border-white/10 px-5 py-5">
+        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-white/8 px-4 py-4">
           <div className="flex min-w-0 items-center gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white p-1.5 shadow-sm">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-white p-1">
               <img
                 src="/Prosperity_Party_logo.png"
                 alt="Prosperity Party"
@@ -47,10 +50,12 @@ export function AppSidebar({
             </div>
 
             <div className="min-w-0">
-              <p className="text-xs font-black uppercase tracking-[0.2em] text-[var(--aw-yellow)]">
+              <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-white/55">
                 {t("app.name")}
               </p>
-              <h1 className="mt-1 truncate text-lg font-black text-white">{roleLabel}</h1>
+              <h1 className="mt-0.5 truncate font-display text-[13px] font-semibold text-white">
+                {roleLabel}
+              </h1>
             </div>
           </div>
 
@@ -58,54 +63,81 @@ export function AppSidebar({
             <button
               type="button"
               onClick={onClose}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-2xl text-white/80 transition hover:bg-white/10 hover:text-white"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-md text-white/70 transition hover:bg-white/8 hover:text-white"
               aria-label="Close navigation"
             >
-              <X size={20} />
+              <X size={18} />
             </button>
           ) : null}
         </div>
 
-        <nav id={navId} className="min-h-0 flex-1 overflow-y-auto px-3 py-4" aria-label={navAriaLabel}>
-          {navItems.map((item) => {
-            const Icon = item.icon;
+        <nav
+          id={navId}
+          className="min-h-0 flex-1 overflow-y-auto px-2.5 py-3"
+          aria-label={navAriaLabel}
+        >
+          <ul className="flex flex-col gap-0.5">
+            {navItems.map((item) => {
+              const Icon = item.icon;
 
-            return (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                className={({ isActive }) =>
-                  [
-                    "group mt-1 flex min-h-12 items-center gap-3 rounded-2xl border-l-4 px-4 py-3 text-sm transition-colors",
-                    isActive
-                      ? "border-[var(--aw-yellow)] bg-white/12 font-black text-white shadow-sm"
-                      : "border-transparent font-bold text-white/75 hover:bg-white/10 hover:text-white",
-                  ].join(" ")
-                }
-              >
-                <Icon size={19} className="shrink-0" />
-                <span className="truncate">{item.label}</span>
-              </NavLink>
-            );
-          })}
+              return (
+                <li key={item.path}>
+                  <NavLink
+                    to={item.path}
+                    className={({ isActive }) =>
+                      [
+                        "group relative flex min-h-9 items-center gap-2.5 rounded-md px-2.5 py-1.5 text-[13px] transition-colors duration-fast",
+                        isActive
+                          ? "bg-white/8 font-medium text-white"
+                          : "font-normal text-white/65 hover:bg-white/6 hover:text-white",
+                      ].join(" ")
+                    }
+                  >
+                    {({ isActive }) => (
+                      <>
+                        <span
+                          aria-hidden
+                          className={[
+                            "absolute left-0 top-1/2 h-5 w-[2px] -translate-y-1/2 rounded-r transition-opacity duration-fast",
+                            isActive ? "opacity-100" : "opacity-0",
+                          ].join(" ")}
+                          style={{ background: "rgba(255,255,255,0.9)" }}
+                        />
+                        <Icon size={16} className="shrink-0 opacity-80" />
+                        <span className="truncate">{item.label}</span>
+                      </>
+                    )}
+                  </NavLink>
+                </li>
+              );
+            })}
+          </ul>
         </nav>
 
-        <div className="shrink-0 border-t border-white/10 p-4">
-          <div className="rounded-2xl bg-white/10 p-4 shadow-sm ring-1 ring-white/10">
-            <p className="text-xs font-black uppercase tracking-[0.16em] text-white/55">
+        <div className="shrink-0 border-t border-white/8 p-2.5">
+          <div className="rounded-md p-2.5" style={{ background: "rgba(255,255,255,0.04)" }}>
+            <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-white/45">
               {t("layout.signedIn")}
             </p>
 
-            <p className="mt-2 truncate text-sm font-black text-white">{userEmail || "-"}</p>
+            <p
+              className="mt-1 truncate font-display text-[13px] font-medium text-white"
+              title={userEmail || "-"}
+            >
+              {userEmail || "-"}
+            </p>
 
-            <p className="mt-1 truncate text-xs font-bold text-white/80">{userRole || "-"}</p>
+            <p className="mt-0.5 truncate text-[11px] font-normal text-white/55">
+              {userRole || "-"}
+            </p>
 
             <button
               type="button"
               onClick={onLogout}
-              className="mt-3 flex min-h-10 w-full items-center justify-center gap-2 rounded-xl bg-[#A00061] px-3 py-2 text-sm font-black text-white transition hover:opacity-90"
+              className="mt-2.5 inline-flex min-h-8 w-full items-center justify-center gap-1.5 rounded-md px-2.5 py-1 text-[12px] font-medium text-white/85 transition hover:bg-white/6 hover:text-white"
+              style={{ border: "1px solid rgba(255,255,255,0.10)" }}
             >
-              <LogOut size={16} />
+              <LogOut size={14} />
               {t("common.logout")}
             </button>
           </div>

@@ -5,28 +5,50 @@ export function StatCard({
   value,
   hint,
   icon,
+  tone = "primary",
 }: {
   label: string;
   value: ReactNode;
   hint?: string;
   icon?: ReactNode;
+  tone?: "primary" | "success" | "warning" | "danger" | "neutral";
 }) {
+  const accent =
+    tone === "success"
+      ? "var(--aw-success)"
+      : tone === "warning"
+        ? "var(--aw-warning)"
+        : tone === "danger"
+          ? "var(--aw-danger)"
+          : tone === "neutral"
+            ? "var(--aw-muted)"
+            : "var(--aw-primary)";
+
   return (
-    <article className="relative overflow-hidden rounded-3xl border border-[var(--aw-border-soft)] bg-[var(--aw-surface)] p-4 shadow-sm">
+    <article
+      className="relative overflow-hidden rounded-md border border-[var(--aw-border)] bg-[var(--aw-surface)] p-4"
+      style={{ boxShadow: "var(--aw-shadow-xs)" }}
+    >
       <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[var(--aw-muted)]">
+        <div className="min-w-0">
+          <p className="font-sans text-[11px] font-medium uppercase tracking-[0.06em] text-[var(--aw-muted)]">
             {label}
           </p>
-          <div className="mt-2 text-[clamp(1.35rem,2vw,2rem)] font-black leading-none text-[var(--aw-primary)]">
+          <div
+            className="mt-1.5 font-display text-[1.625rem] font-semibold leading-tight text-[var(--aw-text)]"
+            style={{ letterSpacing: "-0.01em", fontVariantNumeric: "tabular-nums lining-nums" }}
+          >
             {value}
           </div>
           {hint ? (
-            <p className="mt-2 text-xs font-semibold text-[var(--aw-muted)]">{hint}</p>
+            <p className="mt-1.5 text-xs font-normal text-[var(--aw-muted)]">{hint}</p>
           ) : null}
         </div>
         {icon ? (
-          <div className="rounded-2xl border border-[var(--aw-border-soft)] bg-[var(--aw-surface-muted)] p-2 text-[var(--aw-muted)]">
+          <div
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-[var(--aw-border-soft)] bg-[var(--aw-surface-muted)]"
+            style={{ color: accent }}
+          >
             {icon}
           </div>
         ) : null}
@@ -34,4 +56,3 @@ export function StatCard({
     </article>
   );
 }
-

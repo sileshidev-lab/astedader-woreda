@@ -1,12 +1,27 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { getBroadcast, publishBroadcast, archiveBroadcast, deleteBroadcast } from "../../../services/contentService";
+import {
+  getBroadcast,
+  publishBroadcast,
+  archiveBroadcast,
+  deleteBroadcast,
+} from "../../../services/contentService";
 import type { Broadcast } from "../../../services/contentService";
 import { ErrorState } from "../../../components/ui/ErrorState";
 import { LoadingState } from "../../../components/ui/LoadingState";
 import { FilePreviewCard } from "../../../components/ui/FilePreviewCard";
 import { useAuthStore } from "../../../stores/authStore";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/shadcn/card";
+import { Button } from "@/components/ui/shadcn/button";
+import { Badge } from "@/components/ui/shadcn/badge";
+import { statusToBadgeVariant } from "@/lib/badge";
 
 export function BroadcastDetailPage() {
   const { t } = useTranslation();
@@ -22,7 +37,10 @@ export function BroadcastDetailPage() {
   const canArchive = hasPrivilege("broadcast.archive");
   const canDelete = hasPrivilege("broadcast.delete");
 
-  const title = useMemo(() => broadcast?.title || t("broadcasts.detail.fallbackTitle"), [broadcast?.title, t]);
+  const title = useMemo(
+    () => broadcast?.title || t("broadcasts.detail.fallbackTitle"),
+    [broadcast?.title, t],
+  );
 
   async function load() {
     if (!broadcastId) return;
@@ -79,78 +97,61 @@ export function BroadcastDetailPage() {
   }
 
   return (
-    <section className="aw-design-page aw-mobile-page flex min-h-0 flex-1 flex-col gap-5">
-      <div className="flex flex-col gap-3 rounded-3xl border border-woreda-border/70 bg-woreda-surface px-5 py-5">
-        <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
-          <div className="min-w-0">
-            <p className="text-[11px] font-black uppercase tracking-[0.16em] text-woreda-textMuted">
-              {broadcast.status}
-            </p>
-            <h2 className="mt-1 truncate text-xl font-black text-woreda-text">{title}</h2>
+    <section className="flex min-h-0 flex-1 flex-col gap-5">
+      <Card>
+        <CardHeader className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+          <div className="min-w-0 space-y-1">
+            <Badge variant={statusToBadgeVariant(broadcast.status)}>{broadcast.status}</Badge>
+            <CardTitle className="truncate">{title}</CardTitle>
             {broadcast.summary ? (
-              <p className="mt-2 text-sm font-semibold text-woreda-textMuted">{broadcast.summary}</p>
+              <CardDescription>{broadcast.summary}</CardDescription>
             ) : null}
           </div>
           <div className="flex flex-wrap gap-2">
             {canUpdate ? (
-              <Link
-                to={`/woreda/broadcasts/${broadcast.id}/edit`}
-                className="min-h-10 rounded-2xl border border-woreda-border bg-woreda-surface px-4 text-sm font-black text-woreda-text hover:border-woreda-primary hover:text-woreda-primary"
-              >
-                {t("common.edit")}
-              </Link>
+              <Button asChild variant="outline" size="default">
+                <Link to={`/woreda/broadcasts/${broadcast.id}/edit`}>{t("common.edit")}</Link>
+              </Button>
             ) : null}
             {canPublish && broadcast.status !== "published" ? (
-              <button
-                type="button"
-                onClick={handlePublish}
-                className="min-h-10 rounded-2xl bg-woreda-primary px-4 text-sm font-black text-white hover:brightness-105"
-              >
+              <Button type="button" variant="default" size="default" onClick={handlePublish}>
                 {t("common.publish")}
-              </button>
+              </Button>
             ) : null}
             {canArchive && broadcast.status === "published" ? (
-              <button
-                type="button"
-                onClick={handleArchive}
-                className="min-h-10 rounded-2xl border border-woreda-border bg-woreda-surface px-4 text-sm font-black text-woreda-text hover:border-woreda-primary hover:text-woreda-primary"
-              >
+              <Button type="button" variant="outline" size="default" onClick={handleArchive}>
                 {t("common.archive")}
-              </button>
+              </Button>
             ) : null}
             {canDelete ? (
-              <button
-                type="button"
-                onClick={handleDelete}
-                className="min-h-10 rounded-2xl border border-[var(--aw-danger)]/30 bg-[var(--aw-danger-bg)] px-4 text-sm font-black text-[var(--aw-danger)]"
-              >
+              <Button type="button" variant="destructive" size="default" onClick={handleDelete}>
                 {t("common.delete")}
-              </button>
+              </Button>
             ) : null}
           </div>
-        </div>
-      </div>
+        </CardHeader>
+      </Card>
 
       <div className="grid gap-5 lg:grid-cols-[1.4fr,0.6fr]">
-        <article className="min-h-0 overflow-hidden rounded-3xl border border-woreda-border/70 bg-woreda-surface">
-          <div className="border-b border-woreda-border/70 bg-woreda-surfaceLow px-5 py-4">
-            <h3 className="text-base font-black text-woreda-text">{t("broadcasts.detail.bodyTitle")}</h3>
-          </div>
-          <div className="px-5 py-5">
+        <Card className="min-h-0 overflow-hidden">
+          <CardHeader>
+            <CardTitle>{t("broadcasts.detail.bodyTitle")}</CardTitle>
+          </CardHeader>
+          <CardContent>
             <div
-              className="aw-richtext text-sm font-semibold leading-relaxed text-woreda-text"
+              className="aw-richtext text-sm leading-relaxed text-foreground"
               dangerouslySetInnerHTML={{ __html: broadcast.bodyHtml }}
             />
-          </div>
-        </article>
+          </CardContent>
+        </Card>
 
         <aside className="flex min-h-0 flex-col gap-4">
-          <div className="rounded-3xl border border-woreda-border/70 bg-woreda-surface px-5 py-5">
-            <h3 className="text-base font-black text-woreda-text">{t("broadcasts.detail.attachmentsTitle")}</h3>
-            <p className="mt-1 text-sm font-semibold text-woreda-textMuted">
-              {t("broadcasts.detail.attachmentsSubtitle")}
-            </p>
-          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>{t("broadcasts.detail.attachmentsTitle")}</CardTitle>
+              <CardDescription>{t("broadcasts.detail.attachmentsSubtitle")}</CardDescription>
+            </CardHeader>
+          </Card>
 
           {broadcast.attachments.length ? (
             <div className="flex flex-col gap-3">
@@ -159,9 +160,11 @@ export function BroadcastDetailPage() {
               ))}
             </div>
           ) : (
-            <div className="rounded-3xl border border-woreda-border/70 bg-woreda-surface px-5 py-8 text-sm font-semibold text-woreda-textMuted">
-              {t("broadcasts.detail.attachmentsEmpty")}
-            </div>
+            <Card>
+              <CardContent className="px-5 py-8 text-sm text-muted-foreground">
+                {t("broadcasts.detail.attachmentsEmpty")}
+              </CardContent>
+            </Card>
           )}
         </aside>
       </div>

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
-import { createPortal } from "react-dom";
+import { toast } from "sonner";
 import {
   ChevronDown,
   Download,
@@ -11,7 +11,6 @@ import {
   Filter,
   Search,
   Upload,
-  X,
 } from "lucide-react";
 import {
   attachFilesToAnnouncement,
@@ -30,6 +29,42 @@ import type {
   HibretOption,
 } from "../../../types/announcement";
 import { useAuthStore } from "../../../stores/authStore";
+import { EmptyState } from "../../../components/ui/EmptyState";
+import { LoadingState } from "../../../components/ui/LoadingState";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/shadcn/card";
+import { Button } from "@/components/ui/shadcn/button";
+import { Badge } from "@/components/ui/shadcn/badge";
+import { Input } from "@/components/ui/shadcn/input";
+import { Textarea } from "@/components/ui/shadcn/textarea";
+import { Label } from "@/components/ui/shadcn/label";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/shadcn/sheet";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/shadcn/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/shadcn/dropdown-menu";
+import { Checkbox } from "@/components/ui/shadcn/checkbox";
+import { statusToBadgeVariant } from "@/lib/badge";
 
 type StatusFilter = "all" | AnnouncementStatus;
 type TypeFilter = "all" | AnnouncementType;
@@ -104,65 +139,20 @@ function typeLabel(type: AnnouncementType, t: (key: string) => string) {
   return t(`announcements.type.${type}`);
 }
 
-function statusBadgeClass(status: AnnouncementStatus) {
-  if (status === "published") {
-    return "border-[var(--aw-magenta)]/25 bg-[var(--aw-magenta-bg)] text-[var(--aw-magenta)]";
-  }
-
-  if (status === "draft") {
-    return "border-[var(--aw-yellow)]/40 bg-[var(--aw-yellow-bg)] text-[var(--aw-yellow-text)]";
-  }
-
-  return "border-[var(--aw-primary)]/20 bg-[var(--aw-primary-soft)] text-[var(--aw-primary)]";
-}
-
-function KpiCard({
-  label,
-  value,
-  tone,
-}: {
-  label: string;
-  value: number;
-  tone: "blue" | "yellow" | "pink" | "muted";
-}) {
-  const toneClass = {
-    blue: {
-      soft: "bg-[var(--aw-primary-soft)]",
-      value: "text-[var(--aw-primary)]",
-      bar: "bg-[var(--aw-primary)]",
-    },
-    yellow: {
-      soft: "bg-[var(--aw-yellow-bg)]",
-      value: "text-[var(--aw-yellow-text)]",
-      bar: "bg-[var(--aw-yellow)]",
-    },
-    pink: {
-      soft: "bg-[var(--aw-magenta-bg)]",
-      value: "text-[var(--aw-magenta)]",
-      bar: "bg-[var(--aw-magenta)]",
-    },
-    muted: {
-      soft: "bg-[var(--aw-surface-muted)]",
-      value: "text-[var(--aw-muted)]",
-      bar: "bg-[var(--aw-muted)]",
-    },
-  }[tone];
-
+function KpiTile({ label, value }: { label: string; value: number }) {
   return (
-    <article className="relative overflow-hidden rounded-3xl border border-[var(--aw-border-soft)] bg-[var(--aw-surface)] p-5 shadow-sm">
-      <div className={`absolute right-0 top-0 h-24 w-24 rounded-bl-full ${toneClass.soft}`} />
-
-      <div className="relative">
-        <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[var(--aw-muted)]">
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between gap-2 px-4 py-3">
+        <span className="text-[11px] font-medium uppercase tracking-[0.06em] text-muted-foreground">
           {label}
-        </p>
-        <p className={`mt-2 text-[clamp(1.75rem,2.7vw,2.5rem)] font-black leading-none ${toneClass.value}`}>
+        </span>
+      </CardHeader>
+      <CardContent className="px-4 pb-4 pt-0">
+        <p className="text-2xl font-semibold tabular-nums leading-none tracking-tight text-foreground">
           {value}
         </p>
-      </div>
-
-      <div className={`relative mt-5 h-1.5 rounded-full ${toneClass.bar}`} />
-    </article>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -193,9 +183,7 @@ export function AnnouncementsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [exportDropdownOpen, setExportDropdownOpen] = useState(false);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
-  const [error, setError] = useState("");
 
   const [searchText, setSearchText] = useState("");
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
@@ -217,7 +205,6 @@ export function AnnouncementsPage() {
 
   async function loadData() {
     setIsLoading(true);
-    setError("");
 
     try {
       const { dateFrom, dateTo } = resolveDateRange(dateFilter, customFrom, customTo);
@@ -241,7 +228,7 @@ export function AnnouncementsPage() {
         setHibrets(hibretData);
       }
     } catch {
-      setError(t("announcements.errors.load"));
+      toast.error(t("announcements.errors.load"));
     } finally {
       setIsLoading(false);
     }
@@ -292,10 +279,9 @@ export function AnnouncementsPage() {
 
   async function handleCreate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setError("");
 
     if (!targetHibretIds.length) {
-      setError(t("announcements.errors.targetRequired"));
+      toast.error(t("announcements.errors.targetRequired"));
       return;
     }
 
@@ -324,9 +310,10 @@ export function AnnouncementsPage() {
 
       resetForm();
       setDrawerOpen(false);
+      toast.success(t("announcements.form.create"));
       await loadData();
     } catch {
-      setError(t("announcements.errors.create"));
+      toast.error(t("announcements.errors.create"));
     } finally {
       setIsCreating(false);
     }
@@ -338,396 +325,356 @@ export function AnnouncementsPage() {
   }
 
   return (
-    <section className="flex min-h-0 flex-1 flex-col gap-5">
-      {error ? (
-        <div className="shrink-0 rounded-2xl border border-[var(--aw-danger)] bg-[var(--aw-danger-bg)] px-4 py-3 text-sm font-bold text-[var(--aw-danger)]">
-          {error}
-        </div>
-      ) : null}
-
-      <div className="grid shrink-0 grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <KpiCard label={t("announcements.kpi.total")} value={summary.total} tone="blue" />
-        <KpiCard label={t("announcements.kpi.active")} value={summary.published} tone="yellow" />
-        <KpiCard label={t("announcements.kpi.draft")} value={summary.draft} tone="pink" />
-        <KpiCard label={t("announcements.kpi.closed")} value={summary.closed} tone="muted" />
+    <section className="flex min-h-0 flex-1 flex-col space-y-6">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <KpiTile label={t("announcements.kpi.total")} value={summary.total} />
+        <KpiTile label={t("announcements.kpi.active")} value={summary.published} />
+        <KpiTile label={t("announcements.kpi.draft")} value={summary.draft} />
+        <KpiTile label={t("announcements.kpi.closed")} value={summary.closed} />
       </div>
 
-      <section className="shrink-0 rounded-3xl border border-[var(--aw-border-soft)] bg-[var(--aw-surface)] p-4 shadow-sm sm:p-5">
-        <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-          <div>
-            <h2 className="text-lg font-black text-[var(--aw-text)]">
+      <Card>
+        <CardHeader className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+          <div className="space-y-1">
+            <CardTitle>
               {t("announcements.listTitle", { defaultValue: "Directive List" })}
-            </h2>
-            <p className="mt-1 text-sm font-semibold text-[var(--aw-muted)]">
+            </CardTitle>
+            <CardDescription>
               {t("announcements.listDescription", {
                 defaultValue: "Search, filter, and review Woreda directives.",
               })}
-            </p>
+            </CardDescription>
           </div>
 
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-            <label className="flex min-h-11 min-w-0 items-center gap-2 rounded-2xl border border-[var(--aw-border-soft)] bg-[var(--aw-bg)] px-3 focus-within:border-[var(--aw-primary)] focus-within:ring-2 focus-within:ring-[var(--aw-primary)]/15 sm:min-w-[280px]">
-              <Search size={18} className="shrink-0 text-[var(--aw-muted)]" />
-              <input
+          <div className="flex flex-col gap-2 lg:flex-row lg:items-center xl:ml-auto">
+            <div className="relative">
+              <Search
+                size={16}
+                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                aria-hidden
+              />
+              <Input
                 type="search"
                 value={searchText}
                 onChange={(event) => setSearchText(event.target.value)}
                 placeholder={t("announcements.searchPlaceholder")}
-                className="min-w-0 flex-1 border-0 bg-transparent p-0 text-sm font-semibold text-[var(--aw-text)] outline-none placeholder:text-[var(--aw-muted)] focus:ring-0"
+                className="pl-9 sm:min-w-[260px]"
               />
-            </label>
+            </div>
 
             <div className="flex flex-wrap items-center gap-2">
-              <button
+              <Button
                 type="button"
-                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-[var(--aw-border-soft)] bg-[var(--aw-surface)] px-4 text-sm font-black text-[var(--aw-text)] shadow-sm hover:border-[var(--aw-primary)] hover:text-[var(--aw-primary)] md:hidden"
+                variant="outline"
+                size="default"
+                className="md:hidden"
                 onClick={() => setMobileFiltersOpen((open) => !open)}
                 aria-expanded={mobileFiltersOpen}
                 aria-controls="announcement-filters"
               >
-                <Filter size={16} />
+                <Filter aria-hidden />
                 {t("common.filters")}
-              </button>
+              </Button>
 
-              <div className="relative">
-                {canExport ? (
-                  <button
-                    type="button"
-                    onClick={() => setExportDropdownOpen((open) => !open)}
-                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-[var(--aw-border-soft)] bg-[var(--aw-surface)] px-4 text-sm font-black text-[var(--aw-primary)] shadow-sm hover:bg-[var(--aw-primary-soft)]"
-                  >
-                    <Download size={16} />
-                    {t("announcements.export")}
-                    <ChevronDown
-                      size={16}
-                      className={exportDropdownOpen ? "rotate-180 transition" : "transition"}
-                    />
-                  </button>
-                ) : null}
-
-                {canExport && exportDropdownOpen ? (
-                  <div className="absolute right-0 top-[calc(100%+8px)] z-[100] w-[min(240px,calc(100vw-24px))] overflow-hidden rounded-2xl border border-[var(--aw-border-soft)] bg-[var(--aw-surface)] shadow-xl">
-                    <button
-                      type="button"
-                      className="block w-full px-4 py-3 text-left text-sm font-bold text-[var(--aw-text)] hover:bg-[var(--aw-surface-muted)]"
-                      onClick={() => {
-                        downloadAuthenticatedExport("/announcements/export.csv");
-                        setExportDropdownOpen(false);
-                      }}
+              {canExport ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button type="button" variant="outline" size="default">
+                      <Download aria-hidden />
+                      {t("announcements.export")}
+                      <ChevronDown aria-hidden />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuItem
+                      onSelect={() =>
+                        downloadAuthenticatedExport("/announcements/export.csv")
+                      }
                     >
                       CSV (Directives)
-                    </button>
-                    <div className="h-px bg-[var(--aw-border-soft)]" />
-                    <button
-                      type="button"
-                      className="block w-full px-4 py-3 text-left text-sm font-bold text-[var(--aw-text)] hover:bg-[var(--aw-surface-muted)]"
-                      onClick={() => {
-                        downloadAuthenticatedExport("/announcements/export.pdf?lang=en");
-                        setExportDropdownOpen(false);
-                      }}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onSelect={() =>
+                        downloadAuthenticatedExport(
+                          "/announcements/export.pdf?lang=en",
+                        )
+                      }
                     >
                       PDF (English)
-                    </button>
-                    <button
-                      type="button"
-                      className="block w-full px-4 py-3 text-left text-sm font-bold text-[var(--aw-text)] hover:bg-[var(--aw-surface-muted)]"
-                      onClick={() => {
-                        downloadAuthenticatedExport("/announcements/export.pdf?lang=am");
-                        setExportDropdownOpen(false);
-                      }}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onSelect={() =>
+                        downloadAuthenticatedExport(
+                          "/announcements/export.pdf?lang=am",
+                        )
+                      }
                     >
                       PDF (አማርኛ)
-                    </button>
-                    <button
-                      type="button"
-                      className="block w-full px-4 py-3 text-left text-sm font-bold text-[var(--aw-text)] hover:bg-[var(--aw-surface-muted)]"
-                      onClick={() => {
-                        downloadAuthenticatedExport("/announcements/export.pdf?lang=om");
-                        setExportDropdownOpen(false);
-                      }}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onSelect={() =>
+                        downloadAuthenticatedExport(
+                          "/announcements/export.pdf?lang=om",
+                        )
+                      }
                     >
                       PDF (Afaan Oromoo)
-                    </button>
-                  </div>
-                ) : null}
-              </div>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : null}
 
-              <button
-                type="button"
-                onClick={openCreateDrawer}
-                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-[var(--aw-primary)] bg-[var(--aw-primary)] px-4 text-sm font-black text-white shadow-sm hover:bg-[var(--aw-primary-dark)]"
-              >
-                <FilePlus2 size={16} />
+              <Button type="button" variant="default" size="default" onClick={openCreateDrawer}>
+                <FilePlus2 aria-hidden />
                 <span className="hidden sm:inline">{t("announcements.newDirective")}</span>
                 <span className="sm:hidden">{t("common.create")}</span>
-              </button>
+              </Button>
             </div>
           </div>
-        </div>
+        </CardHeader>
 
-        <div
+        <CardContent
           id="announcement-filters"
           className={[
-            "mt-4 gap-2",
+            "gap-2 pt-0",
             mobileFiltersOpen ? "grid grid-cols-1 sm:grid-cols-2" : "hidden",
             "md:flex md:flex-wrap",
           ].join(" ")}
         >
-          <select
-            value={typeFilter}
-            onChange={(event) => setTypeFilter(event.target.value as TypeFilter)}
-            className="min-h-11 min-w-[140px] rounded-2xl border border-[var(--aw-border-soft)] bg-[var(--aw-surface)] px-3 text-sm font-bold text-[var(--aw-text)] outline-none focus:border-[var(--aw-primary)]"
-          >
-            <option value="all">{t("announcements.filters.typeAll")}</option>
-            <option value="meeting">{t("announcements.type.meeting")}</option>
-            <option value="conference">{t("announcements.type.conference")}</option>
-            <option value="trend_report">{t("announcements.type.trend_report")}</option>
-            <option value="other">{t("announcements.type.other")}</option>
-          </select>
+          <Select value={typeFilter} onValueChange={(value) => setTypeFilter(value as TypeFilter)}>
+            <SelectTrigger className="min-w-[160px] md:w-auto">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t("announcements.filters.typeAll")}</SelectItem>
+              <SelectItem value="meeting">{t("announcements.type.meeting")}</SelectItem>
+              <SelectItem value="conference">{t("announcements.type.conference")}</SelectItem>
+              <SelectItem value="trend_report">{t("announcements.type.trend_report")}</SelectItem>
+              <SelectItem value="other">{t("announcements.type.other")}</SelectItem>
+            </SelectContent>
+          </Select>
 
-          <select
+          <Select
             value={statusFilter}
-            onChange={(event) => setStatusFilter(event.target.value as StatusFilter)}
-            className="min-h-11 min-w-[140px] rounded-2xl border border-[var(--aw-border-soft)] bg-[var(--aw-surface)] px-3 text-sm font-bold text-[var(--aw-text)] outline-none focus:border-[var(--aw-primary)]"
+            onValueChange={(value) => setStatusFilter(value as StatusFilter)}
           >
-            <option value="all">{t("announcements.filters.statusAll")}</option>
-            <option value="published">{t("announcements.status.active")}</option>
-            <option value="draft">{t("announcements.status.draft")}</option>
-            <option value="closed">{t("announcements.status.closed")}</option>
-          </select>
+            <SelectTrigger className="min-w-[160px] md:w-auto">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t("announcements.filters.statusAll")}</SelectItem>
+              <SelectItem value="published">{t("announcements.status.active")}</SelectItem>
+              <SelectItem value="draft">{t("announcements.status.draft")}</SelectItem>
+              <SelectItem value="closed">{t("announcements.status.closed")}</SelectItem>
+            </SelectContent>
+          </Select>
 
-          <select
-            value={dateFilter}
-            onChange={(event) => setDateFilter(event.target.value as DateFilter)}
-            className="min-h-11 min-w-[150px] rounded-2xl border border-[var(--aw-border-soft)] bg-[var(--aw-surface)] px-3 text-sm font-bold text-[var(--aw-text)] outline-none focus:border-[var(--aw-primary)]"
-          >
-            <option value="all">{t("announcements.filters.timeAll")}</option>
-            <option value="week">{t("announcements.filters.thisWeek")}</option>
-            <option value="month">{t("announcements.filters.thisMonth")}</option>
-            <option value="last_30_days">{t("announcements.filters.last30")}</option>
-            <option value="custom">{t("announcements.filters.custom")}</option>
-          </select>
+          <Select value={dateFilter} onValueChange={(value) => setDateFilter(value as DateFilter)}>
+            <SelectTrigger className="min-w-[160px] md:w-auto">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t("announcements.filters.timeAll")}</SelectItem>
+              <SelectItem value="week">{t("announcements.filters.thisWeek")}</SelectItem>
+              <SelectItem value="month">{t("announcements.filters.thisMonth")}</SelectItem>
+              <SelectItem value="last_30_days">{t("announcements.filters.last30")}</SelectItem>
+              <SelectItem value="custom">{t("announcements.filters.custom")}</SelectItem>
+            </SelectContent>
+          </Select>
 
           {dateFilter === "custom" ? (
             <>
-              <input
+              <Input
                 type="date"
                 value={customFrom}
                 onChange={(event) => setCustomFrom(event.target.value)}
-                className="min-h-11 rounded-2xl border border-[var(--aw-border-soft)] bg-[var(--aw-surface)] px-3 text-sm font-bold text-[var(--aw-text)] outline-none focus:border-[var(--aw-primary)]"
                 aria-label={t("announcements.filters.from")}
+                className="md:w-auto"
               />
-              <input
+              <Input
                 type="date"
                 value={customTo}
                 onChange={(event) => setCustomTo(event.target.value)}
-                className="min-h-11 rounded-2xl border border-[var(--aw-border-soft)] bg-[var(--aw-surface)] px-3 text-sm font-bold text-[var(--aw-text)] outline-none focus:border-[var(--aw-primary)]"
                 aria-label={t("announcements.filters.to")}
+                className="md:w-auto"
               />
             </>
           ) : null}
-        </div>
-      </section>
+        </CardContent>
+      </Card>
 
-      <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-3xl border border-[var(--aw-border-soft)] bg-[var(--aw-surface)] shadow-sm">
-        <div className="flex shrink-0 flex-col gap-3 border-b border-[var(--aw-border-soft)] p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
-          <div>
-            <h2 className="text-lg font-black text-[var(--aw-text)]">
+      <Card>
+        <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="space-y-1">
+            <CardTitle>
               {pagination.total} {t("sidebar.announcements")}
-            </h2>
-            <p className="text-sm font-semibold text-[var(--aw-muted)]">
+            </CardTitle>
+            <CardDescription>
               {t("announcements.mobileHint", {
                 defaultValue: "Swipe cards on mobile. Table view appears on wider screens.",
               })}
-            </p>
+            </CardDescription>
           </div>
-        </div>
+        </CardHeader>
 
-        <div className="min-h-0 flex-1 overflow-y-auto">
-          <div className="grid gap-3 p-4 md:hidden">
+        <CardContent className="space-y-3 px-0 pb-0 pt-0">
+          <div className="grid gap-3 px-5 pb-3 md:hidden">
             {isLoading ? (
-              <div className="rounded-3xl border border-[var(--aw-border-soft)] bg-[var(--aw-surface-muted)] px-4 py-8 text-sm font-semibold text-[var(--aw-muted)]">
-                {t("common.loading")}...
-              </div>
+              <LoadingState label={`${t("common.loading")}...`} />
             ) : announcements.length === 0 ? (
-              <div className="rounded-3xl border border-dashed border-[var(--aw-border-soft)] bg-[var(--aw-surface-muted)] px-4 py-10 text-center">
-                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--aw-primary)] text-white">
-                  <FilePlus2 size={22} />
-                </div>
-                <h3 className="mt-4 text-lg font-black text-[var(--aw-text)]">
-                  {t("announcements.emptyTitle")}
-                </h3>
-                <p className="mt-2 text-sm font-semibold text-[var(--aw-muted)]">
-                  {t("announcements.emptyDescription")}
-                </p>
-              </div>
+              <EmptyState
+                title={t("announcements.emptyTitle")}
+                message={t("announcements.emptyDescription")}
+              />
             ) : (
               announcements.map((announcement) => (
-                <article
-                  key={announcement.id}
-                  className="overflow-hidden rounded-3xl border border-[var(--aw-border-soft)] bg-[var(--aw-surface)] shadow-sm"
-                >
-                  <div className="bg-gradient-to-br from-[var(--aw-primary-soft)] to-[var(--aw-yellow-bg)] px-4 py-4">
-                    <p className="text-[11px] font-black uppercase tracking-[0.14em] text-[var(--aw-muted)]">
+                <Card key={announcement.id}>
+                  <CardHeader className="gap-1 px-4 py-3">
+                    <p className="text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
                       {typeLabel(announcement.type, t)}
                     </p>
                     <Link
                       to={`/woreda/announcements/${announcement.id}`}
-                      className="mt-1 line-clamp-2 text-base font-black text-[var(--aw-primary-dark)]"
+                      className="line-clamp-2 text-sm font-semibold text-foreground hover:text-primary"
                     >
                       {normalizeDisplayText(announcement.title)}
                     </Link>
-                  </div>
-
-                  <div className="grid gap-3 p-4 text-sm">
+                  </CardHeader>
+                  <CardContent className="grid gap-2 px-4 pb-4 pt-0 text-sm">
                     <div className="flex items-center justify-between gap-4">
-                      <span className="font-bold text-[var(--aw-muted)]">
+                      <span className="text-xs text-muted-foreground">
                         {t("announcements.table.status")}
                       </span>
-                      <span
-                        className={[
-                          "inline-flex rounded-full border px-3 py-1 text-xs font-black",
-                          statusBadgeClass(announcement.status),
-                        ].join(" ")}
-                      >
+                      <Badge variant={statusToBadgeVariant(announcement.status)}>
                         {statusLabel(announcement.status, t)}
-                      </span>
+                      </Badge>
                     </div>
-
                     <div className="flex items-center justify-between gap-4">
-                      <span className="font-bold text-[var(--aw-muted)]">
+                      <span className="text-xs text-muted-foreground">
                         {t("announcements.table.deadline")}
                       </span>
-                      <span className="font-black text-[var(--aw-text)]">
+                      <span className="text-sm text-foreground">
                         {formatDate(announcement.deadline)}
                       </span>
                     </div>
-
                     <div className="flex items-center justify-between gap-4">
-                      <span className="font-bold text-[var(--aw-muted)]">
+                      <span className="text-xs text-muted-foreground">
                         {t("announcements.table.hibrets")}
                       </span>
-                      <span className="font-black text-[var(--aw-text)]">
+                      <span className="text-sm text-foreground">
                         {announcement.targets.length}
                       </span>
                     </div>
-
                     <div className="flex items-center justify-between gap-4">
-                      <span className="font-bold text-[var(--aw-muted)]">
+                      <span className="text-xs text-muted-foreground">
                         {t("announcements.table.reports")}
                       </span>
-                      <span className="font-black text-[var(--aw-text)]">
+                      <span className="text-sm text-foreground">
                         {announcement.reports.length}
                       </span>
                     </div>
 
-                    <Link
-                      to={`/woreda/announcements/${announcement.id}`}
-                      className="mt-1 inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl bg-[var(--aw-primary)] px-4 text-sm font-black text-white hover:bg-[var(--aw-primary-dark)]"
-                    >
-                      <Eye size={16} />
-                      {t("common.open")}
-                    </Link>
-                  </div>
-                </article>
+                    <Button asChild variant="default" size="sm" className="mt-2">
+                      <Link
+                        to={`/woreda/announcements/${announcement.id}`}
+                        className="inline-flex items-center gap-2"
+                      >
+                        <Eye aria-hidden />
+                        {t("common.open")}
+                      </Link>
+                    </Button>
+                  </CardContent>
+                </Card>
               ))
             )}
           </div>
 
-          <div className="hidden h-full overflow-x-auto md:block">
-            <table className="w-[max(100%,880px)] border-collapse text-left">
-              <thead className="sticky top-0 z-10">
-                <tr className="border-b border-[var(--aw-border-soft)] bg-[var(--aw-surface-muted)] text-[11px] font-black uppercase tracking-[0.1em] text-[var(--aw-muted)]">
-                  <th className="px-5 py-4">{t("announcements.table.title")}</th>
-                  <th className="px-5 py-4">{t("announcements.table.type")}</th>
-                  <th className="px-5 py-4">{t("announcements.table.status")}</th>
-                  <th className="px-5 py-4">{t("announcements.table.deadline")}</th>
-                  <th className="px-5 py-4 text-right">{t("announcements.table.hibrets")}</th>
-                  <th className="px-5 py-4 text-right">{t("announcements.table.reports")}</th>
-                  <th className="px-5 py-4 text-center">{t("announcements.table.action")}</th>
+          <div className="hidden overflow-x-auto md:block">
+            <table className="w-full border-collapse text-left text-sm">
+              <thead>
+                <tr className="border-b border-border bg-muted/40">
+                  <th className="px-5 py-3 text-xs font-medium uppercase tracking-[0.04em] text-muted-foreground">
+                    {t("announcements.table.title")}
+                  </th>
+                  <th className="px-5 py-3 text-xs font-medium uppercase tracking-[0.04em] text-muted-foreground">
+                    {t("announcements.table.type")}
+                  </th>
+                  <th className="px-5 py-3 text-xs font-medium uppercase tracking-[0.04em] text-muted-foreground">
+                    {t("announcements.table.status")}
+                  </th>
+                  <th className="px-5 py-3 text-xs font-medium uppercase tracking-[0.04em] text-muted-foreground">
+                    {t("announcements.table.deadline")}
+                  </th>
+                  <th className="px-5 py-3 text-right text-xs font-medium uppercase tracking-[0.04em] text-muted-foreground">
+                    {t("announcements.table.hibrets")}
+                  </th>
+                  <th className="px-5 py-3 text-right text-xs font-medium uppercase tracking-[0.04em] text-muted-foreground">
+                    {t("announcements.table.reports")}
+                  </th>
+                  <th className="px-5 py-3 text-center text-xs font-medium uppercase tracking-[0.04em] text-muted-foreground">
+                    {t("announcements.table.action")}
+                  </th>
                 </tr>
               </thead>
-
-              <tbody className="divide-y divide-[var(--aw-border-soft)] text-sm text-[var(--aw-text)]">
+              <tbody className="divide-y divide-border text-foreground">
                 {isLoading ? (
                   <tr>
-                    <td colSpan={7} className="px-5 py-10 text-sm font-semibold text-[var(--aw-muted)]">
+                    <td colSpan={7} className="px-5 py-10 text-sm text-muted-foreground">
                       {t("common.loading")}...
                     </td>
                   </tr>
                 ) : announcements.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-5 py-16 text-center">
-                      <div className="mx-auto max-w-md">
-                        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--aw-primary)] text-white">
-                          <FilePlus2 size={22} />
-                        </div>
-                        <h3 className="mt-4 text-lg font-black text-[var(--aw-text)]">
-                          {t("announcements.emptyTitle")}
-                        </h3>
-                        <p className="mt-2 text-sm font-semibold text-[var(--aw-muted)]">
-                          {t("announcements.emptyDescription")}
-                        </p>
-                        <button
-                          type="button"
-                          onClick={openCreateDrawer}
-                          className="mt-4 inline-flex min-h-10 items-center rounded-2xl bg-[var(--aw-primary)] px-4 text-sm font-black text-white hover:bg-[var(--aw-primary-dark)]"
-                        >
-                          {t("announcements.newDirective")}
-                        </button>
-                      </div>
+                    <td colSpan={7} className="px-5 py-10">
+                      <EmptyState
+                        title={t("announcements.emptyTitle")}
+                        message={t("announcements.emptyDescription")}
+                        action={
+                          <Button type="button" variant="default" size="sm" onClick={openCreateDrawer}>
+                            {t("announcements.newDirective")}
+                          </Button>
+                        }
+                      />
                     </td>
                   </tr>
                 ) : (
                   announcements.map((announcement) => (
-                    <tr
-                      key={announcement.id}
-                      className="transition hover:bg-[var(--aw-primary-soft)]/50"
-                    >
-                      <td className="max-w-[360px] px-5 py-4">
+                    <tr key={announcement.id} className="transition-colors hover:bg-muted/40">
+                      <td className="max-w-[360px] px-5 py-3">
                         <Link
                           to={`/woreda/announcements/${announcement.id}`}
-                          className="line-clamp-2 font-black text-[var(--aw-primary-dark)] hover:text-[var(--aw-primary)]"
+                          className="line-clamp-2 text-sm font-medium text-foreground hover:text-primary"
                         >
                           {normalizeDisplayText(announcement.title)}
                         </Link>
                       </td>
-
-                      <td className="whitespace-nowrap px-5 py-4 font-bold text-[var(--aw-muted)]">
+                      <td className="whitespace-nowrap px-5 py-3 text-sm text-muted-foreground">
                         {typeLabel(announcement.type, t)}
                       </td>
-
-                      <td className="px-5 py-4">
-                        <span
-                          className={[
-                            "inline-flex rounded-full border px-3 py-1 text-xs font-black",
-                            statusBadgeClass(announcement.status),
-                          ].join(" ")}
-                        >
+                      <td className="px-5 py-3">
+                        <Badge variant={statusToBadgeVariant(announcement.status)}>
                           {statusLabel(announcement.status, t)}
-                        </span>
+                        </Badge>
                       </td>
-
-                      <td className="whitespace-nowrap px-5 py-4 font-semibold text-[var(--aw-muted)]">
+                      <td className="whitespace-nowrap px-5 py-3 text-sm text-muted-foreground">
                         {formatDate(announcement.deadline)}
                       </td>
-
-                      <td className="px-5 py-4 text-right font-black">
+                      <td className="px-5 py-3 text-right text-sm tabular-nums">
                         {announcement.targets.length}
                       </td>
-
-                      <td className="px-5 py-4 text-right font-black">
+                      <td className="px-5 py-3 text-right text-sm tabular-nums">
                         {announcement.reports.length}
                       </td>
-
-                      <td className="px-5 py-4 text-center">
-                        <Link
-                          to={`/woreda/announcements/${announcement.id}`}
-                          className="inline-flex min-h-9 items-center justify-center gap-2 rounded-xl bg-[var(--aw-primary)] px-3 text-xs font-black text-white hover:bg-[var(--aw-primary-dark)]"
-                        >
-                          <Eye size={15} />
-                          {t("common.open")}
-                        </Link>
+                      <td className="px-5 py-3 text-center">
+                        <Button asChild variant="outline" size="sm">
+                          <Link
+                            to={`/woreda/announcements/${announcement.id}`}
+                            className="inline-flex items-center gap-1.5"
+                          >
+                            <Eye aria-hidden />
+                            {t("common.open")}
+                          </Link>
+                        </Button>
                       </td>
                     </tr>
                   ))
@@ -735,10 +682,8 @@ export function AnnouncementsPage() {
               </tbody>
             </table>
           </div>
-        </div>
 
-        <div className="shrink-0 border-t border-[var(--aw-border-soft)] bg-[var(--aw-surface)] p-4">
-          <div className="flex flex-col gap-3 text-xs font-bold text-[var(--aw-muted)] sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-3 border-t border-border px-5 py-3 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
             <span>
               {t("announcements.pagination.page")} {pagination.page}{" "}
               {t("announcements.pagination.of")} {pagination.totalPages} ·{" "}
@@ -746,237 +691,214 @@ export function AnnouncementsPage() {
             </span>
 
             <div className="flex flex-wrap items-center gap-2">
-              <select
-                value={pageSize}
-                onChange={(event) => {
-                  setPageSize(Number(event.target.value));
+              <Select
+                value={String(pageSize)}
+                onValueChange={(value) => {
+                  setPageSize(Number(value));
                   setPage(1);
                 }}
-                className="min-h-10 rounded-xl border border-[var(--aw-border-soft)] bg-[var(--aw-surface)] px-3 text-sm font-bold text-[var(--aw-text)]"
               >
-                <option value={10}>10 / {t("announcements.pagination.pageSize")}</option>
-                <option value={20}>20 / {t("announcements.pagination.pageSize")}</option>
-                <option value={50}>50 / {t("announcements.pagination.pageSize")}</option>
-                <option value={100}>100 / {t("announcements.pagination.pageSize")}</option>
-              </select>
+                <SelectTrigger className="h-8 w-auto px-2 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="10">10 / {t("announcements.pagination.pageSize")}</SelectItem>
+                  <SelectItem value="20">20 / {t("announcements.pagination.pageSize")}</SelectItem>
+                  <SelectItem value="50">50 / {t("announcements.pagination.pageSize")}</SelectItem>
+                  <SelectItem value="100">100 / {t("announcements.pagination.pageSize")}</SelectItem>
+                </SelectContent>
+              </Select>
 
-              <button
+              <Button
                 type="button"
+                variant="outline"
+                size="sm"
                 disabled={!pagination.hasPreviousPage}
                 onClick={() => setPage((current) => Math.max(1, current - 1))}
-                className="min-h-10 rounded-xl border border-[var(--aw-border-soft)] px-3 text-sm font-black text-[var(--aw-text)] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {t("common.previous")}
-              </button>
+              </Button>
 
-              <button
+              <Button
                 type="button"
+                variant="outline"
+                size="sm"
                 disabled={!pagination.hasNextPage}
-                onClick={() => setPage((current) => Math.min(pagination.totalPages, current + 1))}
-                className="min-h-10 rounded-xl border border-[var(--aw-border-soft)] px-3 text-sm font-black text-[var(--aw-text)] disabled:cursor-not-allowed disabled:opacity-50"
+                onClick={() =>
+                  setPage((current) => Math.min(pagination.totalPages, current + 1))
+                }
               >
                 {t("common.next")}
-              </button>
+              </Button>
             </div>
           </div>
-        </div>
-      </section>
+        </CardContent>
+      </Card>
 
-      {drawerOpen
-        ? createPortal(
-            <div className="fixed inset-0 z-[2147483647] overflow-hidden">
-              <button
-                type="button"
-                className="absolute inset-0 bg-black/55 backdrop-blur-[2px]"
-                aria-label={t("common.cancel")}
-                onClick={() => setDrawerOpen(false)}
-              />
+      <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
+        <SheetContent
+          side="right"
+          className="flex w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-[540px]"
+        >
+          <form onSubmit={handleCreate} className="flex h-full flex-col">
+            <SheetHeader className="border-b border-border bg-muted/30">
+              <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
+                {t("announcements.drawer.eyebrow")}
+              </p>
+              <SheetTitle>{t("announcements.drawer.title")}</SheetTitle>
+              <SheetDescription>{t("announcements.drawer.description")}</SheetDescription>
+            </SheetHeader>
 
-              <form
-                onSubmit={handleCreate}
-                className="absolute inset-0 flex h-full w-full flex-col bg-[var(--aw-surface)] shadow-xl sm:inset-y-0 sm:left-auto sm:right-0 sm:w-[min(540px,96vw)]"
-              >
-                <header className="shrink-0 border-b border-[var(--aw-border-soft)] bg-[var(--aw-surface-muted)] px-5 py-4">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <p className="text-[11px] font-black uppercase tracking-[0.14em] text-[var(--aw-muted)]">
-                        {t("announcements.drawer.eyebrow")}
-                      </p>
-                      <h2 className="mt-1 text-xl font-black text-[var(--aw-text)]">
-                        {t("announcements.drawer.title")}
-                      </h2>
-                      <p className="mt-1 text-sm font-semibold text-[var(--aw-muted)]">
-                        {t("announcements.drawer.description")}
-                      </p>
-                    </div>
+            <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-6 py-5">
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="ann-title">
+                  {t("announcements.form.title")}
+                  <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="ann-title"
+                  value={title}
+                  onChange={(event) => setTitle(event.target.value)}
+                  required
+                />
+              </div>
 
-                    <button
-                      type="button"
-                      onClick={() => setDrawerOpen(false)}
-                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[var(--aw-primary)] text-white hover:bg-[var(--aw-primary-dark)]"
-                      aria-label={t("common.cancel")}
-                    >
-                      <X size={18} />
-                    </button>
-                  </div>
-                </header>
-
-                <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-5 py-4">
-                  <label className="block">
-                    <span className="text-sm font-black text-[var(--aw-text)]">
-                      {t("announcements.form.title")}
-                    </span>
-                    <input
-                      value={title}
-                      onChange={(event) => setTitle(event.target.value)}
-                      required
-                      className="mt-2 w-full rounded-2xl border border-[var(--aw-border-soft)] bg-[var(--aw-surface)] px-3 py-3 text-sm font-semibold text-[var(--aw-text)] outline-none focus:border-[var(--aw-primary)]"
-                    />
-                  </label>
-
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <label className="block">
-                      <span className="text-sm font-black text-[var(--aw-text)]">
-                        {t("announcements.form.type")}
-                      </span>
-                      <select
-                        value={type}
-                        onChange={(event) => setType(event.target.value as AnnouncementType)}
-                        className="mt-2 w-full rounded-2xl border border-[var(--aw-border-soft)] bg-[var(--aw-surface)] px-3 py-3 text-sm font-semibold text-[var(--aw-text)] outline-none focus:border-[var(--aw-primary)]"
-                      >
-                        <option value="meeting">{t("announcements.type.meeting")}</option>
-                        <option value="conference">{t("announcements.type.conference")}</option>
-                        <option value="trend_report">{t("announcements.type.trend_report")}</option>
-                        <option value="other">{t("announcements.type.other")}</option>
-                      </select>
-                    </label>
-
-                    <label className="block">
-                      <span className="text-sm font-black text-[var(--aw-text)]">
-                        {t("announcements.form.deadline")}
-                      </span>
-                      <input
-                        value={deadline}
-                        onChange={(event) => setDeadline(event.target.value)}
-                        type="datetime-local"
-                        className="mt-2 w-full rounded-2xl border border-[var(--aw-border-soft)] bg-[var(--aw-surface)] px-3 py-3 text-sm font-semibold text-[var(--aw-text)] outline-none focus:border-[var(--aw-primary)]"
-                      />
-                    </label>
-                  </div>
-
-                  <label className="block">
-                    <span className="text-sm font-black text-[var(--aw-text)]">
-                      {t("announcements.form.instructions")}
-                    </span>
-                    <textarea
-                      value={instructions}
-                      onChange={(event) => setInstructions(event.target.value)}
-                      required
-                      rows={5}
-                      className="mt-2 w-full resize-y rounded-2xl border border-[var(--aw-border-soft)] bg-[var(--aw-surface)] px-3 py-3 text-sm font-semibold leading-6 text-[var(--aw-text)] outline-none focus:border-[var(--aw-primary)]"
-                    />
-                  </label>
-
-                  <label className="flex cursor-pointer items-center gap-3 rounded-2xl border border-[var(--aw-border-soft)] bg-[var(--aw-surface-muted)] px-3 py-3 text-sm font-black text-[var(--aw-text)]">
-                    <input
-                      checked={attendanceRequired}
-                      onChange={(event) => setAttendanceRequired(event.target.checked)}
-                      type="checkbox"
-                      className="h-4 w-4 shrink-0"
-                    />
-                    {t("announcements.form.attendanceRequired")}
-                  </label>
-
-                  <label className="block">
-                    <span className="text-sm font-black text-[var(--aw-text)]">
-                      {t("announcements.form.attachments")}
-                    </span>
-                    <div className="mt-2 flex items-center gap-2 rounded-2xl border border-dashed border-[var(--aw-border-soft)] bg-[var(--aw-surface-muted)] px-3 py-3">
-                      <Upload size={18} className="text-[var(--aw-muted)]" />
-                      <input
-                        onChange={(event) => setSelectedFiles(Array.from(event.target.files ?? []))}
-                        type="file"
-                        multiple
-                        className="min-w-0 flex-1 text-sm font-semibold text-[var(--aw-text)]"
-                      />
-                    </div>
-
-                    {selectedFiles.length ? (
-                      <div className="mt-3 rounded-2xl border border-[var(--aw-border-soft)] bg-[var(--aw-surface-muted)] p-3">
-                        <p className="text-[11px] font-black uppercase tracking-[0.12em] text-[var(--aw-muted)]">
-                          {t("announcements.form.selectedFiles")}
-                        </p>
-                        <ul className="mt-2 space-y-1 text-sm font-semibold text-[var(--aw-text)]">
-                          {selectedFiles.map((file) => (
-                            <li key={`${file.name}-${file.size}`} className="truncate">
-                              {file.name}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    ) : null}
-                  </label>
-
-                  <div>
-                    <div className="mb-2 flex items-center justify-between gap-3">
-                      <span className="text-sm font-black text-[var(--aw-text)]">
-                        {t("announcements.form.targetHibrets")}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={toggleAllHibrets}
-                        className="min-h-9 rounded-xl border border-[var(--aw-border-soft)] px-3 text-xs font-black text-[var(--aw-text)] hover:border-[var(--aw-primary)] hover:text-[var(--aw-primary)]"
-                      >
-                        {targetHibretIds.length === hibrets.length
-                          ? t("announcements.form.unselectAll")
-                          : t("announcements.form.selectAll")}
-                      </button>
-                    </div>
-
-                    <input
-                      value={hibretSearch}
-                      onChange={(event) => setHibretSearch(event.target.value)}
-                      placeholder={t("announcements.form.searchHibrets")}
-                      className="mb-2 w-full rounded-2xl border border-[var(--aw-border-soft)] bg-[var(--aw-surface)] px-3 py-3 text-sm font-semibold text-[var(--aw-text)] outline-none focus:border-[var(--aw-primary)]"
-                    />
-
-                    <div className="max-h-64 overflow-auto rounded-2xl border border-[var(--aw-border-soft)] bg-[var(--aw-surface)]">
-                      {filteredHibrets.map((hibret) => (
-                        <label
-                          key={hibret.id}
-                          className="flex cursor-pointer gap-3 border-b border-[var(--aw-border-soft)] px-3 py-2.5 text-sm font-semibold last:border-b-0 hover:bg-[var(--aw-surface-muted)]"
-                        >
-                          <input
-                            checked={targetHibretIds.includes(hibret.id)}
-                            onChange={() => toggleHibret(hibret.id)}
-                            type="checkbox"
-                            className="mt-1 h-4 w-4 shrink-0"
-                          />
-                          <span className="leading-6 text-[var(--aw-text)]">{hibret.name}</span>
-                        </label>
-                      ))}
-                    </div>
-
-                    <p className="mt-3 inline-flex rounded-2xl border border-[var(--aw-primary)] bg-[var(--aw-surface)] px-3 py-2 text-sm font-black text-[var(--aw-primary)]">
-                      {t("announcements.form.selected")} {targetHibretIds.length} / {hibrets.length}
-                    </p>
-                  </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="ann-type">{t("announcements.form.type")}</Label>
+                  <Select value={type} onValueChange={(value) => setType(value as AnnouncementType)}>
+                    <SelectTrigger id="ann-type">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="meeting">{t("announcements.type.meeting")}</SelectItem>
+                      <SelectItem value="conference">{t("announcements.type.conference")}</SelectItem>
+                      <SelectItem value="trend_report">{t("announcements.type.trend_report")}</SelectItem>
+                      <SelectItem value="other">{t("announcements.type.other")}</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
-                <footer className="shrink-0 border-t border-[var(--aw-border-soft)] bg-[var(--aw-surface-muted)] px-5 py-4">
-                  <button
-                    type="submit"
-                    disabled={isCreating}
-                    className="min-h-11 w-full rounded-2xl bg-[var(--aw-primary)] px-4 text-sm font-black text-white hover:bg-[var(--aw-primary-dark)] disabled:cursor-not-allowed disabled:opacity-60"
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="ann-deadline">{t("announcements.form.deadline")}</Label>
+                  <Input
+                    id="ann-deadline"
+                    value={deadline}
+                    onChange={(event) => setDeadline(event.target.value)}
+                    type="datetime-local"
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="ann-instructions">
+                  {t("announcements.form.instructions")}
+                  <span className="text-destructive">*</span>
+                </Label>
+                <Textarea
+                  id="ann-instructions"
+                  value={instructions}
+                  onChange={(event) => setInstructions(event.target.value)}
+                  required
+                  rows={5}
+                />
+              </div>
+
+              <label className="flex cursor-pointer items-center gap-3 rounded-md border border-border bg-muted/30 px-3 py-3 text-sm text-foreground">
+                <Checkbox
+                  checked={attendanceRequired}
+                  onCheckedChange={(checked) => setAttendanceRequired(Boolean(checked))}
+                />
+                <span>{t("announcements.form.attendanceRequired")}</span>
+              </label>
+
+              <div className="flex flex-col gap-1.5">
+                <Label>{t("announcements.form.attachments")}</Label>
+                <div className="flex items-center gap-2 rounded-md border border-dashed border-border bg-muted/30 px-3 py-3">
+                  <Upload size={18} className="text-muted-foreground" aria-hidden />
+                  <input
+                    onChange={(event) =>
+                      setSelectedFiles(Array.from(event.target.files ?? []))
+                    }
+                    type="file"
+                    multiple
+                    className="min-w-0 flex-1 bg-transparent text-sm text-foreground"
+                  />
+                </div>
+                {selectedFiles.length ? (
+                  <div className="rounded-md border border-border bg-muted/30 p-3">
+                    <p className="text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
+                      {t("announcements.form.selectedFiles")}
+                    </p>
+                    <ul className="mt-2 space-y-1 text-sm text-foreground">
+                      {selectedFiles.map((file) => (
+                        <li key={`${file.name}-${file.size}`} className="truncate">
+                          {file.name}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between gap-3">
+                  <Label>{t("announcements.form.targetHibrets")}</Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={toggleAllHibrets}
                   >
-                    {isCreating ? t("announcements.form.creating") : t("announcements.form.create")}
-                  </button>
-                </footer>
-              </form>
-            </div>,
-            document.body,
-          )
-        : null}
+                    {targetHibretIds.length === hibrets.length
+                      ? t("announcements.form.unselectAll")
+                      : t("announcements.form.selectAll")}
+                  </Button>
+                </div>
+
+                <Input
+                  value={hibretSearch}
+                  onChange={(event) => setHibretSearch(event.target.value)}
+                  placeholder={t("announcements.form.searchHibrets")}
+                />
+
+                <div className="max-h-64 overflow-auto rounded-md border border-border">
+                  {filteredHibrets.map((hibret) => (
+                    <label
+                      key={hibret.id}
+                      className="flex cursor-pointer items-center gap-3 border-b border-border px-3 py-2.5 text-sm last:border-b-0 hover:bg-muted/50"
+                    >
+                      <Checkbox
+                        checked={targetHibretIds.includes(hibret.id)}
+                        onCheckedChange={() => toggleHibret(hibret.id)}
+                      />
+                      <span className="text-foreground">{hibret.name}</span>
+                    </label>
+                  ))}
+                </div>
+
+                <Badge variant="default" className="w-fit">
+                  {t("announcements.form.selected")} {targetHibretIds.length} / {hibrets.length}
+                </Badge>
+              </div>
+            </div>
+
+            <div className="border-t border-border bg-muted/30 px-6 py-4">
+              <Button
+                type="submit"
+                variant="default"
+                size="default"
+                disabled={isCreating}
+                className="w-full"
+              >
+                {isCreating
+                  ? t("announcements.form.creating")
+                  : t("announcements.form.create")}
+              </Button>
+            </div>
+          </form>
+        </SheetContent>
+      </Sheet>
     </section>
   );
 }

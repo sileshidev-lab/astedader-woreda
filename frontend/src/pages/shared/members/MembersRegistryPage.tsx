@@ -13,10 +13,18 @@ import {
   Search,
   Upload,
   UserPlus,
-  X,
 } from "lucide-react";
+import { toast } from "sonner";
 import { apiClient, AUTH_TOKEN_KEY } from "../../../services/apiClient";
 import { MemberImportDrawer } from "../../woreda/members/MemberImportDrawer";
+import { Button } from "@/components/ui/shadcn/button";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/shadcn/sheet";
 
 
 const API_BASE_URL =
@@ -307,7 +315,6 @@ export function MembersRegistryPage({
   const [filterCounts, setFilterCounts] = useState<Record<string, Record<string, number>>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
   const [query, setQuery] = useState("");
   const [viewMode, setViewMode] = useState<"table" | "cards">("cards");
   const [page, setPage] = useState(1);
@@ -513,7 +520,6 @@ export function MembersRegistryPage({
 
   async function loadMembers() {
     setLoading(true);
-    setError("");
 
     try {
       const params = new URLSearchParams();
@@ -553,7 +559,7 @@ export function MembersRegistryPage({
       }
     } catch (err) {
       console.error(err);
-      setError("Unable to load members.");
+      toast.error("Unable to load members.");
     } finally {
       setLoading(false);
     }
@@ -773,14 +779,14 @@ export function MembersRegistryPage({
     if (!file) return;
 
     setSaving(true);
-    setError("");
 
     try {
       const fileId = await uploadMemberPhoto(file);
       updateMemberForm("photoFileId", fileId);
+      toast.success("Member photo uploaded.");
     } catch (err: any) {
       console.error(err);
-      setError(err?.response?.data?.message || "Unable to upload member photo.");
+      toast.error(err?.response?.data?.message || "Unable to upload member photo.");
     } finally {
       setSaving(false);
     }
@@ -955,7 +961,6 @@ export function MembersRegistryPage({
   async function saveMember(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSaving(true);
-    setError("");
 
     try {
       const payload = {
@@ -988,11 +993,12 @@ export function MembersRegistryPage({
       };
 
       await apiClient.post("/members", payload);
+      toast.success("Member created.");
       setMemberActionModal(null);
       await loadMembers();
     } catch (err: any) {
       console.error(err);
-      setError(err?.response?.data?.message || "Unable to create member.");
+      toast.error(err?.response?.data?.message || "Unable to create member.");
     } finally {
       setSaving(false);
     }
@@ -1008,24 +1014,28 @@ export function MembersRegistryPage({
       ref={rootRef}
       className="aw-design-page member-registry-page aw-member-registry flex min-h-0 flex-1 flex-col overflow-hidden"
     >
-      {error ? <div className="aw-error-banner">{error}</div> : null}
-
       <div className="member-registry-control-bar">
         <div className="flex min-w-0 flex-1 flex-wrap items-center gap-3">
           {controlBarLeading}
-          <button
+          <Button
             type="button"
+            variant="outline"
+            size="sm"
             className="member-mobile-filter-toggle"
             onClick={() => setMobileFiltersOpen(!mobileFiltersOpen)}
             aria-expanded={mobileFiltersOpen}
             aria-controls="mobile-filters"
           >
             Filters
-            {mobileFiltersOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-          </button>
+            {mobileFiltersOpen ? <ChevronUp aria-hidden /> : <ChevronDown aria-hidden />}
+          </Button>
           <div className="member-registry-search">
-            <Search size={17} />
-            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search name, PP, FAN, phone..." />
+            <Search size={17} aria-hidden />
+            <input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search name, PP, FAN, phone..."
+            />
           </div>
         </div>
 
@@ -1046,65 +1056,85 @@ export function MembersRegistryPage({
             <option value={100}>100 per page</option>
           </select>
 
-          <button
+          <Button
             type="button"
-            className={viewMode === "cards" ? "member-view-button member-registry-outline is-active" : "member-view-button member-registry-outline"}
+            variant={viewMode === "cards" ? "default" : "outline"}
+            size="icon-sm"
             onClick={() => setViewMode("cards")}
             title="Kanban view"
+            aria-label="Kanban view"
           >
-            <Grid3X3 size={17} />
-          </button>
+            <Grid3X3 aria-hidden />
+          </Button>
 
-          <button
+          <Button
             type="button"
-            className={viewMode === "table" ? "member-view-button member-registry-outline is-active" : "member-view-button member-registry-outline"}
+            variant={viewMode === "table" ? "default" : "outline"}
+            size="icon-sm"
             onClick={() => setViewMode("table")}
             title="List view"
+            aria-label="List view"
           >
-            <List size={17} />
-          </button>
+            <List aria-hidden />
+          </Button>
 
           <div className="member-pagination-controls">
-            <button
+            <Button
               type="button"
-              className="member-page-button member-registry-outline"
+              variant="outline"
+              size="sm"
               disabled={safePage <= 1}
               onClick={() => setPage((current) => Math.max(1, current - 1))}
             >
               Previous
-            </button>
-            
+            </Button>
+
             <span className="member-page-info">
               Page {safePage} of {totalPages}
             </span>
 
-            <button
+            <Button
               type="button"
-              className="member-page-button member-registry-outline"
+              variant="outline"
+              size="sm"
               disabled={safePage >= totalPages}
               onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
             >
               Next
-            </button>
+            </Button>
           </div>
 
           {showImportButton ? (
-            <button type="button" className="member-action-button member-registry-outline" onClick={() => setIsImportOpen(true)}>
-              <Upload size={16} />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setIsImportOpen(true)}
+            >
+              <Upload aria-hidden />
               Import
-            </button>
+            </Button>
           ) : null}
 
-          <button type="button" className={`member-action-button member-registry-outline ${showAnalytics ? 'is-active' : ''}`} onClick={() => setShowAnalytics(!showAnalytics)}>
-            <BarChart3 size={16} />
+          <Button
+            type="button"
+            variant={showAnalytics ? "default" : "outline"}
+            size="sm"
+            onClick={() => setShowAnalytics(!showAnalytics)}
+          >
+            <BarChart3 aria-hidden />
             Analytics
-          </button>
+          </Button>
 
           {showAddButton ? (
-            <button type="button" className="member-action-button is-primary" onClick={() => setMemberActionModal("add")}>
-              <UserPlus size={16} />
-              Add Member
-            </button>
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => setMemberActionModal("add")}
+            >
+              <UserPlus aria-hidden />
+              Add member
+            </Button>
           ) : null}
         </div>
       </div>
@@ -1342,21 +1372,22 @@ export function MembersRegistryPage({
         </main>
       </div>
 
-      {memberActionModal ? (
-        <div className="aw-drawer-overlay" onMouseDown={() => setMemberActionModal(null)}>
-          <aside className="aw-drawer member-action-drawer" onMouseDown={(event) => event.stopPropagation()}>
-            <div className="aw-drawer-header">
-              <div>
-                <p>{title}</p>
-                <h2>Add Member</h2>
-              </div>
-
-              <button type="button" onClick={() => setMemberActionModal(null)}>
-                <X size={20} />
-              </button>
-            </div>
-            {memberActionModal === "add" ? (
-              <form className="member-action-body member-form-grid" onSubmit={saveMember}>
+      <Sheet
+        open={memberActionModal !== null}
+        onOpenChange={(open) => {
+          if (!open) setMemberActionModal(null);
+        }}
+      >
+        <SheetContent
+          side="right"
+          className="member-action-drawer flex w-full flex-col gap-0 overflow-y-auto p-0 sm:max-w-2xl"
+        >
+          <SheetHeader>
+            <SheetDescription>{title}</SheetDescription>
+            <SheetTitle>Add member</SheetTitle>
+          </SheetHeader>
+          {memberActionModal === "add" ? (
+            <form className="member-action-body member-form-grid" onSubmit={saveMember}>
                 <label className="member-form-field member-photo-upload member-form-full">
                   Photo
                   <div className="member-photo-upload-row">
@@ -1434,19 +1465,23 @@ export function MembersRegistryPage({
                 <FormInput label="Registration Type" value={memberForm.registrationType} onChange={(value) => updateMemberForm("registrationType", value)} />
                 <FormInput label="Membership Status" value={memberForm.membershipStatus} onChange={(value) => updateMemberForm("membershipStatus", value)} />
 
-                <div className="member-drawer-actions member-form-full">
-                  <button type="button" className="aw-secondary-button" onClick={() => setMemberActionModal(null)} disabled={saving}>
-                    Cancel
-                  </button>
-                  <button type="submit" className="aw-primary-button" disabled={saving}>
-                    {saving ? "Saving..." : "Save Member"}
-                  </button>
-                </div>
-              </form>
-            ) : null}
-          </aside>
-        </div>
-      ) : null}
+              <div className="member-drawer-actions member-form-full">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setMemberActionModal(null)}
+                  disabled={saving}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={saving}>
+                  {saving ? "Saving..." : "Save member"}
+                </Button>
+              </div>
+            </form>
+          ) : null}
+        </SheetContent>
+      </Sheet>
       <MemberImportDrawer
         isOpen={isImportOpen}
         onClose={() => setIsImportOpen(false)}

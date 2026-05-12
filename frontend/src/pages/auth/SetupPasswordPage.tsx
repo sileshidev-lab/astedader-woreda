@@ -2,10 +2,18 @@ import { useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Eye, EyeOff, Moon, Sun } from "lucide-react";
-import { apiClient } from "../../services/apiClient";
+import { setupAccount } from "../../services/authService";
+import { useAuthStore } from "../../stores/authStore";
 import { AuthShell } from "./AuthShell";
 import { useThemeStore } from "../../stores/themeStore";
 import { AUTH_SPLIT_HERO_IMAGES } from "./authHeroImages";
+
+function destinationForRole(role?: string) {
+  if (role === "WOREDA_ADMIN") return "/woreda/dashboard";
+  if (role === "HIBRET_ADMIN") return "/hibret/announcements";
+  if (role === "MEMBER") return "/member/broadcasts";
+  return "/login";
+}
 
 export function SetupPasswordPage() {
   const navigate = useNavigate();
@@ -44,11 +52,15 @@ export function SetupPasswordPage() {
     setIsSaving(true);
 
     try {
-      await apiClient.post("/auth/setup-account", { token, password });
-      setMessage("Account activated successfully. You can now sign in.");
+      const result = await setupAccount(token, password);
+      setMessage("Account activated successfully. Signing you in...");
       setPassword("");
       setConfirmPassword("");
-      setTimeout(() => navigate("/login", { replace: true }), 900);
+
+      useAuthStore.getState().applySession(result.token, result.user);
+
+      const destination = destinationForRole(result.user.role);
+      setTimeout(() => navigate(destination, { replace: true }), 600);
     } catch (err: any) {
       setError(err?.response?.data?.message || "Unable to activate account. The link may be expired or already used.");
     } finally {

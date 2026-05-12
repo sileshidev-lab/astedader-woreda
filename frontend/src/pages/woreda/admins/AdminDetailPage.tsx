@@ -2,29 +2,24 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, Mail, ShieldCheck } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import { getAdmin, resendAdminSetup, updateAdminStatus } from "../../../services/adminService";
 import type { AdminListItem } from "../../../services/adminService";
 import { useAuthStore } from "../../../stores/authStore";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/shadcn/card";
+import { Button } from "@/components/ui/shadcn/button";
+import { Badge } from "@/components/ui/shadcn/badge";
+import { statusToBadgeVariant } from "@/lib/badge";
 
 function formatDate(value?: string | null) {
   if (!value) return "-";
   return new Date(value).toLocaleString();
-}
-
-function statusClass(status?: string | null) {
-  if (status === "ACTIVE") {
-    return "rounded border border-woreda-success/20 bg-woreda-successBg px-2.5 py-1 text-xs font-bold text-woreda-success";
-  }
-
-  if (status === "PENDING_SETUP") {
-    return "rounded border border-woreda-primary/20 bg-woreda-primarySoft px-2.5 py-1 text-xs font-bold text-woreda-primary";
-  }
-
-  if (status === "DISABLED") {
-    return "rounded border border-woreda-danger/20 bg-woreda-dangerBg px-2.5 py-1 text-xs font-bold text-woreda-danger";
-  }
-
-  return "rounded border border-woreda-border bg-woreda-surfaceLow px-2.5 py-1 text-xs font-bold text-woreda-textMuted";
 }
 
 type AdminDetail = AdminListItem & {
@@ -45,21 +40,17 @@ export function AdminDetailPage() {
   const [admin, setAdmin] = useState<AdminDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState("");
-  const [error, setError] = useState("");
 
   const canUpdate = hasPrivilege("admin.update");
 
   async function loadAdmin() {
     if (!adminId) return;
 
-    setError("");
-
     try {
       const data = await getAdmin(adminId);
       setAdmin(data);
     } catch {
-      setError(t("admins.detail.errors.load"));
+      toast.error(t("admins.detail.errors.load"));
     } finally {
       setIsLoading(false);
     }
@@ -73,15 +64,13 @@ export function AdminDetailPage() {
     if (!admin) return;
 
     setBusy(true);
-    setError("");
-    setMessage("");
 
     try {
       const result = await updateAdminStatus(admin.id, status);
-      setMessage(result.message);
+      toast.success(result.message);
       await loadAdmin();
     } catch (err: any) {
-      setError(err?.response?.data?.message || t("admins.errors.status"));
+      toast.error(err?.response?.data?.message || t("admins.errors.status"));
     } finally {
       setBusy(false);
     }
@@ -91,15 +80,13 @@ export function AdminDetailPage() {
     if (!admin) return;
 
     setBusy(true);
-    setError("");
-    setMessage("");
 
     try {
       const result = await resendAdminSetup(admin.id);
-      setMessage(result.message);
+      toast.success(result.message);
       await loadAdmin();
     } catch (err: any) {
-      setError(err?.response?.data?.message || t("admins.errors.resendSetup"));
+      toast.error(err?.response?.data?.message || t("admins.errors.resendSetup"));
     } finally {
       setBusy(false);
     }
@@ -107,168 +94,162 @@ export function AdminDetailPage() {
 
   if (isLoading) {
     return (
-      <section className="aw-design-page rounded border border-woreda-border bg-woreda-surface p-5 shadow-none">
-        <p className="text-sm font-semibold text-woreda-textMuted">{t("admins.detail.loading")}</p>
-      </section>
+      <Card>
+        <CardContent className="p-5">
+          <p className="text-sm text-muted-foreground">{t("admins.detail.loading")}</p>
+        </CardContent>
+      </Card>
     );
   }
 
   if (!admin) {
     return (
-      <section className="aw-design-page rounded-3xl border border-woreda-border bg-woreda-surface p-5 shadow-sm">
-        <p className="text-sm font-semibold text-woreda-textMuted">{t("admins.detail.notFound")}</p>
-      </section>
+      <Card>
+        <CardContent className="p-5">
+          <p className="text-sm text-muted-foreground">{t("admins.detail.notFound")}</p>
+        </CardContent>
+      </Card>
     );
   }
 
   return (
-    <section className="aw-design-page flex min-h-0 flex-1 flex-col gap-5">
-      {error ? (
-        <div className="rounded border border-woreda-danger bg-woreda-dangerBg px-4 py-3 text-sm font-semibold text-woreda-danger">
-          {error}
-        </div>
-      ) : null}
-
-      {message ? (
-        <div className="rounded border border-woreda-primary/20 bg-woreda-primarySoft px-4 py-3 text-sm font-semibold text-woreda-primary">
-          {message}
-        </div>
-      ) : null}
-
-      <div className="overflow-hidden rounded-3xl border border-woreda-border/70 bg-woreda-surface shadow-none">
-        <div className="flex flex-col gap-4 border-b border-woreda-border/60 bg-woreda-surfaceLow px-5 py-4 xl:flex-row xl:items-center xl:justify-between">
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-woreda-textMuted">
+    <section className="flex min-h-0 flex-1 flex-col gap-5">
+      <Card>
+        <CardHeader className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+          <div className="space-y-2">
+            <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
               {t("admins.detail.eyebrow")}
             </p>
-            <h1 className="mt-2 text-2xl font-bold text-woreda-text">{admin.email}</h1>
-            <div className="mt-3 flex flex-wrap gap-2">
-              <span className={statusClass(admin.status)}>{admin.status}</span>
-              <span className="rounded border border-woreda-border bg-woreda-surface px-2.5 py-1 text-xs font-bold text-woreda-textMuted">
+            <CardTitle>{admin.email}</CardTitle>
+            <div className="flex flex-wrap gap-2">
+              <Badge variant={statusToBadgeVariant(admin.status)}>{admin.status}</Badge>
+              <Badge variant="muted">
                 {admin.role === "WOREDA_ADMIN" ? t("admins.roles.woreda") : t("admins.roles.hibret")}
-              </span>
+              </Badge>
             </div>
           </div>
 
-          <Link
-            to="/woreda/admins"
-            className="inline-flex min-h-10 items-center gap-2 rounded-2xl border border-woreda-border bg-woreda-surface px-4 py-2 text-sm font-bold text-woreda-text hover:border-woreda-primary hover:text-woreda-primary"
-          >
-            <ArrowLeft size={16} />
-            {t("admins.detail.back")}
-          </Link>
-        </div>
+          <Button asChild variant="outline" size="default">
+            <Link to="/woreda/admins">
+              <ArrowLeft aria-hidden />
+              {t("admins.detail.back")}
+            </Link>
+          </Button>
+        </CardHeader>
 
-        <div className="form-grid p-5">
+        <CardContent className="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-4">
           <Info label={t("admins.detail.fields.email")} value={admin.email} />
-          <Info label={t("admins.detail.fields.scope")} value={admin.role === "WOREDA_ADMIN" ? t("admins.scope.woreda") : admin.hibretName || "-"} />
+          <Info
+            label={t("admins.detail.fields.scope")}
+            value={
+              admin.role === "WOREDA_ADMIN" ? t("admins.scope.woreda") : admin.hibretName || "-"
+            }
+          />
           <Info label={t("admins.detail.fields.lastLogin")} value={formatDate(admin.lastLoginAt)} />
           <Info label={t("admins.detail.fields.created")} value={formatDate(admin.createdAt)} />
-        </div>
+        </CardContent>
 
         {canUpdate ? (
-          <div className="flex flex-wrap gap-2 border-t border-woreda-border/60 px-5 py-4">
+          <div className="flex flex-wrap gap-2 border-t border-border px-5 py-4">
             {admin.status === "DISABLED" ? (
-              <button
+              <Button
                 type="button"
+                variant="outline"
+                size="sm"
                 disabled={busy}
                 onClick={() => changeStatus("ACTIVE")}
-                className="rounded-2xl border border-woreda-success bg-woreda-successBg px-4 py-2 text-xs font-bold text-woreda-success"
               >
                 {t("admins.actions.reactivate")}
-              </button>
+              </Button>
             ) : (
-              <button
+              <Button
                 type="button"
+                variant="destructive"
+                size="sm"
                 disabled={busy}
                 onClick={() => changeStatus("DISABLED")}
-                className="rounded-2xl border border-woreda-danger bg-woreda-dangerBg px-4 py-2 text-xs font-bold text-woreda-danger"
               >
                 {t("admins.actions.disable")}
-              </button>
+              </Button>
             )}
 
-            <button
+            <Button
               type="button"
+              variant="outline"
+              size="sm"
               disabled={busy}
               onClick={() => changeStatus("PENDING_SETUP")}
-              className="rounded-2xl border border-woreda-border bg-woreda-surface px-4 py-2 text-xs font-bold text-woreda-text"
             >
               {t("admins.detail.actions.markPendingSetup")}
-            </button>
+            </Button>
 
-            <button
+            <Button
               type="button"
+              variant="outline"
+              size="sm"
               disabled={busy}
               onClick={resendSetup}
-              className="inline-flex items-center gap-2 rounded-2xl border border-woreda-primary bg-woreda-primarySoft px-4 py-2 text-xs font-bold text-woreda-primary hover:bg-woreda-primary hover:text-white"
             >
-              <Mail size={14} />
+              <Mail aria-hidden />
               {t("admins.actions.setupLink")}
-            </button>
+            </Button>
           </div>
         ) : null}
-      </div>
+      </Card>
 
       <div className="grid min-h-0 flex-1 gap-5 xl:grid-cols-[0.8fr_1.2fr]">
-        <section className="rounded-3xl border border-woreda-border/70 bg-woreda-surface p-5 shadow-none">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded border border-woreda-primary/20 bg-woreda-primarySoft text-woreda-primary">
-              <ShieldCheck size={18} />
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-md border border-primary/20 bg-primary/10 text-primary">
+                <ShieldCheck size={18} aria-hidden />
+              </div>
+              <div>
+                <CardTitle>{t("admins.form.privilegesTitle")}</CardTitle>
+                <CardDescription>
+                  {admin.privileges.includes("*")
+                    ? t("admins.detail.privileges.fullSystemAccess")
+                    : t("admins.privileges.count", { count: admin.privileges.length })}
+                </CardDescription>
+              </div>
             </div>
-            <div>
-              <h2 className="font-bold text-woreda-text">{t("admins.form.privilegesTitle")}</h2>
-              <p className="text-xs font-semibold text-woreda-textMuted">
-                {admin.privileges.includes("*")
-                  ? t("admins.detail.privileges.fullSystemAccess")
-                  : t("admins.privileges.count", { count: admin.privileges.length })}
-              </p>
+          </CardHeader>
+
+          <CardContent>
+            <div className="flex flex-wrap gap-2">
+              {admin.privileges.map((privilege) => (
+                <Badge key={privilege} variant="muted">
+                  {privilege === "*" ? t("admins.privileges.fullAccess") : privilege}
+                </Badge>
+              ))}
             </div>
-          </div>
+          </CardContent>
+        </Card>
 
-          <div className="mt-5 flex flex-wrap gap-2">
-            {admin.privileges.map((privilege) => (
-              <span
-                key={privilege}
-                className="rounded border border-woreda-border bg-woreda-surfaceLow px-2.5 py-1 text-xs font-bold text-woreda-textMuted"
-              >
-                {privilege === "*" ? t("admins.privileges.fullAccess") : privilege}
-              </span>
-            ))}
-          </div>
-        </section>
+        <Card className="flex min-h-0 flex-col overflow-hidden">
+          <CardHeader>
+            <CardTitle>{t("admins.detail.activity.title")}</CardTitle>
+            <CardDescription>{t("admins.detail.activity.subtitle")}</CardDescription>
+          </CardHeader>
 
-        <section className="flex min-h-0 flex-col overflow-hidden rounded-3xl border border-woreda-border/70 bg-woreda-surface shadow-none">
-          <div className="shrink-0 border-b border-woreda-border/60 bg-woreda-surfaceLow px-5 py-4">
-            <h2 className="font-bold text-woreda-text">{t("admins.detail.activity.title")}</h2>
-            <p className="mt-1 text-xs font-semibold text-woreda-textMuted">
-              {t("admins.detail.activity.subtitle")}
-            </p>
-          </div>
-
-          <div className="min-h-0 flex-1 overflow-auto">
+          <CardContent className="min-h-0 flex-1 overflow-auto p-0">
             {admin.activity.length === 0 ? (
-              <div className="p-5 text-sm font-semibold text-woreda-textMuted">
+              <div className="p-5 text-sm text-muted-foreground">
                 {t("admins.detail.activity.empty")}
               </div>
             ) : (
               admin.activity.map((item) => (
-                <article
-                  key={item.id}
-                  className="border-b border-woreda-borderLight/40 px-5 py-4"
-                >
-                  <p className="font-bold text-woreda-text">{item.operation}</p>
-                  <p className="mt-1 text-sm text-woreda-textMuted">
+                <article key={item.id} className="border-b border-border px-5 py-4">
+                  <p className="font-medium text-foreground">{item.operation}</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
                     {item.description || item.targetName || item.targetType || "-"}
                   </p>
-                  <p className="mt-2 text-xs font-semibold text-woreda-textMuted">
-                    {formatDate(item.createdAt)}
-                  </p>
+                  <p className="mt-2 text-xs text-muted-foreground">{formatDate(item.createdAt)}</p>
                 </article>
               ))
             )}
-          </div>
-        </section>
+          </CardContent>
+        </Card>
       </div>
     </section>
   );
@@ -276,11 +257,11 @@ export function AdminDetailPage() {
 
 function Info({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded border border-woreda-border/60 bg-woreda-surfaceLow p-4">
-      <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-woreda-textMuted">
+    <div className="rounded-md border border-border bg-muted/30 p-4">
+      <p className="text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
         {label}
       </p>
-      <p className="mt-1 truncate text-sm font-bold text-woreda-text">{value}</p>
+      <p className="mt-1 truncate text-sm font-medium text-foreground">{value}</p>
     </div>
   );
 }

@@ -15,15 +15,16 @@ export function SearchInput({
   }
 
   return (
-    <label className="flex min-h-10 w-full items-center gap-2 rounded-2xl border border-woreda-border bg-woreda-surface px-3 text-sm">
-      <Search size={16} className="text-woreda-textMuted" aria-hidden />
+    <label
+      className="flex min-h-10 w-full items-center gap-2 rounded-md border border-[var(--aw-border)] bg-[var(--aw-surface)] px-3 text-sm transition focus-within:border-[var(--aw-primary)] focus-within:shadow-focus"
+    >
+      <Search size={16} className="text-[var(--aw-muted)]" aria-hidden />
       <input
         value={value}
         onChange={handleChange}
         placeholder={placeholder || "Search"}
-        className="min-w-0 flex-1 bg-transparent font-semibold text-woreda-text outline-none placeholder:text-woreda-textMuted"
+        className="min-w-0 flex-1 bg-transparent font-medium text-[var(--aw-text)] outline-none placeholder:text-[var(--aw-muted)]"
       />
     </label>
   );
 }
-

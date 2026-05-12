@@ -3,7 +3,7 @@ import type { FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Moon, Sun } from "lucide-react";
-import { apiClient } from "../../services/apiClient";
+import { forgotPassword } from "../../services/authService";
 import { AuthShell } from "./AuthShell";
 import { useThemeStore } from "../../stores/themeStore";
 import { AUTH_SPLIT_HERO_IMAGES } from "./authHeroImages";
@@ -26,10 +26,8 @@ export function ForgotPasswordPage() {
     setIsSending(true);
 
     try {
-      const response = await apiClient.post<{ message: string }>("/auth/forgot-password", {
-        email: email.trim(),
-      });
-      setMessage(response.data.message || t("auth.resetSent"));
+      const result = await forgotPassword(email.trim());
+      setMessage(result.message || t("auth.resetSent"));
     } catch (err: any) {
       setError(err?.response?.data?.message || t("auth.resetSendFailed"));
     } finally {

@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import { ImageIcon, X } from "lucide-react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/shadcn/button";
 import { apiClient } from "../../../services/apiClient";
 import { getApiBaseUrl } from "../../../services/runtimeConfig";
 import type {
@@ -96,7 +98,6 @@ export function MemberFormDrawer({
   onSubmit,
 }: MemberFormDrawerProps) {
   const [form, setForm] = useState<MemberPayload>(emptyForm);
-  const [error, setError] = useState("");
   const [photoUploading, setPhotoUploading] = useState(false);
 
   useEffect(() => {
@@ -137,8 +138,6 @@ export function MemberFormDrawer({
         hibretId: options.hibrets[0]?.id ?? "",
       });
     }
-
-    setError("");
   }, [isOpen, member, options.hibrets]);
 
   const familiesForHibret = useMemo(() => {
@@ -159,13 +158,12 @@ export function MemberFormDrawer({
     if (!file) return;
 
     setPhotoUploading(true);
-    setError("");
 
     try {
       const fileId = await uploadMemberPhoto(file);
       updateField("photoFileId", fileId);
     } catch (err: any) {
-      setError(err?.response?.data?.message || "Unable to upload member photo.");
+      toast.error(err?.response?.data?.message || "Unable to upload member photo.");
     } finally {
       setPhotoUploading(false);
     }
@@ -173,10 +171,9 @@ export function MemberFormDrawer({
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setError("");
 
     if (!String(form.firstName || "").trim() || !String(form.fatherName || "").trim() || !form.gender || !form.hibretId) {
-      setError("First name, father name, gender, and Hibret are required.");
+      toast.error("First name, father name, gender, and Hibret are required.");
       return;
     }
 
@@ -225,23 +222,19 @@ export function MemberFormDrawer({
               <h2 className="mt-1 text-xl font-bold text-woreda-text">{title}</h2>
             </div>
 
-            <button
+            <Button
               type="button"
+              variant="outline"
+              size="icon"
               onClick={onClose}
-              className="inline-flex h-10 w-10 items-center justify-center border border-woreda-border bg-woreda-surface text-woreda-text"
+              aria-label="Close"
             >
-              <X size={18} />
-            </button>
+              <X aria-hidden />
+            </Button>
           </div>
         </div>
 
         <form onSubmit={handleSubmit} className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
-          {error ? (
-            <div className="mb-4 border border-woreda-danger bg-woreda-dangerBg px-4 py-3 text-sm font-bold text-woreda-danger">
-              {error}
-            </div>
-          ) : null}
-
           <div className="mb-5 border border-woreda-border bg-woreda-surfaceLow p-4">
             <p className="mb-3 text-sm font-bold text-woreda-text">Member photo</p>
             <div className="flex items-center gap-4">
@@ -324,22 +317,24 @@ export function MemberFormDrawer({
             <FormInput label="Membership Status" value={String(form.membershipStatus ?? "")} onChange={(value) => updateField("membershipStatus", value)} />
           </div>
 
-          <div className="sticky bottom-0 mt-6 flex justify-end gap-3 border-t border-woreda-border bg-woreda-surface py-4">
-            <button
+          <div className="sticky bottom-0 mt-6 flex justify-end gap-3 border-t border-border bg-background py-4">
+            <Button
               type="button"
-              className="aw-secondary-button"
+              variant="outline"
+              size="default"
               onClick={onClose}
               disabled={isSaving || photoUploading}
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
-              className="aw-primary-button"
+              variant="default"
+              size="default"
               disabled={isSaving || photoUploading}
             >
               {isSaving ? "Saving..." : "Save Member"}
-            </button>
+            </Button>
           </div>
         </form>
       </aside>

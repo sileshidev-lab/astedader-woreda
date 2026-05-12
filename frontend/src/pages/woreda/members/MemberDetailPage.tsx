@@ -11,6 +11,8 @@ import {
   MapPin,
   Phone,
 } from "lucide-react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/shadcn/button";
 import { AUTH_TOKEN_KEY } from "../../../services/apiClient";
 import { getApiBaseUrl } from "../../../services/runtimeConfig";
 import {
@@ -92,13 +94,11 @@ export function MemberDetailPage() {
   const [isAccountBusy, setIsAccountBusy] = useState(false);
   const [accountMessage, setAccountMessage] = useState("");
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState("");
 
   async function loadMember() {
     if (!memberId) return;
 
     setIsLoading(true);
-    setError("");
 
     try {
       const [data, options] = await Promise.all([
@@ -109,7 +109,7 @@ export function MemberDetailPage() {
       setMember(data);
       setFormOptions(options);
     } catch {
-      setError("Unable to load member profile.");
+      toast.error("Unable to load member profile.");
     } finally {
       setIsLoading(false);
     }
@@ -123,7 +123,6 @@ export function MemberDetailPage() {
     if (!memberId) return;
 
     setIsSaving(true);
-    setError("");
 
     try {
       const updated = await updateWoredaMember(memberId, payload);
@@ -131,7 +130,7 @@ export function MemberDetailPage() {
       setIsEditOpen(false);
       await loadMember();
     } catch (err: any) {
-      setError(err?.response?.data?.message || "Unable to update member.");
+      toast.error(err?.response?.data?.message || "Unable to update member.");
     } finally {
       setIsSaving(false);
     }
@@ -141,7 +140,6 @@ export function MemberDetailPage() {
     if (!memberId) return;
 
     setIsAccountBusy(true);
-    setError("");
     setAccountMessage("");
 
     try {
@@ -149,7 +147,7 @@ export function MemberDetailPage() {
       setAccountMessage(result.message);
       await loadMember();
     } catch (err: any) {
-      setError(err?.response?.data?.message || "Unable to create account.");
+      toast.error(err?.response?.data?.message || "Unable to create account.");
     } finally {
       setIsAccountBusy(false);
     }
@@ -159,7 +157,6 @@ export function MemberDetailPage() {
     if (!memberId) return;
 
     setIsAccountBusy(true);
-    setError("");
     setAccountMessage("");
 
     try {
@@ -167,7 +164,7 @@ export function MemberDetailPage() {
       setAccountMessage(result.message);
       await loadMember();
     } catch (err: any) {
-      setError(err?.response?.data?.message || "Unable to resend setup email.");
+      toast.error(err?.response?.data?.message || "Unable to resend setup email.");
     } finally {
       setIsAccountBusy(false);
     }
@@ -177,7 +174,6 @@ export function MemberDetailPage() {
     if (!memberId) return;
 
     setIsAccountBusy(true);
-    setError("");
     setAccountMessage("");
 
     try {
@@ -185,7 +181,7 @@ export function MemberDetailPage() {
       setAccountMessage(result.message);
       await loadMember();
     } catch (err: any) {
-      setError(err?.response?.data?.message || "Unable to update account status.");
+      toast.error(err?.response?.data?.message || "Unable to update account status.");
     } finally {
       setIsAccountBusy(false);
     }
@@ -195,32 +191,22 @@ export function MemberDetailPage() {
 
   if (isLoading) {
     return (
-      <section className="aw-design-page member-detail-redesign flex min-h-0 flex-1 flex-col">
+      <section className="member-detail-redesign flex min-h-0 flex-1 flex-col">
         <div className="member-detail-loading">Loading member profile.</div>
-      </section>
-    );
-  }
-
-  if (error && !member) {
-    return (
-      <section className="aw-design-page member-detail-redesign flex min-h-0 flex-1 flex-col">
-        <div className="aw-error-banner">{error}</div>
       </section>
     );
   }
 
   if (!member) {
     return (
-      <section className="aw-design-page member-detail-redesign flex min-h-0 flex-1 flex-col">
+      <section className="member-detail-redesign flex min-h-0 flex-1 flex-col">
         <div className="member-detail-loading">Member not found.</div>
       </section>
     );
   }
 
   return (
-    <section className="aw-design-page member-detail-redesign flex min-h-0 flex-1 flex-col gap-5">
-      {error ? <div className="aw-error-banner">{error}</div> : null}
-
+    <section className="member-detail-redesign flex min-h-0 flex-1 flex-col gap-5">
       <div className="member-profile-header-card">
         <div className="member-profile-header-top">
           <div className="member-profile-title-area">
@@ -249,13 +235,14 @@ export function MemberDetailPage() {
             </div>
           </div>
 
-          <button
+          <Button
             type="button"
+            variant="default"
+            size="default"
             onClick={() => setIsEditOpen(true)}
-            className="member-profile-primary-action"
           >
             Edit Profile
-          </button>
+          </Button>
         </div>
 
         <div className="member-profile-summary-bar">
@@ -377,18 +364,36 @@ export function MemberDetailPage() {
                 <DetailPair label="Created" value={formatDate(member.account.createdAt)} />
 
                 <div className="member-account-actions">
-                  <button type="button" disabled={isAccountBusy} onClick={handleResendSetup}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={isAccountBusy}
+                    onClick={handleResendSetup}
+                  >
                     Resend Setup Link
-                  </button>
+                  </Button>
 
                   {member.account.status === "DISABLED" ? (
-                    <button type="button" disabled={isAccountBusy} onClick={() => handleAccountStatus("ACTIVE")}>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={isAccountBusy}
+                      onClick={() => handleAccountStatus("ACTIVE")}
+                    >
                       Reactivate Account
-                    </button>
+                    </Button>
                   ) : (
-                    <button type="button" disabled={isAccountBusy} onClick={() => handleAccountStatus("DISABLED")}>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      disabled={isAccountBusy}
+                      onClick={() => handleAccountStatus("DISABLED")}
+                    >
                       Disable Account
-                    </button>
+                    </Button>
                   )}
                 </div>
               </div>
@@ -397,13 +402,15 @@ export function MemberDetailPage() {
                 <Mail size={22} />
                 <h3>No account linked</h3>
                 <p>Email ready: {member.email || "No email recorded"}</p>
-                <button
+                <Button
                   type="button"
+                  variant="default"
+                  size="default"
                   disabled={isAccountBusy || !member.email}
                   onClick={handleCreateAccount}
                 >
                   Create Account
-                </button>
+                </Button>
               </div>
             )}
 

@@ -1,17 +1,88 @@
 import { useEffect, useMemo, useState } from "react";
 import { BarChart3, Users } from "lucide-react";
-import { useAuthStore } from "../../../store/authStore";
+import { useAuthStore } from "../../../stores/authStore";
 import { getMyHibretPortalDetail } from "../../../services/hibretPortalService";
 import type { HibretPortalDetail } from "../../../services/hibretPortalService";
+import { EmptyState } from "../../../components/ui/EmptyState";
 import {
-  AdminEmptyState,
-  AdminMetricCard,
-  AdminSectionPanel,
-} from "../../../components/ui/AdminPagePrimitives";
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/shadcn/card";
 
 function percent(value: number, total: number) {
   if (!total) return 0;
   return Math.round((value / total) * 100);
+}
+
+function StatTile({
+  label,
+  value,
+  subtitle,
+  tone = "default",
+}: {
+  label: string;
+  value: string | number;
+  subtitle?: string;
+  tone?: "default" | "success" | "warning";
+}) {
+  const labelToneClass =
+    tone === "success"
+      ? "text-[var(--aw-success)]"
+      : tone === "warning"
+        ? "text-[var(--aw-warning)]"
+        : "text-muted-foreground";
+
+  return (
+    <Card>
+      <CardHeader className="px-4 py-3">
+        <span
+          className={`text-[11px] font-medium uppercase tracking-[0.06em] ${labelToneClass}`}
+        >
+          {label}
+        </span>
+      </CardHeader>
+      <CardContent className="px-4 pb-4 pt-0">
+        <p className="text-2xl font-semibold tabular-nums leading-none tracking-tight text-foreground">
+          {value}
+        </p>
+        {subtitle ? (
+          <p className="mt-2 text-xs text-muted-foreground">{subtitle}</p>
+        ) : null}
+      </CardContent>
+    </Card>
+  );
+}
+
+function SmallStat({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div className="rounded-md border border-border bg-muted/30 p-3">
+      <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
+        {label}
+      </p>
+      <p className="mt-1 text-xl font-semibold tabular-nums text-foreground">{value}</p>
+    </div>
+  );
+}
+
+function Progress({ label, value }: { label: string; value: number }) {
+  const clamped = Math.max(0, Math.min(value, 100));
+  return (
+    <div>
+      <div className="flex justify-between gap-3 text-sm">
+        <span className="font-medium text-foreground">{label}</span>
+        <span className="font-medium text-primary tabular-nums">{clamped}%</span>
+      </div>
+      <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted">
+        <div
+          className="h-full rounded-full bg-primary"
+          style={{ width: `${clamped}%` }}
+        />
+      </div>
+    </div>
+  );
 }
 
 export function HibretAnalyticsPage() {
@@ -22,8 +93,15 @@ export function HibretAnalyticsPage() {
   async function loadData() {
     setError("");
 
+    const hibretId = user?.hibretId;
+    if (!hibretId) {
+      setDetail(null);
+      setError("Unable to load Hibret analytics.");
+      return;
+    }
+
     try {
-      const data = await getMyHibretPortalDetail((user as any)?.hibretId);
+      const data = await getMyHibretPortalDetail(hibretId);
       setDetail(data);
     } catch {
       setError("Unable to load Hibret analytics.");
@@ -32,7 +110,8 @@ export function HibretAnalyticsPage() {
 
   useEffect(() => {
     void loadData();
-  }, [(user as any)?.hibretId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.hibretId]);
 
   const analytics = useMemo(() => {
     const directives = detail?.directives ?? [];
@@ -40,8 +119,13 @@ export function HibretAnalyticsPage() {
     const members = detail?.members ?? [];
     const families = detail?.families ?? [];
 
-    const submittedReports = reports.filter((report) => report.submittedAt || report.status === "submitted" || report.status === "approved").length;
-    const approvedReports = reports.filter((report) => report.reviewDecision === "approved" || report.status === "approved").length;
+    const submittedReports = reports.filter(
+      (report) =>
+        report.submittedAt || report.status === "submitted" || report.status === "approved",
+    ).length;
+    const approvedReports = reports.filter(
+      (report) => report.reviewDecision === "approved" || report.status === "approved",
+    ).length;
     const pendingReports = Math.max(directives.length - submittedReports, 0);
     const membersInFamilies = families.reduce((sum, family) => sum + family.members.length, 0);
 
@@ -71,104 +155,106 @@ export function HibretAnalyticsPage() {
   }, [detail?.directives]);
 
   return (
-    <section className="aw-design-page aw-mobile-page flex min-h-0 flex-1 flex-col gap-5">
+    <section className="flex min-h-0 flex-1 flex-col space-y-6">
       {error ? (
-        <div className="rounded border border-woreda-danger bg-woreda-dangerBg px-4 py-3 text-sm font-semibold text-woreda-danger">{error}</div>
+        <div className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm font-medium text-destructive">
+          {error}
+        </div>
       ) : null}
 
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <AdminMetricCard label="Assigned directives" value={analytics.directives} note="Current directives in this Hibret" />
-        <AdminMetricCard label="Submitted reports" value={analytics.submittedReports} note="Reports sent for review" tone="success" />
-        <AdminMetricCard label="Members" value={analytics.members} note="Registered Hibret members" />
-        <AdminMetricCard label="Families" value={analytics.families} note="Family structures in this Hibret" tone="warning" />
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <StatTile
+          label="Assigned directives"
+          value={analytics.directives}
+          subtitle="Current directives in this Hibret"
+        />
+        <StatTile
+          label="Submitted reports"
+          value={analytics.submittedReports}
+          subtitle="Reports sent for review"
+          tone="success"
+        />
+        <StatTile
+          label="Members"
+          value={analytics.members}
+          subtitle="Registered Hibret members"
+        />
+        <StatTile
+          label="Families"
+          value={analytics.families}
+          subtitle="Family structures in this Hibret"
+          tone="warning"
+        />
       </div>
 
-      <div className="grid gap-5 xl:grid-cols-2">
-        <AdminSectionPanel
-          title="Report performance"
-          description="Submission and review progress for directives assigned to this Hibret."
-        >
-          <div className="p-5">
-          <h2 className="flex items-center gap-2 text-lg font-black text-woreda-text">
-            <BarChart3 size={18} />
-            Report performance
-          </h2>
-
-          <div className="mt-5 space-y-4">
+      <div className="grid gap-6 xl:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base font-semibold">
+              <BarChart3 aria-hidden className="text-muted-foreground" />
+              Report performance
+            </CardTitle>
+            <CardDescription className="text-sm text-muted-foreground">
+              Submission and review progress for directives assigned to this Hibret.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-5">
             <Progress label="Submission rate" value={analytics.submissionRate} />
             <Progress label="Approval rate" value={analytics.approvalRate} />
-          </div>
+            <div className="grid grid-cols-3 gap-3">
+              <SmallStat label="Pending reports" value={analytics.pendingReports} />
+              <SmallStat label="Approved reports" value={analytics.approvedReports} />
+              <SmallStat label="Total reports" value={analytics.reports} />
+            </div>
+          </CardContent>
+        </Card>
 
-          <div className="stat-grid mt-5">
-            <SmallStat label="Pending reports" value={analytics.pendingReports} />
-            <SmallStat label="Approved reports" value={analytics.approvedReports} />
-            <SmallStat label="Total reports" value={analytics.reports} />
-          </div>
-          </div>
-        </AdminSectionPanel>
-
-        <AdminSectionPanel
-          title="Family structure"
-          description="Household organization and member assignment inside the Hibret."
-        >
-          <div className="p-5">
-          <h2 className="flex items-center gap-2 text-lg font-black text-woreda-text">
-            <Users size={18} />
-            Family structure
-          </h2>
-
-          <div className="stat-grid mt-5">
-            <SmallStat label="Members in families" value={analytics.membersInFamilies} />
-            <SmallStat label="Unassigned members" value={analytics.unassignedMembers} />
-            <SmallStat label="Families" value={analytics.families} />
-          </div>
-
-          <div className="mt-5">
-            <Progress label="Members assigned to families" value={percent(analytics.membersInFamilies, analytics.members)} />
-          </div>
-          </div>
-        </AdminSectionPanel>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base font-semibold">
+              <Users aria-hidden className="text-muted-foreground" />
+              Family structure
+            </CardTitle>
+            <CardDescription className="text-sm text-muted-foreground">
+              Household organization and member assignment inside the Hibret.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            <div className="grid grid-cols-3 gap-3">
+              <SmallStat label="Members in families" value={analytics.membersInFamilies} />
+              <SmallStat label="Unassigned members" value={analytics.unassignedMembers} />
+              <SmallStat label="Families" value={analytics.families} />
+            </div>
+            <Progress
+              label="Members assigned to families"
+              value={percent(analytics.membersInFamilies, analytics.members)}
+            />
+          </CardContent>
+        </Card>
       </div>
 
-      <AdminSectionPanel
-        title="Directive type breakdown"
-        description="A quick look at the kinds of directives currently assigned."
-      >
-        <div className="p-5">
-        {directiveBreakdown.length === 0 ? (
-          <AdminEmptyState title="No assigned directives found" description="Directive analytics will appear here as work is assigned." />
-        ) : (
-          <div className="stat-grid mt-4">
-            {directiveBreakdown.map(([type, count]) => (
-              <SmallStat key={type} label={type.replace("_", " ")} value={count} />
-            ))}
-          </div>
-        )}
-        </div>
-      </AdminSectionPanel>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base font-semibold">Directive type breakdown</CardTitle>
+          <CardDescription className="text-sm text-muted-foreground">
+            A quick look at the kinds of directives currently assigned.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {directiveBreakdown.length === 0 ? (
+            <EmptyState
+              title="No assigned directives found"
+              message="Directive analytics will appear here as work is assigned."
+            />
+          ) : (
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+              {directiveBreakdown.map(([type, count]) => (
+                <SmallStat key={type} label={type.replace("_", " ")} value={count} />
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </section>
-  );
-}
-
-function SmallStat({ label, value }: { label: string; value: string | number }) {
-  return (
-    <div className="rounded border border-woreda-border bg-woreda-surfaceLow p-3">
-      <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-woreda-textMuted">{label}</p>
-      <p className="mt-1 text-xl font-black text-woreda-text">{value}</p>
-    </div>
-  );
-}
-
-function Progress({ label, value }: { label: string; value: number }) {
-  return (
-    <div>
-      <div className="flex justify-between gap-3 text-sm font-bold">
-        <span className="text-woreda-text">{label}</span>
-        <span className="text-woreda-primary">{value}%</span>
-      </div>
-      <div className="mt-2 h-3 overflow-hidden rounded bg-woreda-surfaceLow">
-        <div className="h-full rounded bg-woreda-primary" style={{ width: `${Math.max(0, Math.min(value, 100))}%` }} />
-      </div>
-    </div>
   );
 }

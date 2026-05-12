@@ -26,19 +26,27 @@ export function FilePreviewCard({
   );
 
   return (
-    <div className="group flex items-start justify-between gap-3 rounded-3xl border border-woreda-border/70 bg-woreda-surface px-4 py-4">
+    <div
+      className="group flex items-start justify-between gap-3 rounded-lg border border-[var(--aw-border-soft)] bg-[var(--aw-surface)] px-4 py-4 transition hover:border-[var(--aw-border)]"
+      style={{ boxShadow: "var(--aw-shadow-xs)" }}
+    >
       <div className="flex min-w-0 items-start gap-3">
-        <div className="mt-0.5 rounded-2xl border border-woreda-border bg-woreda-surfaceLow p-2 text-woreda-textMuted">
+        <div
+          className="mt-0.5 flex h-9 w-9 items-center justify-center rounded-md border border-[var(--aw-border-soft)] text-[var(--aw-primary)]"
+          style={{ background: "var(--aw-primary-softer)" }}
+        >
           {icon}
         </div>
         <div className="min-w-0">
-          <p className="truncate text-sm font-black text-woreda-text">{file.originalName}</p>
-          <p className="mt-1 text-xs font-semibold text-woreda-textMuted">
+          <p className="truncate font-display text-sm font-semibold text-[var(--aw-text-strong)]">
+            {file.originalName}
+          </p>
+          <p className="mt-1 text-xs font-medium text-[var(--aw-muted)]">
             {file.mimeType} · {Math.round(file.sizeBytes / 1024)} KB
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
             <a
-              className="rounded-2xl border border-woreda-border bg-woreda-surface px-3 py-2 text-xs font-black text-woreda-text hover:border-woreda-primary hover:text-woreda-primary"
+              className="inline-flex items-center rounded-md border border-[var(--aw-border)] bg-[var(--aw-surface)] px-3 py-1.5 text-xs font-semibold text-[var(--aw-text)] transition hover:border-[var(--aw-primary)] hover:bg-[var(--aw-primary-softer)] hover:text-[var(--aw-primary)]"
               href={filePreviewUrl(file.id)}
               target="_blank"
               rel="noreferrer"
@@ -46,7 +54,7 @@ export function FilePreviewCard({
               View
             </a>
             <a
-              className="rounded-2xl bg-woreda-primary px-3 py-2 text-xs font-black text-white hover:brightness-105"
+              className="inline-flex items-center rounded-md border border-[var(--aw-primary)] bg-[var(--aw-primary)] px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-[var(--aw-primary-dark)]"
               href={fileDownloadUrl(file.id)}
               target="_blank"
               rel="noreferrer"
@@ -60,4 +68,3 @@ export function FilePreviewCard({
     </div>
   );
 }
-
