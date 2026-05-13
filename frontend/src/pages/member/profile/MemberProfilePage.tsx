@@ -1,16 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import {
-  BriefcaseBusiness,
-  CalendarDays,
-  CheckCircle2,
   Edit3,
   GraduationCap,
   IdCard,
-  Mail,
   MapPin,
-  Phone,
-  Save,
   ShieldCheck,
   X,
 } from "lucide-react";
@@ -24,57 +18,13 @@ import type {
   WoredaMember,
 } from "../../../services/woredaMemberService";
 
-function valueText(value: unknown) {
-  if (value === null || value === undefined || value === "") return "-";
-  return String(value);
+function inputValue(v: unknown) {
+  if (v === null || v === undefined || v === "-") return "";
+  if (typeof v === "string" && v.includes("T")) return v.slice(0, 10);
+  return String(v);
 }
-
-function inputValue(value: unknown) {
-  if (value === null || value === undefined || value === "-") return "";
-  if (typeof value === "string" && value.includes("T")) return value.slice(0, 10);
-  return String(value);
-}
-
-function formatDate(value?: string | null) {
-  if (!value) return "-";
-  return new Date(value).toLocaleDateString();
-}
-
-function profileInitials(member?: WoredaMember | null) {
-  if (!member) return "MB";
-  return [member.firstName, member.fatherName]
-    .filter(Boolean)
-    .map((part) => part[0]?.toUpperCase())
-    .join("");
-}
-
-function isMissing(value: unknown) {
-  return value === null || value === undefined || value === "" || value === "-";
-}
-
-function makeEditForm(member: WoredaMember | null): MyMemberProfileUpdatePayload {
-  return {
-    firstName: inputValue(member?.firstName),
-    fatherName: inputValue(member?.fatherName),
-    grandfatherName: inputValue(member?.grandfatherName),
-    gender: inputValue(member?.gender),
-    phone: inputValue(member?.phone),
-    email: inputValue(member?.email),
-    dateOfBirth: inputValue(member?.dateOfBirth),
-    registrationType: inputValue(member?.registrationType),
-    membershipYear: inputValue(member?.membershipYear),
-    partyRole: inputValue(member?.partyRole),
-    educationLevel: inputValue(member?.educationLevel),
-    fieldOfStudy: inputValue(member?.fieldOfStudy),
-    workplace: inputValue(member?.workplace),
-    workType: inputValue(member?.workType),
-    workExperienceYears: inputValue(member?.workExperienceYears),
-    zone: inputValue(member?.zone),
-    kebele: inputValue(member?.kebele),
-    ethnicity: inputValue(member?.ethnicity),
-    healthStatus: inputValue(member?.healthStatus),
-  };
-}
+function formatDate(v?: string | null) { return v ? new Date(v).toLocaleDateString() : "-"; }
+function isMissing(v: unknown) { return v === null || v === undefined || v === "" || v === "-"; }
 
 export function MemberProfilePage() {
   const { user } = useAuthStore();
@@ -87,547 +37,198 @@ export function MemberProfilePage() {
   const [error, setError] = useState("");
 
   async function loadProfile() {
-    setIsLoading(true);
-    setError("");
-
+    setIsLoading(true); setError("");
     try {
-      const data = await getMyMemberProfile();
-      setMember(data);
-      setEditForm(makeEditForm(data));
-    } catch {
-      setError("Unable to load your member profile.");
-    } finally {
-      setIsLoading(false);
-    }
+      const data = await getMyMemberProfile(); setMember(data);
+      setEditForm({
+        firstName: inputValue(data.firstName), fatherName: inputValue(data.fatherName), grandfatherName: inputValue(data.grandfatherName),
+        gender: inputValue(data.gender), phone: inputValue(data.phone), email: inputValue(data.email),
+        dateOfBirth: inputValue(data.dateOfBirth), registrationType: inputValue(data.registrationType),
+        membershipYear: inputValue(data.membershipYear), partyRole: inputValue(data.partyRole),
+        educationLevel: inputValue(data.educationLevel), fieldOfStudy: inputValue(data.fieldOfStudy),
+        workplace: inputValue(data.workplace), workType: inputValue(data.workType),
+        workExperienceYears: inputValue(data.workExperienceYears), zone: inputValue(data.zone),
+        kebele: inputValue(data.kebele), ethnicity: inputValue(data.ethnicity), healthStatus: inputValue(data.healthStatus),
+      });
+    } catch { setError("Unable to load profile."); } finally { setIsLoading(false); }
   }
 
-  useEffect(() => {
-    void loadProfile();
-  }, []);
+  useEffect(() => { void loadProfile(); }, []);
 
-  const fullName = useMemo(() => {
-    if (!member) return "Member Profile";
-    return [member.firstName, member.fatherName, member.grandfatherName].filter(Boolean).join(" ");
-  }, [member]);
-
-  const profileCompletion = member?.profileCompletion ?? 0;
-
+  const fullName = useMemo(() => [member?.firstName, member?.fatherName, member?.grandfatherName].filter(Boolean).join(" ") || "Member Profile", [member]);
   const missingFields = useMemo(() => {
     if (!member) return [];
-
-    const checks = [
-      ["Date of birth", member.dateOfBirth],
-      ["Phone", member.phone],
-      ["Email", member.email],
-      ["Family", member.familyName],
-      ["Education level", member.educationLevel],
-      ["Field of study", member.fieldOfStudy],
-      ["Workplace", member.workplace],
-      ["Work type", member.workType],
-      ["Zone", member.zone],
-      ["Kebele", member.kebele],
-      ["Health status", member.healthStatus],
-    ];
-
-    return checks
-      .filter(([, value]) => isMissing(value))
-      .map(([label]) => String(label));
+    return [
+      ["Birthday", member.dateOfBirth], ["Phone", member.phone], ["Education", member.educationLevel],
+      ["Workplace", member.workplace], ["Zone", member.zone], ["Kebele", member.kebele], ["Health", member.healthStatus]
+    ].filter(([, v]) => isMissing(v)).map(([l]) => String(l));
   }, [member]);
 
-  function openEdit() {
-    setMessage("");
-    setError("");
-    setEditForm(makeEditForm(member));
-    setIsEditOpen(true);
+  async function handleSaveProfile(e: FormEvent) {
+    e.preventDefault(); setIsSaving(true); setMessage(""); setError("");
+    try { const up = await updateMyMemberProfile(editForm); setMember(up); setIsEditOpen(false); setMessage("Profile updated."); }
+    catch { setError("Update failed."); } finally { setIsSaving(false); }
   }
 
-  function updateField<K extends keyof MyMemberProfileUpdatePayload>(
-    field: K,
-    value: MyMemberProfileUpdatePayload[K]
-  ) {
-    setEditForm((current) => ({ ...current, [field]: value }));
-  }
-
-  async function handleSaveProfile(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setIsSaving(true);
-    setMessage("");
-    setError("");
-
-    try {
-      const updated = await updateMyMemberProfile(editForm);
-      setMember(updated);
-      setEditForm(makeEditForm(updated));
-      setIsEditOpen(false);
-      setMessage("Profile updated successfully.");
-    } catch (err: any) {
-      setError(err?.response?.data?.message || "Unable to update profile.");
-    } finally {
-      setIsSaving(false);
-    }
-  }
-
-  if (isLoading) {
-    return (
-      <section className="aw-design-page border border-woreda-border bg-woreda-surface p-6">
-        <p className="text-sm font-semibold text-woreda-textMuted">Loading member profile...</p>
-      </section>
-    );
-  }
+  if (isLoading) return <div className="aw-panel p-10 text-center font-bold text-[var(--aw-muted)]">Fetching your profile...</div>;
 
   return (
-    <section className="aw-design-page member-profile-page flex min-h-0 flex-1 flex-col gap-5">
-      {error ? (
-        <div className="border border-woreda-danger bg-woreda-dangerBg px-4 py-3 text-sm font-semibold text-woreda-danger">
-          {error}
-        </div>
-      ) : null}
+    <div className="flex flex-col gap-6">
+      {error && <div className="aw-panel !bg-[var(--aw-danger-bg)] !border-[var(--aw-danger)] px-4 py-3 text-sm font-black text-[var(--aw-danger)]">{error}</div>}
+      {message && <div className="aw-panel !bg-[var(--aw-primary-soft)]/20 !border-[var(--aw-primary)] px-4 py-3 text-sm font-black text-[var(--aw-primary)]">{message}</div>}
 
-      {message ? (
-        <div className="border border-woreda-success/20 bg-woreda-successBg px-4 py-3 text-sm font-semibold text-woreda-success">
-          {message}
-        </div>
-      ) : null}
-
-      <div className="member-profile-hero border border-woreda-border bg-woreda-surface">
-        <div className="flex flex-col gap-5 px-6 py-6 xl:flex-row xl:items-start xl:justify-between">
-          <div className="flex min-w-0 items-start gap-4">
-            <div className="flex h-20 w-20 shrink-0 items-center justify-center border border-woreda-primary bg-woreda-primary text-2xl font-black text-white">
-              {profileInitials(member)}
-            </div>
-
-            <div className="min-w-0">
-              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-woreda-primary">
-                Member profile
-              </p>
-              <h1 className="mt-1 break-words text-3xl font-black leading-tight text-woreda-text">
-                {fullName}
-              </h1>
-              <p className="mt-2 text-sm font-semibold text-woreda-textMuted">
-                {member?.hibretName || "No Hibret"} · {member?.familyName || "No family assigned"}
-              </p>
-
-              <div className="mt-4 flex flex-wrap gap-2">
-                <StatusBadge label={member?.membershipStatus || "Unknown status"} tone="success" />
-                <StatusBadge label={user?.status || "Account status"} tone="primary" />
-                <StatusBadge label={member?.partyRole || "No party role"} tone="muted" />
-              </div>
-            </div>
-          </div>
-
-          <div className="flex shrink-0 flex-wrap gap-2">
-          
-            <button
-              type="button"
-              onClick={openEdit}
-              className="inline-flex min-h-10 items-center justify-center gap-2 border border-woreda-primary bg-woreda-primary px-4 py-2 text-sm font-black text-white hover:bg-woreda-sidebar"
-            >
-              <Edit3 size={16} />
-              Edit Profile
-            </button>
-</div>
-        </div>
-
-        <div className="grid border-t border-woreda-border bg-woreda-surfaceLow md:grid-cols-3">
-          <HeroMetric label="Profile completeness" value={`${profileCompletion}%`} />
-          <HeroMetric label="Member code" value={member?.memberCode || "-"} />
-          <HeroMetric label="PP ID" value={member?.ppId || "-"} />
-        </div>
-      </div>
-
-      <div className="detail-layout">
-        <div className="space-y-5">
-          <ProfileCompletenessCard completion={profileCompletion} missingFields={missingFields} />
-
-          <ProfileSection title="Identity" icon={<IdCard size={18} />}>
-            <Detail label="Full name" value={fullName} strong />
-            <Detail label="Gender" value={member?.gender} />
-            <Detail label="Date of birth" value={formatDate(member?.dateOfBirth)} />
-            <Detail label="Member code" value={member?.memberCode} />
-            <Detail label="FAN ID" value={member?.fanId} />
-            <Detail label="PP ID" value={member?.ppId} />
-          </ProfileSection>
-
-          <ProfileSection title="Hibret and family assignment" icon={<ShieldCheck size={18} />}>
-            <Detail label="Hibret" value={member?.hibretName} strong />
-            <Detail label="Family" value={member?.familyName} />
-            <Detail label="Membership status" value={member?.membershipStatus} />
-            <Detail label="Registration type" value={member?.registrationType} />
-            <Detail label="Membership year" value={member?.membershipYear} />
-            <Detail label="Party role" value={member?.partyRole} />
-          </ProfileSection>
-
-          <ProfileSection title="Education and work" icon={<GraduationCap size={18} />}>
-            <Detail label="Education level" value={member?.educationLevel} />
-            <Detail label="Field of study" value={member?.fieldOfStudy} />
-            <Detail label="Workplace" value={member?.workplace} />
-            <Detail label="Work type" value={member?.workType} />
-            <Detail
-              label="Work experience"
-              value={member?.workExperienceYears ? `${member.workExperienceYears} years` : ""}
-            />
-          </ProfileSection>
-
-          <ProfileSection title="Location and profile" icon={<MapPin size={18} />}>
-            <Detail label="Zone" value={member?.zone} />
-            <Detail label="Kebele" value={member?.kebele} />
-            <Detail label="Ethnicity" value={member?.ethnicity} />
-            <Detail label="Health status" value={member?.healthStatus} />
-          </ProfileSection>
-        </div>
-
-        <aside className="space-y-5">
-          <ProfileSection title="Contact" icon={<Phone size={18} />} compact>
-            <Detail label="Phone" value={member?.phone} strong />
-            <Detail label="Email" value={member?.email || user?.email} />
-          </ProfileSection>
-
-          <ProfileSection title="Account" icon={<Mail size={18} />} compact>
-            <Detail label="Login email" value={user?.email} />
-            <Detail label="Account status" value={user?.status} />
-            <Detail label="Role" value={user?.role} />
-          </ProfileSection>
-
-          <ProfileSection title="Recent attendance" icon={<CalendarDays size={18} />} compact>
-            {member?.attendance?.length ? (
-              <div className="space-y-2">
-                {member.attendance.slice(0, 6).map((record) => (
-                  <div key={record.id} className="border border-woreda-border bg-woreda-surfaceLow px-3 py-2">
-                    <p className="text-sm font-black text-woreda-text">{record.announcementTitle}</p>
-                    <p className="mt-1 text-xs font-semibold text-woreda-textMuted">
-                      {record.status} · {formatDate(record.recordedAt)}
-                    </p>
+      <header className="aw-panel !rounded-3xl shrink-0 overflow-hidden shadow-soft">
+        <div className="border-b border-[var(--aw-border-soft)] bg-[var(--aw-surface)] p-6 sm:p-8">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex items-center gap-6">
+               <div className="h-20 w-20 rounded-2xl bg-[var(--aw-primary)] flex items-center justify-center text-white text-3xl font-black shadow-lg shadow-[var(--aw-primary)]/20">
+                  {member?.firstName?.[0]}{member?.fatherName?.[0]}
+               </div>
+               <div className="min-w-0">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--aw-primary)] mb-1">Official Member Profile</p>
+                  <h1 className="text-3xl font-black tracking-tight">{fullName}</h1>
+                  <div className="flex items-center gap-3 mt-2 text-sm font-bold text-[var(--aw-muted)]">
+                     <span className="flex items-center gap-1.5"><ShieldCheck size={16} className="text-[var(--aw-primary)]"/>{member?.hibretName || 'Unassigned Unit'}</span>
+                     <span className="text-[var(--aw-border)]">•</span>
+                     <span>{member?.familyName || 'No Family Unit'}</span>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <EmptyHint
-                title="No attendance records"
-                description="Attendance history will appear here after Hibret attendance is recorded."
-              />
-            )}
-          </ProfileSection>
+               </div>
+            </div>
+            <button onClick={() => setIsEditOpen(true)} className="aw-btn aw-btn-primary !min-h-[46px] !px-6 shadow-lg"><Edit3 size={18}/>Edit Profile</button>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 bg-[var(--aw-surface-muted)]">
+           <div className="p-4 text-center border-r border-[var(--aw-border-soft)]"><p className="text-[10px] font-black uppercase text-[var(--aw-muted)] mb-1">Profile Health</p><p className="text-xl font-black text-[var(--aw-primary)]">{member?.profileCompletion}%</p></div>
+           <div className="p-4 text-center border-r border-[var(--aw-border-soft)]"><p className="text-[10px] font-black uppercase text-[var(--aw-muted)] mb-1">Member Code</p><p className="text-xl font-black">{member?.memberCode || '—'}</p></div>
+           <div className="p-4 text-center border-r border-[var(--aw-border-soft)]"><p className="text-[10px] font-black uppercase text-[var(--aw-muted)] mb-1">PP ID</p><p className="text-xl font-black">{member?.ppId || '—'}</p></div>
+           <div className="p-4 text-center"><p className="text-[10px] font-black uppercase text-[var(--aw-muted)] mb-1">Joined</p><p className="text-xl font-black">{member?.membershipYear || '—'}</p></div>
+        </div>
+      </header>
 
-          <ProfileSection title="Work summary" icon={<BriefcaseBusiness size={18} />} compact>
-            <Detail label="Workplace" value={member?.workplace} />
-            <Detail label="Work type" value={member?.workType} />
-            <Detail
-              label="Experience"
-              value={member?.workExperienceYears ? `${member.workExperienceYears} years` : ""}
-            />
-          </ProfileSection>
-        </aside>
+      <div className="grid grid-cols-1 xl:grid-cols-[1fr_360px] gap-6 items-start">
+         <div className="space-y-6">
+            <section className="aw-panel p-6 shadow-soft">
+               <h2 className="text-lg font-black flex items-center gap-2 mb-6"><IdCard size={20} className="text-[var(--aw-primary)]"/>Personal Identity</h2>
+               <div className="aw-form-grid !grid-cols-1 md:!grid-cols-2 lg:!grid-cols-3">
+                  <DetailLine label="Full Name" value={fullName} />
+                  <DetailLine label="Gender" value={member?.gender} />
+                  <DetailLine label="Date of Birth" value={formatDate(member?.dateOfBirth)} />
+                  <DetailLine label="FAN Identifier" value={member?.fanId} />
+                  <DetailLine label="Ethnicity" value={member?.ethnicity} />
+                  <DetailLine label="Health Status" value={member?.healthStatus} />
+               </div>
+            </section>
+
+            <section className="aw-panel p-6 shadow-soft">
+               <h2 className="text-lg font-black flex items-center gap-2 mb-6"><GraduationCap size={20} className="text-[var(--aw-primary)]"/>Professional & Educational</h2>
+               <div className="aw-form-grid !grid-cols-1 md:!grid-cols-2 lg:!grid-cols-3">
+                  <DetailLine label="Education Level" value={member?.educationLevel} />
+                  <DetailLine label="Field of Study" value={member?.fieldOfStudy} />
+                  <DetailLine label="Current Workplace" value={member?.workplace} />
+                  <DetailLine label="Employment Type" value={member?.workType} />
+                  <DetailLine label="Experience" value={member?.workExperienceYears ? `${member.workExperienceYears} Years` : null} />
+               </div>
+            </section>
+
+            <section className="aw-panel p-6 shadow-soft">
+               <h2 className="text-lg font-black flex items-center gap-2 mb-6"><MapPin size={20} className="text-[var(--aw-primary)]"/>Residential Location</h2>
+               <div className="aw-form-grid !grid-cols-1 md:!grid-cols-2 lg:!grid-cols-3">
+                  <DetailLine label="Region / Zone" value={member?.zone} />
+                  <DetailLine label="Kebele" value={member?.kebele} />
+               </div>
+            </section>
+         </div>
+
+         <aside className="space-y-6">
+            <section className="aw-panel p-6 shadow-soft">
+               <h3 className="font-black text-sm uppercase tracking-widest border-b border-[var(--aw-border-soft)] pb-3 text-[var(--aw-primary)] mb-6">Contact Info</h3>
+               <div className="space-y-4">
+                  <DetailLine label="Phone Number" value={member?.phone} />
+                  <DetailLine label="Email Address" value={member?.email || user?.email} />
+               </div>
+            </section>
+
+            <section className="aw-panel p-6 shadow-soft">
+               <h3 className="font-black text-sm uppercase tracking-widest border-b border-[var(--aw-border-soft)] pb-3 text-[var(--aw-primary)] mb-6">Completeness</h3>
+               <div className="mb-6">
+                  <div className="flex justify-between items-end mb-2">
+                     <span className="text-2xl font-black">{member?.profileCompletion}%</span>
+                  </div>
+                  <div className="h-2 bg-[var(--aw-bg)] rounded-full overflow-hidden border border-[var(--aw-border-soft)]">
+                     <div className="h-full bg-[var(--aw-primary)] rounded-full" style={{ width: `${member?.profileCompletion}%` }} />
+                  </div>
+               </div>
+               {missingFields.length > 0 && (
+                 <div className="space-y-2">
+                    <p className="text-[10px] font-black uppercase text-[var(--aw-muted)]">Missing Fields</p>
+                    <div className="flex flex-wrap gap-2">
+                       {missingFields.map(f => <span key={f} className="text-[10px] font-bold bg-[var(--aw-bg)] px-2 py-1 rounded border border-[var(--aw-border-soft)]">{f}</span>)}
+                    </div>
+                 </div>
+               )}
+            </section>
+
+            <section className="aw-panel p-6 shadow-soft">
+               <h3 className="font-black text-sm uppercase tracking-widest border-b border-[var(--aw-border-soft)] pb-3 text-[var(--aw-primary)] mb-4">Recent Activity</h3>
+               {member?.attendance?.length ? (
+                 <div className="space-y-3">
+                    {member.attendance.slice(0, 4).map(at => (
+                      <div key={at.id} className="p-3 bg-[var(--aw-bg)] rounded-xl border border-[var(--aw-border-soft)]">
+                         <p className="text-xs font-black line-clamp-1">{at.announcementTitle}</p>
+                         <div className="flex justify-between items-center mt-2">
+                            <span className="text-[10px] font-bold text-[var(--aw-muted)] uppercase tracking-wider">{formatDate(at.recordedAt)}</span>
+                            <span className="text-[10px] font-black uppercase text-[var(--aw-primary)]">{at.status}</span>
+                         </div>
+                      </div>
+                    ))}
+                 </div>
+               ) : <p className="text-xs font-bold text-[var(--aw-muted)] text-center py-4">No activity history.</p>}
+            </section>
+         </aside>
       </div>
 
-      {isEditOpen ? (
-        <div className="fixed inset-0 z-50 flex justify-end bg-[var(--overlay-scrim)]">
-          <form
-            onSubmit={handleSaveProfile}
-            className="flex h-full w-full max-w-3xl flex-col border-l border-woreda-border bg-woreda-surface text-woreda-text"
-          >
-            <div className="flex items-start justify-between gap-4 border-b border-woreda-border bg-woreda-surfaceLow px-6 py-5">
-              <div>
-                <p className="text-[11px] font-black uppercase tracking-[0.18em] text-woreda-primary">
-                  Member profile
-                </p>
-                <h2 className="mt-1 text-2xl font-black text-woreda-text">Edit Profile</h2>
-                <p className="mt-1 text-sm font-semibold text-woreda-textMuted">
-                  Update contact, education, work, and profile information.
-                </p>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setIsEditOpen(false)}
-                className="inline-flex h-10 w-10 items-center justify-center border border-woreda-border bg-woreda-surface text-woreda-text hover:border-woreda-primary hover:text-woreda-primary"
-              >
-                <X size={18} />
-              </button>
+      {isEditOpen && (
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-[var(--aw-overlay-scrim-strong)] backdrop-blur-sm" onClick={() => setIsEditOpen(false)} />
+          <form onSubmit={handleSaveProfile} className="relative aw-panel w-full max-w-4xl shadow-2xl !rounded-3xl border-none flex flex-col max-h-[90dvh]">
+            <header className="aw-panel-header !rounded-t-3xl !py-6">
+              <h2 className="text-xl font-black">Update Profile</h2>
+              <button type="button" onClick={() => setIsEditOpen(false)} className="aw-btn aw-btn-outline !min-h-[36px] !px-2 !rounded-xl"><X size={18}/></button>
+            </header>
+            <div className="p-8 space-y-8 overflow-y-auto aw-seamless-scroll flex-1">
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-8">
+                  <div className="space-y-6">
+                     <p className="text-xs font-black uppercase tracking-widest text-[var(--aw-primary)] border-b border-[var(--aw-border-soft)] pb-2">Identity</p>
+                     <div className="aw-form-field"><label className="aw-form-label">First Name</label><input className="aw-input" value={editForm.firstName || ""} onChange={e => setEditForm({...editForm, firstName: e.target.value})} /></div>
+                     <div className="aw-form-field"><label className="aw-form-label">Father Name</label><input className="aw-input" value={editForm.fatherName || ""} onChange={e => setEditForm({...editForm, fatherName: e.target.value})} /></div>
+                     <div className="aw-form-field"><label className="aw-form-label">Grandfather</label><input className="aw-input" value={editForm.grandfatherName || ""} onChange={e => setEditForm({...editForm, grandfatherName: e.target.value})} /></div>
+                     <div className="aw-form-field"><label className="aw-form-label">Gender</label><select className="aw-filter-select" value={editForm.gender || ""} onChange={e => setEditForm({...editForm, gender: e.target.value})}><option value="male">Male</option><option value="female">Female</option></select></div>
+                  </div>
+                  <div className="space-y-6">
+                     <p className="text-xs font-black uppercase tracking-widest text-[var(--aw-primary)] border-b border-[var(--aw-border-soft)] pb-2">Contact & Bio</p>
+                     <div className="aw-form-field"><label className="aw-form-label">Phone</label><input className="aw-input" value={editForm.phone || ""} onChange={e => setEditForm({...editForm, phone: e.target.value})} /></div>
+                     <div className="aw-form-field"><label className="aw-form-label">Email</label><input className="aw-input" value={editForm.email || ""} onChange={e => setEditForm({...editForm, email: e.target.value})} /></div>
+                     <div className="aw-form-field"><label className="aw-form-label">Birth Date</label><input type="date" className="aw-input" value={editForm.dateOfBirth || ""} onChange={e => setEditForm({...editForm, dateOfBirth: e.target.value})} /></div>
+                  </div>
+               </div>
             </div>
-
-            <div className="min-h-0 flex-1 overflow-y-auto p-6">
-              <div className="space-y-6">
-                <EditGroup title="Personal information">
-                  <EditInput label="First name" value={editForm.firstName} onChange={(value) => updateField("firstName", value)} />
-                  <EditInput label="Father name" value={editForm.fatherName} onChange={(value) => updateField("fatherName", value)} />
-                  <EditInput label="Grandfather name" value={editForm.grandfatherName} onChange={(value) => updateField("grandfatherName", value)} />
-
-                  <label>
-                    <span className="text-sm font-black text-woreda-text">Gender</span>
-                    <select
-                      value={inputValue(editForm.gender)}
-                      onChange={(event) => updateField("gender", event.target.value)}
-                      className="mt-2 min-h-11 w-full border border-woreda-border bg-woreda-surface px-3 py-2 text-sm outline-none focus:border-woreda-primary"
-                    >
-                      <option value="">Select gender</option>
-                      <option value="male">Male</option>
-                      <option value="female">Female</option>
-                    </select>
-                  </label>
-
-                  <EditInput label="Date of birth" type="date" value={editForm.dateOfBirth} onChange={(value) => updateField("dateOfBirth", value)} />
-                  <EditInput label="Phone" value={editForm.phone} onChange={(value) => updateField("phone", value)} />
-                  <EditInput label="Email" type="email" value={editForm.email} onChange={(value) => updateField("email", value)} />
-                </EditGroup>
-
-                <EditGroup title="Membership information">
-                  <ReadOnlyInput label="Member code" value={member?.memberCode} />
-                  <ReadOnlyInput label="FAN ID" value={member?.fanId} />
-                  <ReadOnlyInput label="PP ID" value={member?.ppId} />
-                  <ReadOnlyInput label="Hibret" value={member?.hibretName} />
-                  <ReadOnlyInput label="Family" value={member?.familyName} />
-                  <ReadOnlyInput label="Membership status" value={member?.membershipStatus} />
-
-                  <EditInput label="Registration type" value={editForm.registrationType} onChange={(value) => updateField("registrationType", value)} />
-                  <EditInput label="Membership year" value={editForm.membershipYear} onChange={(value) => updateField("membershipYear", value)} />
-                  <EditInput label="Party role" value={editForm.partyRole} onChange={(value) => updateField("partyRole", value)} />
-                </EditGroup>
-
-                <EditGroup title="Education and work">
-                  <EditInput label="Education level" value={editForm.educationLevel} onChange={(value) => updateField("educationLevel", value)} />
-                  <EditInput label="Field of study" value={editForm.fieldOfStudy} onChange={(value) => updateField("fieldOfStudy", value)} />
-                  <EditInput label="Workplace" value={editForm.workplace} onChange={(value) => updateField("workplace", value)} />
-                  <EditInput label="Work type" value={editForm.workType} onChange={(value) => updateField("workType", value)} />
-                  <EditInput label="Work experience years" type="number" value={editForm.workExperienceYears} onChange={(value) => updateField("workExperienceYears", value)} />
-                </EditGroup>
-
-                <EditGroup title="Location and profile">
-                  <EditInput label="Zone" value={editForm.zone} onChange={(value) => updateField("zone", value)} />
-                  <EditInput label="Kebele" value={editForm.kebele} onChange={(value) => updateField("kebele", value)} />
-                  <EditInput label="Ethnicity" value={editForm.ethnicity} onChange={(value) => updateField("ethnicity", value)} />
-                  <EditInput label="Health status" value={editForm.healthStatus} onChange={(value) => updateField("healthStatus", value)} />
-                </EditGroup>
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-3 border-t border-woreda-border bg-woreda-surfaceLow px-6 py-4">
-              <button
-                type="button"
-                onClick={() => setIsEditOpen(false)}
-                className="min-h-10 border border-woreda-border bg-woreda-surface px-5 py-2 text-sm font-black text-woreda-text hover:border-woreda-primary hover:text-woreda-primary"
-              >
-                Cancel
-              </button>
-
-              <button
-                type="submit"
-                disabled={isSaving}
-                className="inline-flex min-h-10 items-center justify-center gap-2 border border-woreda-primary bg-woreda-primary px-5 py-2 text-sm font-black text-white hover:bg-woreda-sidebar disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                <Save size={16} />
-                {isSaving ? "Saving..." : "Save Profile"}
-              </button>
+            <div className="p-6 bg-[var(--aw-surface-muted)] flex justify-end gap-3 rounded-b-3xl">
+              <button type="button" onClick={() => setIsEditOpen(false)} className="aw-btn aw-btn-outline !bg-white">Cancel</button>
+              <button type="submit" disabled={isSaving} className="aw-btn aw-btn-primary min-w-[140px]">{isSaving ? "Saving..." : "Save Changes"}</button>
             </div>
           </form>
         </div>
-      ) : null}
-    </section>
-  );
-}
-
-function EditGroup({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="border border-woreda-border bg-woreda-surface">
-      <div className="border-b border-woreda-border bg-woreda-surfaceLow px-4 py-3">
-        <h3 className="text-sm font-black text-woreda-text">{title}</h3>
-      </div>
-      <div className="form-grid p-4">{children}</div>
-    </section>
-  );
-}
-
-function ReadOnlyInput({ label, value }: { label: string; value: unknown }) {
-  return (
-    <label>
-      <span className="text-sm font-black text-woreda-text">{label}</span>
-      <input
-        value={inputValue(value) || "-"}
-        disabled
-        className="mt-2 min-h-11 w-full border border-woreda-border bg-woreda-surfaceLow px-3 py-2 text-sm font-semibold text-woreda-textMuted outline-none"
-      />
-      <p className="mt-1 text-xs font-semibold text-woreda-textMuted">
-        Managed by administration.
-      </p>
-    </label>
-  );
-}
-
-function EditInput({
-  label,
-  value,
-  onChange,
-  type = "text",
-}: {
-  label: string;
-  value: unknown;
-  onChange: (value: string) => void;
-  type?: string;
-}) {
-  return (
-    <label>
-      <span className="text-sm font-black text-woreda-text">{label}</span>
-      <input
-        type={type}
-        value={inputValue(value)}
-        onChange={(event) => onChange(event.target.value)}
-        className="mt-2 min-h-11 w-full border border-woreda-border bg-woreda-surface px-3 py-2 text-sm outline-none focus:border-woreda-primary"
-      />
-    </label>
-  );
-}
-
-function HeroMetric({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="border-r border-woreda-border px-6 py-4 last:border-r-0">
-      <p className="text-[11px] font-black uppercase tracking-[0.12em] text-woreda-textMuted">
-        {label}
-      </p>
-      <p className="mt-1 break-words text-xl font-black text-woreda-text">{value}</p>
+      )}
     </div>
   );
 }
 
-function StatusBadge({
-  label,
-  tone,
-}: {
-  label: string;
-  tone: "primary" | "success" | "muted";
-}) {
-  const classes =
-    tone === "primary"
-      ? "border-woreda-primary/25 bg-woreda-primarySoft text-woreda-primary"
-      : tone === "success"
-        ? "border-woreda-success/25 bg-woreda-successBg text-woreda-success"
-        : "border-woreda-border bg-woreda-surfaceLow text-woreda-textMuted";
-
-  return (
-    <span className={`border px-2.5 py-1 text-xs font-black uppercase tracking-[0.06em] ${classes}`}>
-      {label}
-    </span>
-  );
-}
-
-function ProfileCompletenessCard({
-  completion,
-  missingFields,
-}: {
-  completion: number;
-  missingFields: string[];
-}) {
-  return (
-    <section className="border border-woreda-border bg-woreda-surface">
-      <div className="flex items-start justify-between gap-4 border-b border-woreda-border bg-woreda-surfaceLow px-5 py-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <CheckCircle2 size={18} className="text-woreda-primary" />
-            <h2 className="text-base font-black text-woreda-text">Profile completeness</h2>
-          </div>
-          <p className="mt-1 text-sm font-semibold text-woreda-textMuted">
-            Use this as a quick check for missing profile information.
-          </p>
-        </div>
-        <p className="text-2xl font-black text-woreda-primary">{completion}%</p>
-      </div>
-
-      <div className="p-5">
-        <div className="h-3 border border-woreda-border bg-woreda-surfaceLow">
-          <div
-            className="h-full bg-woreda-primary"
-            style={{ width: `${Math.min(100, Math.max(0, completion))}%` }}
-          />
-        </div>
-
-        {missingFields.length ? (
-          <div className="mt-4">
-            <p className="text-[11px] font-black uppercase tracking-[0.12em] text-woreda-textMuted">
-              Missing information
-            </p>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {missingFields.map((field) => (
-                <span
-                  key={field}
-                  className="border border-woreda-border bg-woreda-surfaceLow px-2.5 py-1 text-xs font-bold text-woreda-textMuted"
-                >
-                  {field}
-                </span>
-              ))}
-            </div>
-          </div>
-        ) : (
-          <p className="mt-4 text-sm font-semibold text-woreda-success">
-            Profile information is complete.
-          </p>
-        )}
-      </div>
-    </section>
-  );
-}
-
-function ProfileSection({
-  title,
-  icon,
-  children,
-  compact = false,
-}: {
-  title: string;
-  icon?: React.ReactNode;
-  children: React.ReactNode;
-  compact?: boolean;
-}) {
-  return (
-    <section className="member-profile-card border border-woreda-border bg-woreda-surface">
-      <div className="flex items-center gap-2 border-b border-woreda-border bg-woreda-surfaceLow px-5 py-3">
-        {icon ? <span className="text-woreda-primary">{icon}</span> : null}
-        <h2 className="text-base font-black text-woreda-text">{title}</h2>
-      </div>
-      <div className={compact ? "form-grid p-5" : "form-grid p-5"}>
-        {children}
-      </div>
-    </section>
-  );
-}
-
-function Detail({
-  label,
-  value,
-  strong = false,
-}: {
-  label: string;
-  value: unknown;
-  strong?: boolean;
-}) {
+function DetailLine({ label, value }: { label: string; value: unknown }) {
   const missing = isMissing(value);
-
   return (
-    <div className={missing ? "member-detail-item is-empty" : "member-detail-item"}>
-      <p className="text-[11px] font-black uppercase tracking-[0.08em] text-woreda-textMuted">
-        {label}
-      </p>
-      <p
-        className={[
-          "mt-1 break-words text-sm leading-6",
-          strong ? "font-black text-woreda-text" : "font-semibold text-woreda-text",
-          missing ? "italic text-woreda-textMuted" : "",
-        ].join(" ")}
-      >
-        {missing ? "Not recorded" : valueText(value)}
-      </p>
-    </div>
-  );
-}
-
-function EmptyHint({ title, description }: { title: string; description: string }) {
-  return (
-    <div className="border border-dashed border-woreda-border bg-woreda-surfaceLow px-4 py-5">
-      <p className="text-sm font-black text-woreda-text">{title}</p>
-      <p className="mt-1 text-sm font-semibold leading-6 text-woreda-textMuted">{description}</p>
+    <div className="py-2">
+      <p className="text-[10px] font-black uppercase tracking-wider text-[var(--aw-muted)] mb-1">{label}</p>
+      <p className={["text-sm font-bold", missing ? "text-[var(--aw-muted)] italic font-normal" : "text-[var(--aw-text)]"].join(" ")}>{missing ? "Not recorded" : String(value)}</p>
     </div>
   );
 }

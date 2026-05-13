@@ -12,16 +12,11 @@ export function HibretAdministrativeMembersPage({
 }: HibretAdministrativeMembersPageProps) {
   return (
     <MembersRegistryPage
-      title="Members"
-      subtitle="የአባላት መረጃ"
-      memberDetailBasePath="/woreda/members"
       scopeHibretId={hibretId}
-      showHibretFilter={false}
-      showAddButton
-      showImportButton
+      memberDetailBasePath="/woreda/members"
+      showAddButton={true}
+      showImportButton={true}
       controlBarLeading={controlBarLeading}
     />
   );
 }
-
-export default HibretAdministrativeMembersPage;

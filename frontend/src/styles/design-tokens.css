@@ -1,55 +1,92 @@
 :root {
-  --aw-bg: #f6f8fb;
-  --aw-surface: #ffffff;
-  --aw-surface-muted: #f1f5f9;
-  --aw-border: #d7dee5;
-  --aw-border-soft: #e8edf2;
+  /* ── Palette ── */
+  --aw-primary:          #00658d;
+  --aw-primary-dark:     #004c6b;
+  --aw-primary-darkest:  #00344b;
+  --aw-primary-soft:     #c6e7ff;
+  --aw-on-primary:       #ffffff;
 
-  --aw-text: #191c1d;
-  --aw-muted: #64748b;
+  --aw-secondary:        #b80049;
+  --aw-magenta:          #ec008c;
+  --aw-magenta-bg:       rgba(236, 0, 140, 0.08);
 
-  --aw-primary: #00658d;
-  --aw-primary-dark: #004c6b;
-  --aw-sidebar: #00344b;
+  --aw-yellow:           #ffd100;
+  --aw-yellow-text:      #6f5900;
+  --aw-yellow-bg:        rgba(255, 209, 0, 0.18);
 
-  --aw-yellow: #ffd100;
-  --aw-magenta: #ec008c;
+  --aw-success:          #0d6e4d;
+  --aw-success-bg:       #d4f5e8;
+  --aw-danger:           #ba1a1a;
+  --aw-danger-bg:        #ffdad6;
+  --aw-warning:          #8a6d00;
+  --aw-warning-bg:       rgba(255, 209, 0, 0.18);
 
-  --aw-success: #0d6e4d;
-  --aw-success-bg: #d4f5e8;
-  --aw-danger: #ba1a1a;
-  --aw-danger-bg: #ffdad6;
-  --aw-warning: #8a6d00;
-  --aw-warning-bg: rgba(255, 209, 0, 0.18);
+  /* ── Surfaces ── */
+  --aw-bg:               #f8f9fa;
+  --aw-surface:          #ffffff;
+  --aw-surface-muted:    #f2f4f6;
+  --aw-surface-container:#eceef2;
+  --aw-surface-high:     #e7e8ea;
 
-  --aw-shell-x: clamp(12px, 3vw, 40px);
-  --aw-shell-y: clamp(12px, 2vw, 28px);
-  --aw-sidebar-w: clamp(220px, 18vw, 280px);
-  --aw-topbar-h: 64px;
-  --aw-page-max: 1600px;
-  --sidebar-w: var(--aw-sidebar-w);
-  --overlay-scrim: rgba(0, 76, 107, 0.66);
-  --overlay-scrim-strong: rgba(15, 23, 42, 0.78);
-  --primary-darkest: var(--aw-primary-dark);
+  /* ── Text ── */
+  --aw-text:             #191c1d;
+  --aw-muted:            #40484e;
+
+  /* ── Borders ── */
+  --aw-border:           #d7dee5;
+  --aw-border-soft:      #e9ecef;
+  --aw-border-light:     #f1f3f5;
+
+  /* ── Fluid sizing & layout ── */
+  --aw-text-xs:    clamp(0.65rem, 0.6rem + 0.2vw,  0.75rem);
+  --aw-text-sm:    clamp(0.8rem,  0.75rem + 0.25vw, 0.9rem);
+  --aw-text-base:  clamp(0.9rem,  0.82rem + 0.35vw, 1rem);
+  --aw-text-lg:    clamp(1rem,    0.9rem + 0.5vw,   1.25rem);
+  --aw-text-xl:    clamp(1.25rem, 1rem + 1vw,       1.75rem);
+  --aw-text-2xl:   clamp(1.5rem,  1.2rem + 1.5vw,   2.25rem);
+  --aw-text-3xl:   clamp(2rem,    1.5rem + 2.5vw,   3.5rem);
+
+  --aw-space-xs:   clamp(4px,   0.5vw, 8px);
+  --aw-space-sm:   clamp(8px,   1vw,   16px);
+  --aw-space-md:   clamp(12px,  1.5vw, 24px);
+  --aw-space-lg:   clamp(20px,  2.5vw, 40px);
+  --aw-space-xl:   clamp(32px,  4vw,   64px);
+
+  --aw-shell-x:    clamp(12px,  4vw,   64px);
+  --aw-shell-y:    clamp(12px,  2vw,   32px);
+
+  --aw-sidebar-w:  clamp(240px, 18vw,  280px);
+  --aw-topbar-h:   64px;
+  --aw-page-max:   1600px;
+
+  --aw-overlay-scrim: rgba(0, 76, 107, 0.62);
+  --aw-overlay-scrim-strong: rgba(15, 23, 42, 0.78);
 }
 
+/* ── Dark mode overrides ── */
 html[data-theme="dark"] {
-  --aw-bg: #0f1319;
-  --aw-surface: #171c24;
-  --aw-surface-muted: #1d2430;
-  --aw-border: rgba(226, 232, 240, 0.14);
-  --aw-border-soft: rgba(226, 232, 240, 0.1);
+  --aw-bg:               #0f1319;
+  --aw-surface:          #171c24;
+  --aw-surface-muted:    #1d2430;
+  --aw-surface-container:#25292e;
+  --aw-surface-high:     #2d3134;
 
-  --aw-text: #f8fafc;
-  --aw-muted: #a8b3c4;
+  --aw-text:             #f8fafc;
+  --aw-muted:            #a8b3c4;
 
-  --aw-primary: #48a8d1;
-  --aw-primary-dark: #0f6f98;
-  --aw-sidebar: #0d1b27;
-  --overlay-scrim-strong: rgba(2, 6, 12, 0.82);
-  --primary-darkest: #0b1622;
+  --aw-border:           rgba(226, 232, 240, 0.14);
+  --aw-border-soft:      rgba(226, 232, 240, 0.10);
+  --aw-border-light:     rgba(226, 232, 240, 0.08);
 
-  --aw-success-bg: rgba(13, 110, 77, 0.22);
-  --aw-danger-bg: rgba(186, 26, 26, 0.22);
-  --aw-warning-bg: rgba(255, 209, 0, 0.14);
+  --aw-primary:          #48a8d1;
+  --aw-primary-dark:     #0f6f98;
+  --aw-primary-darkest:  #0b1622;
+  --aw-primary-soft:     rgba(0, 101, 141, 0.28);
+
+  --aw-success-bg:       rgba(13, 110, 77, 0.22);
+  --aw-danger-bg:        rgba(186, 26, 26, 0.22);
+  --aw-warning-bg:       rgba(255, 209, 0, 0.14);
+  --aw-magenta-bg:       rgba(236, 0, 140, 0.2);
+
+  --aw-overlay-scrim-strong: rgba(2, 6, 12, 0.82);
 }

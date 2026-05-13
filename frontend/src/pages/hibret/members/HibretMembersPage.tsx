@@ -3,16 +3,14 @@ import { useAuthStore } from "../../../store/authStore";
 
 export function HibretMembersPage() {
   const { user } = useAuthStore();
+  const hibretId = (user as any)?.hibretId;
 
   return (
     <MembersRegistryPage
-      title="Members"
-      subtitle="የአባላት መረጃ"
+      scopeHibretId={hibretId}
       memberDetailBasePath="/hibret/members"
-      scopeHibretId={user?.hibretId ?? undefined}
-      showHibretFilter={false}
-      showAddButton
-      showImportButton
+      showAddButton={true}
+      showImportButton={true}
     />
   );
 }

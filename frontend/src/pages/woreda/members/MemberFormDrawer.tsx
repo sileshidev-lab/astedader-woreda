@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
-import { ImageIcon, X } from "lucide-react";
+import { ImageIcon, X, Save } from "lucide-react";
 import { apiClient } from "../../../services/apiClient";
 import { getApiBaseUrl } from "../../../services/runtimeConfig";
 import type {
@@ -20,360 +20,120 @@ type MemberFormDrawerProps = {
 };
 
 const emptyForm: MemberPayload = {
-  memberCode: "",
-  fanId: "",
-  ppId: "",
-  firstName: "",
-  fatherName: "",
-  grandfatherName: "",
-  gender: "ወንድ",
-  dateOfBirth: "",
-  phone: "",
-  email: "",
-  hibretId: "",
-  familyId: "",
-  membershipStatus: "ዕጩ አባል",
-  registrationType: "እንደ አዲስ የተመዘገበ",
-  membershipYear: null,
-  partyRole: "",
-  educationLevel: "",
-  fieldOfStudy: "",
-  workplace: "",
-  workType: "የመንግስት ሰራተኛ",
-  workExperienceYears: null,
-  zone: "",
-  kebele: "",
-  ethnicity: "",
-  healthStatus: "ጤነኛ",
-  photoFileId: "",
+  memberCode: "", fanId: "", ppId: "", firstName: "", fatherName: "", grandfatherName: "",
+  gender: "ወንድ", dateOfBirth: "", phone: "", email: "", hibretId: "", familyId: "",
+  membershipStatus: "ዕጩ አባል", registrationType: "እንደ አዲስ የተመዘገበ",
+  membershipYear: null, partyRole: "", educationLevel: "", fieldOfStudy: "",
+  workplace: "", workType: "የመንግስት ሰራተኛ", workExperienceYears: null,
+  zone: "", kebele: "", ethnicity: "", healthStatus: "ጤነኛ", photoFileId: "",
 };
 
-function toDateInput(value?: string | null) {
-  if (!value) return "";
-  return value.slice(0, 10);
+function toDateInput(v?: string | null) { return v ? v.slice(0, 10) : ""; }
+function nullIfEmpty(v: unknown) { const t = String(v ?? "").trim(); return t === "" ? null : t; }
+function intOrNull(v: unknown) { const p = Number(v); return (v === "" || !Number.isFinite(p)) ? null : p; }
+
+function fileUrl(id?: string | null) {
+  if (!id) return "";
+  const api = getApiBaseUrl(); const tok = localStorage.getItem("astedader_woreda_token");
+  const q = tok ? `?token=${encodeURIComponent(tok)}&inline=true` : "?inline=true";
+  return `${api}/files/${id}/download${q}`;
 }
 
-function nullIfEmpty(value: unknown) {
-  if (value === undefined || value === null) return null;
-  const text = String(value).trim();
-  return text === "" ? null : text;
-}
-
-function intOrNull(value: unknown) {
-  if (value === undefined || value === null || value === "") return null;
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : null;
-}
-
-function fileUrl(fileId?: string | null) {
-  if (!fileId) return "";
-
-  const baseUrl = getApiBaseUrl();
-  const token = localStorage.getItem("astedader_woreda_token");
-  const query = token ? `?token=${encodeURIComponent(token)}&inline=true` : "?inline=true";
-
-  return `${baseUrl}/files/${fileId}/download${query}`;
-}
-
-async function uploadMemberPhoto(file: File) {
-  const formData = new FormData();
-  formData.append("file", file);
-
-  const response = await apiClient.post<{ file: { id: string } }>("/files/upload/member", formData, {
-    headers: { "Content-Type": "multipart/form-data" },
-  });
-
-  return response.data.file.id;
-}
-
-export function MemberFormDrawer({
-  title,
-  isOpen,
-  member,
-  options,
-  isSaving,
-  onClose,
-  onSubmit,
-}: MemberFormDrawerProps) {
+export function MemberFormDrawer({ title, isOpen, member, options, isSaving, onClose, onSubmit }: MemberFormDrawerProps) {
   const [form, setForm] = useState<MemberPayload>(emptyForm);
   const [error, setError] = useState("");
-  const [photoUploading, setPhotoUploading] = useState(false);
+  const [uping, setUping] = useState(false);
 
   useEffect(() => {
     if (!isOpen) return;
-
-    if (member) {
-      setForm({
-        memberCode: member.memberCode ?? "",
-        fanId: member.fanId ?? "",
-        ppId: member.ppId ?? "",
-        firstName: member.firstName ?? "",
-        fatherName: member.fatherName ?? "",
-        grandfatherName: member.grandfatherName ?? "",
-        gender: member.gender ?? "ወንድ",
-        dateOfBirth: toDateInput(member.dateOfBirth),
-        phone: member.phone ?? "",
-        email: member.email ?? "",
-        hibretId: member.hibretId ?? "",
-        familyId: member.familyId ?? "",
-        membershipStatus: member.membershipStatus ?? "ዕጩ አባል",
-        registrationType: member.registrationType ?? "እንደ አዲስ የተመዘገበ",
-        membershipYear: member.membershipYear ?? null,
-        partyRole: member.partyRole ?? "",
-        educationLevel: member.educationLevel ?? "",
-        fieldOfStudy: member.fieldOfStudy ?? "",
-        workplace: member.workplace ?? "",
-        workType: member.workType ?? "የመንግስት ሰራተኛ",
-        workExperienceYears: member.workExperienceYears ?? null,
-        zone: member.zone ?? "",
-        kebele: member.kebele ?? "",
-        ethnicity: member.ethnicity ?? "",
-        healthStatus: member.healthStatus ?? "ጤነኛ",
-        photoFileId: member.photoFileId ?? "",
-      });
-    } else {
-      setForm({
-        ...emptyForm,
-        hibretId: options.hibrets[0]?.id ?? "",
-      });
-    }
-
+    if (member) setForm({ ...member, dateOfBirth: toDateInput(member.dateOfBirth), hibretId: member.hibretId || "", familyId: member.familyId || "" });
+    else setForm({ ...emptyForm, hibretId: options.hibrets[0]?.id || "" });
     setError("");
   }, [isOpen, member, options.hibrets]);
 
-  const familiesForHibret = useMemo(() => {
-    return options.families.filter((family) => family.hibretId === form.hibretId);
-  }, [form.hibretId, options.families]);
+  const families = useMemo(() => options.families.filter(f => f.hibretId === form.hibretId), [form.hibretId, options.families]);
 
   if (!isOpen) return null;
 
-  function updateField(name: keyof MemberPayload, value: string) {
-    setForm((current) => ({
-      ...current,
-      [name]: value,
-      ...(name === "hibretId" ? { familyId: "" } : {}),
-    }));
-  }
-
-  async function handlePhotoChange(file?: File | null) {
-    if (!file) return;
-
-    setPhotoUploading(true);
-    setError("");
-
+  async function handlePhoto(file?: File | null) {
+    if (!file) return; setUping(true); setError("");
     try {
-      const fileId = await uploadMemberPhoto(file);
-      updateField("photoFileId", fileId);
-    } catch (err: any) {
-      setError(err?.response?.data?.message || "Unable to upload member photo.");
-    } finally {
-      setPhotoUploading(false);
-    }
-  }
-
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setError("");
-
-    if (!String(form.firstName || "").trim() || !String(form.fatherName || "").trim() || !form.gender || !form.hibretId) {
-      setError("First name, father name, gender, and Hibret are required.");
-      return;
-    }
-
-    await onSubmit({
-      memberCode: nullIfEmpty(form.memberCode),
-      fanId: nullIfEmpty(form.fanId),
-      ppId: nullIfEmpty(form.ppId),
-      firstName: String(form.firstName).trim(),
-      fatherName: String(form.fatherName).trim(),
-      grandfatherName: nullIfEmpty(form.grandfatherName),
-      gender: String(form.gender || "ወንድ"),
-      dateOfBirth: nullIfEmpty(form.dateOfBirth),
-      phone: nullIfEmpty(form.phone),
-      email: nullIfEmpty(form.email),
-      hibretId: String(form.hibretId || ""),
-      familyId: nullIfEmpty(form.familyId),
-      membershipStatus: nullIfEmpty(form.membershipStatus),
-      registrationType: nullIfEmpty(form.registrationType),
-      membershipYear: intOrNull(form.membershipYear),
-      partyRole: nullIfEmpty(form.partyRole),
-      educationLevel: nullIfEmpty(form.educationLevel),
-      fieldOfStudy: nullIfEmpty(form.fieldOfStudy),
-      workplace: nullIfEmpty(form.workplace),
-      workType: nullIfEmpty(form.workType),
-      workExperienceYears: intOrNull(form.workExperienceYears),
-      zone: nullIfEmpty(form.zone),
-      kebele: nullIfEmpty(form.kebele),
-      ethnicity: nullIfEmpty(form.ethnicity),
-      healthStatus: nullIfEmpty(form.healthStatus),
-      photoFileId: nullIfEmpty(form.photoFileId),
-    });
+      const fd = new FormData(); fd.append("file", file);
+      const res = await apiClient.post<{ file: { id: string } }>("/files/upload/member", fd, { headers: { "Content-Type": "multipart/form-data" } });
+      setForm({ ...form, photoFileId: res.data.file.id });
+    } catch { setError("Photo upload failed."); } finally { setUping(false); }
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-[var(--overlay-scrim)]" onMouseDown={onClose}>
-      <aside
-        className="flex min-h-0 h-full w-full max-w-4xl flex-col bg-woreda-surface text-woreda-text shadow-none"
-        onMouseDown={(event) => event.stopPropagation()}
-      >
-        <div className="shrink-0 border-b border-woreda-border bg-woreda-surfaceLow px-6 py-5">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-woreda-textMuted">
-                Members
-              </p>
-              <h2 className="mt-1 text-xl font-bold text-woreda-text">{title}</h2>
-            </div>
+    <div className="fixed inset-0 z-[1000] flex items-center justify-end">
+      <div className="absolute inset-0 bg-[var(--aw-overlay-scrim-strong)] backdrop-blur-sm" onClick={onClose} />
+      <form onSubmit={(e: FormEvent) => { e.preventDefault(); onSubmit({ ...form, firstName: String(form.firstName).trim(), fatherName: String(form.fatherName).trim(), grandfatherName: nullIfEmpty(form.grandfatherName), membershipYear: intOrNull(form.membershipYear), workExperienceYears: intOrNull(form.workExperienceYears) }); }} className="relative aw-panel h-full w-full max-w-4xl shadow-2xl !rounded-none border-none flex flex-col">
+        <header className="aw-panel-header !py-7 !px-8 !bg-[var(--aw-surface)]">
+          <div><p className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--aw-primary)] mb-1">Population Registry</p><h2 className="text-2xl font-black">{title}</h2></div>
+          <button type="button" onClick={onClose} className="aw-btn aw-btn-outline !min-h-[36px] !px-2"><X size={20}/></button>
+        </header>
 
-            <button
-              type="button"
-              onClick={onClose}
-              className="inline-flex h-10 w-10 items-center justify-center border border-woreda-border bg-woreda-surface text-woreda-text"
-            >
-              <X size={18} />
-            </button>
-          </div>
+        <div className="flex-1 overflow-y-auto aw-seamless-scroll p-8 space-y-10">
+           {error && <div className="aw-panel !bg-[var(--aw-danger-bg)] !border-[var(--aw-danger)] p-4 text-xs font-black text-[var(--aw-danger)]">{error}</div>}
+
+           <section>
+              <h3 className="font-black text-sm uppercase tracking-widest border-b border-[var(--aw-border-soft)] pb-3 text-[var(--aw-primary)] mb-6">Profile Photo</h3>
+              <div className="flex items-center gap-6">
+                 <div className="h-24 w-24 rounded-2xl bg-[var(--aw-bg)] border border-[var(--aw-border-soft)] flex items-center justify-center overflow-hidden shadow-inner flex-shrink-0">
+                    {form.photoFileId ? <img src={fileUrl(form.photoFileId)} className="h-full w-full object-cover" /> : <ImageIcon size={32} className="text-[var(--aw-muted)]" />}
+                 </div>
+                 <div className="space-y-3">
+                    <label className="aw-btn aw-btn-outline !bg-white cursor-pointer"><UploadCloud size={16}/><span>{uping ? 'Uploading...' : 'Choose Image'}</span><input type="file" className="hidden" accept="image/*" onChange={e => handlePhoto(e.target.files?.[0])} /></label>
+                    <p className="text-[10px] font-bold text-[var(--aw-muted)] uppercase tracking-wider">Accepted formats: JPG, PNG, WebP. Max 2MB.</p>
+                 </div>
+              </div>
+           </section>
+
+           <section>
+              <h3 className="font-black text-sm uppercase tracking-widest border-b border-[var(--aw-border-soft)] pb-3 text-[var(--aw-primary)] mb-6">Identity & Personal</h3>
+              <div className="aw-form-grid">
+                 <div className="aw-form-field"><label className="aw-form-label">First Name</label><input required className="aw-input" value={form.firstName || ''} onChange={e => setForm({...form, firstName: e.target.value})} /></div>
+                 <div className="aw-form-field"><label className="aw-form-label">Father Name</label><input required className="aw-input" value={form.fatherName || ''} onChange={e => setForm({...form, fatherName: e.target.value})} /></div>
+                 <div className="aw-form-field"><label className="aw-form-label">Grandfather</label><input className="aw-input" value={form.grandfatherName || ''} onChange={e => setForm({...form, grandfatherName: e.target.value})} /></div>
+                 <div className="aw-form-field"><label className="aw-form-label">Gender</label><select className="aw-filter-select" value={form.gender || 'ወንድ'} onChange={e => setForm({...form, gender: e.target.value})}><option value="ወንድ">Male (ወንድ)</option><option value="ሴት">Female (ሴት)</option></select></div>
+                 <div className="aw-form-field"><label className="aw-form-label">Birth Date</label><input type="date" className="aw-input" value={form.dateOfBirth || ''} onChange={e => setForm({...form, dateOfBirth: e.target.value})} /></div>
+                 <div className="aw-form-field"><label className="aw-form-label">Ethnicity</label><input className="aw-input" value={form.ethnicity || ''} onChange={e => setForm({...form, ethnicity: e.target.value})} /></div>
+              </div>
+           </section>
+
+           <section>
+              <h3 className="font-black text-sm uppercase tracking-widest border-b border-[var(--aw-border-soft)] pb-3 text-[var(--aw-primary)] mb-6">Unit & Assignment</h3>
+              <div className="aw-form-grid">
+                 <div className="aw-form-field"><label className="aw-form-label">System Code</label><input className="aw-input" placeholder="Member Code" value={form.memberCode || ''} onChange={e => setForm({...form, memberCode: e.target.value})} /></div>
+                 <div className="aw-form-field"><label className="aw-form-label">PP ID</label><input className="aw-input" placeholder="Party ID" value={form.ppId || ''} onChange={e => setForm({...form, ppId: e.target.value})} /></div>
+                 <div className="aw-form-field"><label className="aw-form-label">FAN ID</label><input className="aw-input" placeholder="Fayda ID" value={form.fanId || ''} onChange={e => setForm({...form, fanId: e.target.value})} /></div>
+                 <div className="aw-form-field"><label className="aw-form-label">Assigned Hibret</label><select required className="aw-filter-select" value={form.hibretId || ''} onChange={e => setForm({...form, hibretId: e.target.value, familyId: ""})}><option value="">Select Unit...</option>{options.hibrets.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}</select></div>
+                 <div className="aw-form-field"><label className="aw-form-label">Assigned Family</label><select className="aw-filter-select" value={form.familyId || ''} onChange={e => setForm({...form, familyId: e.target.value})}><option value="">Unassigned</option>{families.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}</select></div>
+              </div>
+           </section>
+
+           <section>
+              <h3 className="font-black text-sm uppercase tracking-widest border-b border-[var(--aw-border-soft)] pb-3 text-[var(--aw-primary)] mb-6">Employment & Contact</h3>
+              <div className="aw-form-grid">
+                 <div className="aw-form-field"><label className="aw-form-label">Phone Number</label><input className="aw-input" value={form.phone || ''} onChange={e => setForm({...form, phone: e.target.value})} /></div>
+                 <div className="aw-form-field"><label className="aw-form-label">Email Address</label><input type="email" className="aw-input" value={form.email || ''} onChange={e => setForm({...form, email: e.target.value})} /></div>
+                 <div className="aw-form-field"><label className="aw-form-label">Workplace</label><input className="aw-input" value={form.workplace || ''} onChange={e => setForm({...form, workplace: e.target.value})} /></div>
+                 <div className="aw-form-field"><label className="aw-form-label">Experience (Years)</label><input type="number" className="aw-input" value={form.workExperienceYears || ''} onChange={e => setForm({...form, workExperienceYears: e.target.value as any})} /></div>
+              </div>
+           </section>
         </div>
 
-        <form onSubmit={handleSubmit} className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
-          {error ? (
-            <div className="mb-4 border border-woreda-danger bg-woreda-dangerBg px-4 py-3 text-sm font-bold text-woreda-danger">
-              {error}
-            </div>
-          ) : null}
-
-          <div className="mb-5 border border-woreda-border bg-woreda-surfaceLow p-4">
-            <p className="mb-3 text-sm font-bold text-woreda-text">Member photo</p>
-            <div className="flex items-center gap-4">
-              <div className="member-photo-upload-preview">
-                {form.photoFileId ? (
-                  <img src={fileUrl(form.photoFileId)} alt="Member photo" />
-                ) : (
-                  <ImageIcon size={26} />
-                )}
-              </div>
-
-              <div className="min-w-0">
-                <input
-                  type="file"
-                  accept="image/*"
-                  disabled={photoUploading || isSaving}
-                  onChange={(event) => void handlePhotoChange(event.currentTarget.files?.[0])}
-                />
-                <p className="mt-2 text-xs font-semibold text-woreda-textMuted">
-                  {photoUploading ? "Uploading photo..." : "Upload or replace the member profile photo."}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="form-grid">
-            <FormInput label="PP" value={String(form.ppId ?? "")} onChange={(value) => updateField("ppId", value)} placeholder="PP/00000000" />
-            <FormInput label="FAN" value={String(form.fanId ?? "")} onChange={(value) => updateField("fanId", value)} placeholder="0000 0000 0000 0000" />
-            <FormInput label="Member Code" value={String(form.memberCode ?? "")} onChange={(value) => updateField("memberCode", value)} placeholder="Member code" />
-
-            <label className="member-form-field">
-              Gender
-              <select value={String(form.gender ?? "")} onChange={(event) => updateField("gender", event.target.value)}>
-                <option value="ወንድ">ወንድ</option>
-                <option value="ሴት">ሴት</option>
-                <option value="male">male</option>
-                <option value="female">female</option>
-              </select>
-            </label>
-
-            <FormInput label="First Name" value={String(form.firstName ?? "")} onChange={(value) => updateField("firstName", value)} required />
-            <FormInput label="Father Name" value={String(form.fatherName ?? "")} onChange={(value) => updateField("fatherName", value)} required />
-            <FormInput label="Grandfather Name" value={String(form.grandfatherName ?? "")} onChange={(value) => updateField("grandfatherName", value)} />
-
-            <label className="member-form-field">
-              Hibret
-              <select value={String(form.hibretId ?? "")} onChange={(event) => updateField("hibretId", event.target.value)} required>
-                <option value="">Select Hibret</option>
-                {options.hibrets.map((hibret) => (
-                  <option value={hibret.id} key={hibret.id}>{hibret.name}</option>
-                ))}
-              </select>
-            </label>
-
-            <label className="member-form-field">
-              Family
-              <select value={String(form.familyId ?? "")} onChange={(event) => updateField("familyId", event.target.value)}>
-                <option value="">Unassigned</option>
-                {familiesForHibret.map((family) => (
-                  <option value={family.id} key={family.id}>{family.name}</option>
-                ))}
-              </select>
-            </label>
-
-            <FormInput label="Date of Birth" type="date" value={String(form.dateOfBirth ?? "")} onChange={(value) => updateField("dateOfBirth", value)} />
-            <FormInput label="Phone" value={String(form.phone ?? "")} onChange={(value) => updateField("phone", value)} />
-            <FormInput label="Email" type="email" value={String(form.email ?? "")} onChange={(value) => updateField("email", value)} />
-            <FormInput label="Membership Year" type="number" value={String(form.membershipYear ?? "")} onChange={(value) => updateField("membershipYear", value)} />
-            <FormInput label="Party Role" value={String(form.partyRole ?? "")} onChange={(value) => updateField("partyRole", value)} />
-            <FormInput label="Education Level" value={String(form.educationLevel ?? "")} onChange={(value) => updateField("educationLevel", value)} />
-            <FormInput label="Field of Study" value={String(form.fieldOfStudy ?? "")} onChange={(value) => updateField("fieldOfStudy", value)} />
-            <FormInput label="Workplace" value={String(form.workplace ?? "")} onChange={(value) => updateField("workplace", value)} />
-            <FormInput label="Work Type" value={String(form.workType ?? "")} onChange={(value) => updateField("workType", value)} />
-            <FormInput label="Work Experience Years" type="number" value={String(form.workExperienceYears ?? "")} onChange={(value) => updateField("workExperienceYears", value)} />
-            <FormInput label="Zone" value={String(form.zone ?? "")} onChange={(value) => updateField("zone", value)} />
-            <FormInput label="Kebele" value={String(form.kebele ?? "")} onChange={(value) => updateField("kebele", value)} />
-            <FormInput label="Ethnicity" value={String(form.ethnicity ?? "")} onChange={(value) => updateField("ethnicity", value)} />
-            <FormInput label="Health Status" value={String(form.healthStatus ?? "")} onChange={(value) => updateField("healthStatus", value)} />
-            <FormInput label="Registration Type" value={String(form.registrationType ?? "")} onChange={(value) => updateField("registrationType", value)} />
-            <FormInput label="Membership Status" value={String(form.membershipStatus ?? "")} onChange={(value) => updateField("membershipStatus", value)} />
-          </div>
-
-          <div className="sticky bottom-0 mt-6 flex justify-end gap-3 border-t border-woreda-border bg-woreda-surface py-4">
-            <button
-              type="button"
-              className="aw-secondary-button"
-              onClick={onClose}
-              disabled={isSaving || photoUploading}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="aw-primary-button"
-              disabled={isSaving || photoUploading}
-            >
-              {isSaving ? "Saving..." : "Save Member"}
-            </button>
-          </div>
-        </form>
-      </aside>
+        <div className="p-6 bg-[var(--aw-surface-muted)] flex justify-end gap-3 border-t border-[var(--aw-border-soft)]">
+          <button type="button" onClick={onClose} className="aw-btn aw-btn-outline !bg-white">Cancel</button>
+          <button type="submit" disabled={isSaving || uping} className="aw-btn aw-btn-primary min-w-[140px] shadow-lg"><Save size={18}/>{isSaving ? 'Saving...' : 'Commit Record'}</button>
+        </div>
+      </form>
     </div>
   );
 }
 
-function FormInput({
-  label,
-  value,
-  onChange,
-  placeholder,
-  type = "text",
-  required = false,
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  placeholder?: string;
-  type?: string;
-  required?: boolean;
-}) {
-  return (
-    <label className="member-form-field">
-      {label}
-      <input
-        type={type}
-        value={value}
-        placeholder={placeholder}
-        required={required}
-        onChange={(event) => onChange(event.target.value)}
-      />
-    </label>
-  );
+function UploadCloud(props: any) {
+  return <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M12 12v9"/><path d="m16 16-4-4-4 4"/></svg>;
 }
 
 export default MemberFormDrawer;

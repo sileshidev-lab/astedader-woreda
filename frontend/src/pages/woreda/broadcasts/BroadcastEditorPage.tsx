@@ -2,18 +2,13 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft,
-  CalendarClock,
-  Eye,
   ImagePlus,
-  Link as LinkIcon,
   Monitor,
-  Paperclip,
   Save,
   Settings2,
   Smartphone,
-  Upload,
-  Video,
-  X,
+  Plus,
+  FileText
 } from "lucide-react";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
@@ -29,7 +24,6 @@ import {
 } from "../../../services/contentService";
 import type { FileInfo } from "../../../services/contentService";
 import {
-  escapeHtml,
   extractCoverMarker,
   fileInlineUrl,
   makeCoverMarker,
@@ -49,10 +43,6 @@ export function BroadcastEditorPage() {
   const [coverFileName, setCoverFileName] = useState("");
   const [coverUrl, setCoverUrl] = useState("");
   const [uploadedFiles, setUploadedFiles] = useState<FileInfo[]>([]);
-  const [inlineImageUrl, setInlineImageUrl] = useState("");
-  const [videoUrl, setVideoUrl] = useState("");
-  const [mediaLink, setMediaLink] = useState("");
-  const [mediaLinkLabel, setMediaLinkLabel] = useState("");
   const [previewMode, setPreviewMode] = useState<"desktop" | "mobile">("desktop");
   const [isSettingsOpen, setIsSettingsOpen] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
@@ -65,40 +55,21 @@ export function BroadcastEditorPage() {
       StarterKit,
       LinkExtension.configure({
         openOnClick: false,
-        HTMLAttributes: { class: "text-[var(--aw-primary)] underline underline-offset-4" },
+        HTMLAttributes: { class: "text-[var(--aw-primary)] underline underline-offset-4 font-bold" },
       }),
       ImageExtension.configure({
-        HTMLAttributes: {
-          class:
-            "my-5 rounded-3xl border border-[var(--aw-border-soft)] shadow-sm",
-        },
+        HTMLAttributes: { class: "my-8 rounded-2xl border border-[var(--aw-border-soft)] shadow-md" },
       }),
-      Youtube.configure({
-        controls: true,
-        nocookie: true,
-      }),
-      Placeholder.configure({
-        placeholder: "Write the official Woreda broadcast article here...",
-      }),
+      Youtube.configure({ controls: true, nocookie: true }),
+      Placeholder.configure({ placeholder: "Write the official article body here..." }),
     ],
     content: "",
-    onUpdate({ editor }) {
-      setBodyHtml(editor.getHTML());
-    },
+    onUpdate({ editor }) { setBodyHtml(editor.getHTML()); },
     editorProps: {
-      attributes: {
-        class:
-          "aw-article-editor min-h-[var(--aw-editor-min-h)] max-w-none bg-[var(--aw-surface)] px-4 py-4 text-[var(--aw-text)] outline-none focus:outline-none sm:px-6 sm:py-5",
-      },
+      attributes: { class: "aw-article-editor min-h-[400px] max-w-none bg-[var(--aw-surface)] px-8 py-8 text-[var(--aw-text)] outline-none focus:outline-none" },
       handleDrop(_view, event) {
         const file = event.dataTransfer?.files?.[0];
-
-        if (file && file.type.startsWith("image/")) {
-          event.preventDefault();
-          void insertUploadedImage(file);
-          return true;
-        }
-
+        if (file && file.type.startsWith("image/")) { event.preventDefault(); void insertUploadedImage(file); return true; }
         return false;
       },
     },
@@ -106,618 +77,164 @@ export function BroadcastEditorPage() {
 
   async function loadBroadcast() {
     if (!broadcastId || !editor) return;
-
     setError("");
-
     try {
       const data = await getBroadcast(broadcastId);
       const remoteCover = extractCoverMarker(data.bodyHtml);
       const cleanBody = removeCoverMarkers(data.bodyHtml || "");
-
-      setTitle(data.title);
-      setSummaryText(data.summary || "");
-      setTargetRoles(data.targetRoles || ["HIBRET_ADMIN", "MEMBER"]);
-      setCoverFileId(data.coverFileId || null);
-      setCoverFileName(data.coverFileId ? "Uploaded main photo" : "");
-      setCoverUrl(remoteCover);
-      setUploadedFiles(data.attachments.map((item) => item.file));
-      setBodyHtml(cleanBody);
-      editor.commands.setContent(cleanBody);
-    } catch {
-      setError("Unable to load broadcast.");
-    }
+      setTitle(data.title); setSummaryText(data.summary || ""); setTargetRoles(data.targetRoles || ["HIBRET_ADMIN", "MEMBER"]); setCoverFileId(data.coverFileId || null); setCoverFileName(data.coverFileId ? "Uploaded photo" : ""); setCoverUrl(remoteCover); setUploadedFiles(data.attachments.map((i) => i.file)); setBodyHtml(cleanBody); editor.commands.setContent(cleanBody);
+    } catch { setError("Unable to load article data."); }
   }
 
-  useEffect(() => {
-    if (editor && broadcastId) {
-      void loadBroadcast();
-    }
-  }, [editor, broadcastId]);
+  useEffect(() => { if (editor && broadcastId) void loadBroadcast(); }, [editor, broadcastId]);
 
   const previewHtml = useMemo(() => rewriteBodyFileUrls(bodyHtml), [bodyHtml]);
   const heroImageUrl = coverFileId ? fileInlineUrl(coverFileId) : coverUrl;
 
-  function toggleAudience(role: "HIBRET_ADMIN" | "MEMBER", checked: boolean) {
-    setTargetRoles((current) =>
-      checked
-        ? [...new Set([...current, role])]
-        : current.filter((item) => item !== role),
-    );
-  }
-
-  async function uploadFile(
-    file?: File,
-    purpose: "cover" | "attachment" | "inlineImage" = "attachment",
-  ) {
+  async function uploadFile(file?: File, purpose: "cover" | "attachment" | "inlineImage" = "attachment") {
     if (!file) return null;
-
-    setIsUploading(true);
-    setError("");
-    setMessage("");
-
+    setIsUploading(true); setError("");
     try {
       const uploaded = await uploadBroadcastFile(file);
-
-      setUploadedFiles((current) =>
-        current.some((item) => item.id === uploaded.id)
-          ? current
-          : [...current, uploaded],
-      );
-
-      if (purpose === "cover") {
-        setCoverFileId(uploaded.id);
-        setCoverUrl("");
-        setCoverFileName(uploaded.originalName);
-      }
-
-      setMessage(`Uploaded: ${uploaded.originalName}`);
+      setUploadedFiles((cur) => cur.some((i) => i.id === uploaded.id) ? cur : [...cur, uploaded]);
+      if (purpose === "cover") { setCoverFileId(uploaded.id); setCoverUrl(""); setCoverFileName(uploaded.originalName); }
       return uploaded;
-    } catch (err: any) {
-      setError(err?.response?.data?.message || "Unable to upload file.");
-      return null;
-    } finally {
-      setIsUploading(false);
-    }
+    } catch { setError("Upload failed."); return null; }
+    finally { setIsUploading(false); }
   }
 
   async function insertUploadedImage(file?: File) {
     if (!file || !editor) return;
-
     const uploaded = await uploadFile(file, "inlineImage");
-    if (!uploaded) return;
-
-    editor
-      .chain()
-      .focus()
-      .setImage({
-        src: fileInlineUrl(uploaded.id),
-        alt: uploaded.originalName,
-      })
-      .run();
-  }
-
-  function setMainPhotoLink() {
-    if (!coverUrl.trim()) return;
-
-    const url = coverUrl.trim();
-
-    if (!/^https?:\/\//i.test(url)) {
-      setError("Main photo link must start with http:// or https://");
-      return;
-    }
-
-    setCoverFileId(null);
-    setCoverFileName("");
-    setCoverUrl(url);
-    setMessage("Main photo link saved for preview.");
-  }
-
-  function insertInlineImageLink() {
-    if (!inlineImageUrl.trim() || !editor) return;
-
-    const url = inlineImageUrl.trim();
-
-    if (!/^https?:\/\//i.test(url)) {
-      setError("Image link must start with http:// or https://");
-      return;
-    }
-
-    editor
-      .chain()
-      .focus()
-      .insertContent(`<figure><img src="${escapeHtml(url)}" alt="Broadcast image" /></figure>`)
-      .run();
-
-    setInlineImageUrl("");
-  }
-
-  function insertVideoLink() {
-    if (!videoUrl.trim() || !editor) return;
-
-    editor.commands.setYoutubeVideo({
-      src: videoUrl.trim(),
-      width: 640,
-      height: 360,
-    });
-
-    setVideoUrl("");
-  }
-
-  function insertMediaLink() {
-    if (!mediaLink.trim() || !editor) return;
-
-    const label = mediaLinkLabel.trim() || mediaLink.trim();
-
-    editor
-      .chain()
-      .focus()
-      .insertContent(
-        `<p><a href="${escapeHtml(mediaLink.trim())}" target="_blank" rel="noopener noreferrer">${escapeHtml(label)}</a></p>`,
-      )
-      .run();
-
-    setMediaLink("");
-    setMediaLinkLabel("");
+    if (uploaded) editor.chain().focus().setImage({ src: fileInlineUrl(uploaded.id), alt: uploaded.originalName }).run();
   }
 
   async function saveBroadcast() {
     if (!editor) return;
-
-    setError("");
-    setMessage("");
-
-    if (!title.trim()) {
-      setError("Broadcast title is required.");
-      return;
-    }
-
-    if (targetRoles.length === 0) {
-      setError("Select at least one target audience.");
-      return;
-    }
-
-    const cleanBody = editor.getHTML();
-    const bodyForSave = coverUrl.trim()
-      ? `${makeCoverMarker(coverUrl.trim())}${cleanBody}`
-      : cleanBody;
-
-    const payload = {
-      title: title.trim(),
-      summary: summaryText.trim(),
-      bodyHtml: bodyForSave,
-      targetRoles,
-      fileIds: uploadedFiles.map((file) => file.id),
-      coverFileId,
-    };
-
+    setError(""); setMessage("");
+    if (!title.trim()) { setError("Title is required."); return; }
+    const bodyForSave = coverUrl.trim() ? `${makeCoverMarker(coverUrl.trim())}${editor.getHTML()}` : editor.getHTML();
+    const payload = { title: title.trim(), summary: summaryText.trim(), bodyHtml: bodyForSave, targetRoles, fileIds: uploadedFiles.map((f) => f.id), coverFileId };
     try {
-      if (isEditMode && broadcastId) {
-        await updateBroadcast(broadcastId, payload);
-        setMessage("Broadcast updated.");
-      } else {
-        const created = await createBroadcast(payload);
-        setMessage("Broadcast created.");
-        navigate(`/woreda/broadcasts/${created.id}/edit`, { replace: true });
-      }
-    } catch (err: any) {
-      setError(err?.response?.data?.message || "Unable to save broadcast.");
-    }
+      if (isEditMode && broadcastId) { await updateBroadcast(broadcastId, payload); setMessage("Changes saved."); }
+      else { const res = await createBroadcast(payload); navigate(`/woreda/broadcasts/${res.id}/edit`, { replace: true }); }
+    } catch { setError("Failed to save broadcast."); }
   }
 
   return (
-    <section className="aw-design-page aw-mobile-page flex min-h-0 flex-1 flex-col gap-4 overflow-visible md:overflow-hidden">
-      {error ? (
-        <div className="shrink-0 rounded-2xl border border-[var(--aw-danger)]/25 bg-[var(--aw-danger-bg)] px-4 py-3 text-sm font-bold text-[var(--aw-danger)]">
-          {error}
-        </div>
-      ) : null}
+    <div className="flex flex-col gap-6">
+      {error && <div className="aw-panel !bg-[var(--aw-danger-bg)] !border-[var(--aw-danger)] px-4 py-3 text-sm font-black text-[var(--aw-danger)]">{error}</div>}
+      {message && <div className="aw-panel !bg-[var(--aw-primary-soft)]/20 !border-[var(--aw-primary)] px-4 py-3 text-sm font-black text-[var(--aw-primary)]">{message}</div>}
 
-      {message ? (
-        <div className="shrink-0 rounded-2xl border border-[var(--aw-primary)]/20 bg-[var(--aw-primary-soft)] px-4 py-3 text-sm font-bold text-[var(--aw-primary)]">
-          {message}
-        </div>
-      ) : null}
-
-      <header className="shrink-0 overflow-hidden rounded-[1.75rem] border border-[var(--aw-border-soft)] bg-[var(--aw-surface)] shadow-sm">
+      <header className="aw-panel !rounded-3xl shrink-0 overflow-hidden shadow-soft">
         <div className="h-1.5 bg-gradient-to-r from-[var(--aw-primary)] via-[var(--aw-yellow)] to-[var(--aw-magenta)]" />
-
-        <div className="flex flex-col gap-4 p-4 sm:p-5 xl:flex-row xl:items-center xl:justify-between">
+        <div className="flex flex-col gap-4 p-6 sm:p-7 xl:flex-row xl:items-center xl:justify-between bg-[var(--aw-surface)]">
           <div className="min-w-0">
-            <p className="text-[11px] font-black uppercase tracking-[0.2em] text-[var(--aw-primary)]">
-              Broadcast Writer
-            </p>
-            <h1 className="mt-1 text-[clamp(1.35rem,2.2vw,2rem)] font-black tracking-tight text-[var(--aw-text)]">
-              {isEditMode ? "Edit Official Article" : "Create Official Article"}
-            </h1>
-            <p className="mt-1 max-w-3xl text-sm font-semibold leading-6 text-[var(--aw-muted)]">
-              Write the broadcast like a public article: title, summary, main
-              photo, article body, media, attachments, and live preview.
-            </p>
+             <div className="flex items-center gap-3 mb-2">
+                <Link to="/woreda/broadcasts" className="aw-btn aw-btn-outline !min-h-[34px] !px-3 !rounded-xl !text-xs"><ArrowLeft size={14}/>Archive</Link>
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--aw-primary)]">Broadcast Studio</span>
+             </div>
+             <h1 className="text-2xl font-black tracking-tight">{isEditMode ? "Edit Official Article" : "Compose New Article"}</h1>
           </div>
-
-          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-end">
-            <Link
-              to="/woreda/broadcasts"
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-[var(--aw-border)] bg-[var(--aw-surface)] px-4 py-2 text-sm font-black text-[var(--aw-text)] transition hover:border-[var(--aw-primary)] hover:text-[var(--aw-primary)]"
-            >
-              <ArrowLeft size={16} />
-              Back
-            </Link>
-
-            <button
-              type="button"
-              onClick={() => setIsSettingsOpen((current) => !current)}
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-[var(--aw-border)] bg-[var(--aw-surface)] px-4 py-2 text-sm font-black text-[var(--aw-text)] transition hover:border-[var(--aw-primary)] hover:text-[var(--aw-primary)]"
-            >
-              {isSettingsOpen ? <X size={16} /> : <Settings2 size={16} />}
-              {isSettingsOpen ? "Hide Settings" : "Show Settings"}
-            </button>
-
-            <button
-              type="button"
-              onClick={saveBroadcast}
-              disabled={isUploading}
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-[var(--aw-primary)] bg-[var(--aw-primary)] px-4 py-2 text-sm font-black text-white shadow-sm shadow-[var(--aw-primary)]/20 transition hover:-translate-y-0.5 hover:bg-[var(--aw-primary-strong)] disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              <Save size={16} />
-              {isUploading ? "Uploading..." : "Save Article"}
-            </button>
+          <div className="flex gap-3">
+             <button onClick={() => setIsSettingsOpen(!isSettingsOpen)} className="aw-btn aw-btn-outline"><Settings2 size={18}/><span>{isSettingsOpen ? 'Hide' : 'Settings'}</span></button>
+             <button onClick={saveBroadcast} disabled={isUploading} className="aw-btn aw-btn-primary min-w-[140px] shadow-lg"><Save size={18}/><span>{isUploading ? 'Uploading...' : 'Save Draft'}</span></button>
           </div>
         </div>
       </header>
 
-      <div
-        className={[
-          "grid min-h-0 flex-1 gap-4 overflow-visible md:overflow-hidden",
-          isSettingsOpen
-            ? "xl:grid-cols-[minmax(0,1.08fr)_minmax(0,0.92fr)_minmax(19rem,0.52fr)]"
-            : "xl:grid-cols-[minmax(0,1.08fr)_minmax(0,0.92fr)]",
-        ].join(" ")}
-      >
-        <section className="flex min-h-0 flex-col overflow-hidden rounded-[1.75rem] border border-[var(--aw-border-soft)] bg-[var(--aw-surface)] shadow-sm">
-          <div className="shrink-0 border-b border-[var(--aw-border-soft)] bg-[var(--aw-surface-muted)] px-4 py-3 sm:px-5">
-            <h2 className="font-black text-[var(--aw-text)]">Article Content</h2>
-            <p className="mt-1 text-xs font-semibold leading-5 text-[var(--aw-muted)]">
-              Keep the title clear, the summary short, and the body readable.
-            </p>
+      <div className={["grid gap-6 flex-1 items-start", isSettingsOpen ? "xl:grid-cols-[1fr_400px_320px]" : "xl:grid-cols-[1fr_1fr]"].join(" ")}>
+        <section className="aw-panel shadow-soft flex flex-col h-full overflow-hidden">
+          <header className="aw-panel-header !bg-transparent border-none pt-6 px-6">
+             <h2 className="aw-panel-title">Write Article</h2>
+          </header>
+          <div className="p-6 space-y-4">
+             <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Main article title..." className="aw-input !text-xl !font-black !min-h-[56px] w-full" />
+             <textarea value={summaryText} onChange={e => setSummaryText(e.target.value)} placeholder="Short excerpt for social feed..." className="aw-input !min-h-[80px] !py-3 w-full font-medium" />
           </div>
-
-          <div className="shrink-0 space-y-3 border-b border-[var(--aw-border-soft)] p-4 sm:p-5">
-            <input
-              value={title}
-              onChange={(event) => setTitle(event.target.value)}
-              placeholder="Official broadcast title"
-              className="min-h-12 w-full rounded-2xl border border-[var(--aw-border)] bg-[var(--aw-surface)] px-4 text-lg font-black text-[var(--aw-text)] outline-none transition placeholder:text-[var(--aw-muted)] focus:border-[var(--aw-primary)] focus:ring-4 focus:ring-[var(--aw-primary)]/10"
-            />
-
-            <textarea
-              value={summaryText}
-              onChange={(event) => setSummaryText(event.target.value)}
-              placeholder="Short article summary shown on broadcast cards"
-              className="min-h-24 w-full resize-y rounded-2xl border border-[var(--aw-border)] bg-[var(--aw-surface)] px-4 py-3 text-sm font-semibold text-[var(--aw-text)] outline-none transition placeholder:text-[var(--aw-muted)] focus:border-[var(--aw-primary)] focus:ring-4 focus:ring-[var(--aw-primary)]/10"
-            />
+          <div className="flex gap-1 p-2 bg-[var(--aw-surface-muted)] border-y border-[var(--aw-border-soft)] flex-wrap">
+             <button onClick={() => editor?.chain().focus().toggleBold().run()} className="aw-btn aw-btn-outline !min-h-[32px] !px-3 !text-xs !bg-white">B</button>
+             <button onClick={() => editor?.chain().focus().toggleItalic().run()} className="aw-btn aw-btn-outline !min-h-[32px] !px-3 !text-xs !bg-white italic">I</button>
+             <button onClick={() => editor?.chain().focus().toggleHeading({level:2}).run()} className="aw-btn aw-btn-outline !min-h-[32px] !px-3 !text-xs !bg-white">H2</button>
+             <button onClick={() => editor?.chain().focus().toggleBulletList().run()} className="aw-btn aw-btn-outline !min-h-[32px] !px-3 !text-xs !bg-white">List</button>
+             <label className="aw-btn aw-btn-outline !min-h-[32px] !px-3 !text-xs !bg-white cursor-pointer"><ImagePlus size={14}/><input type="file" className="hidden" accept="image/*" onChange={e => void insertUploadedImage(e.target.files?.[0])}/></label>
           </div>
-
-          <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-[var(--aw-border-soft)] bg-[var(--aw-surface-muted)] px-4 py-3 sm:px-5">
-            <button type="button" onClick={() => editor?.chain().focus().toggleBold().run()} className="rounded-xl border border-[var(--aw-border)] bg-[var(--aw-surface)] px-3 py-1.5 text-xs font-black text-[var(--aw-text)] hover:border-[var(--aw-primary)] hover:text-[var(--aw-primary)]">Bold</button>
-            <button type="button" onClick={() => editor?.chain().focus().toggleItalic().run()} className="rounded-xl border border-[var(--aw-border)] bg-[var(--aw-surface)] px-3 py-1.5 text-xs font-black text-[var(--aw-text)] hover:border-[var(--aw-primary)] hover:text-[var(--aw-primary)]">Italic</button>
-            <button type="button" onClick={() => editor?.chain().focus().toggleHeading({ level: 2 }).run()} className="rounded-xl border border-[var(--aw-border)] bg-[var(--aw-surface)] px-3 py-1.5 text-xs font-black text-[var(--aw-text)] hover:border-[var(--aw-primary)] hover:text-[var(--aw-primary)]">Heading</button>
-            <button type="button" onClick={() => editor?.chain().focus().toggleBulletList().run()} className="rounded-xl border border-[var(--aw-border)] bg-[var(--aw-surface)] px-3 py-1.5 text-xs font-black text-[var(--aw-text)] hover:border-[var(--aw-primary)] hover:text-[var(--aw-primary)]">List</button>
-
-            <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-[var(--aw-primary)] bg-[var(--aw-primary-soft)] px-3 py-1.5 text-xs font-black text-[var(--aw-primary)] transition hover:bg-[var(--aw-primary)] hover:text-white">
-              <ImagePlus size={13} />
-              Add Image
-              <input
-                type="file"
-                accept="image/*"
-                className="sr-only"
-                onChange={(event) => {
-                  void insertUploadedImage(event.currentTarget.files?.[0]);
-                  event.currentTarget.value = "";
-                }}
-              />
-            </label>
-          </div>
-
-          <div className="min-h-0 flex-1 overflow-auto p-3 sm:p-4">
-            <div className="min-h-full overflow-hidden rounded-3xl border border-[var(--aw-border-soft)] bg-[var(--aw-surface)]">
-              <EditorContent editor={editor} />
-            </div>
+          <div className="flex-1 bg-white">
+             <EditorContent editor={editor} />
           </div>
         </section>
 
-        <section className="flex min-h-0 flex-col overflow-hidden rounded-[1.75rem] border border-[var(--aw-border-soft)] bg-[var(--aw-surface)] shadow-sm">
-          <div className="flex shrink-0 flex-col gap-3 border-b border-[var(--aw-border-soft)] bg-[var(--aw-surface-muted)] px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
-            <div className="flex items-center gap-2 text-sm font-black text-[var(--aw-text)]">
-              <Eye size={16} className="text-[var(--aw-primary)]" />
-              Article Preview
-            </div>
-
-            <div className="flex w-full rounded-2xl border border-[var(--aw-border)] bg-[var(--aw-surface)] p-1 sm:w-auto">
-              <button
-                type="button"
-                onClick={() => setPreviewMode("desktop")}
-                className={[
-                  "inline-flex min-h-9 flex-1 items-center justify-center gap-1 rounded-xl px-3 text-xs font-black transition sm:flex-none",
-                  previewMode === "desktop"
-                    ? "bg-[var(--aw-primary)] text-white"
-                    : "text-[var(--aw-muted)] hover:text-[var(--aw-primary)]",
-                ].join(" ")}
-              >
-                <Monitor size={13} />
-                Desktop
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setPreviewMode("mobile")}
-                className={[
-                  "inline-flex min-h-9 flex-1 items-center justify-center gap-1 rounded-xl px-3 text-xs font-black transition sm:flex-none",
-                  previewMode === "mobile"
-                    ? "bg-[var(--aw-primary)] text-white"
-                    : "text-[var(--aw-muted)] hover:text-[var(--aw-primary)]",
-                ].join(" ")}
-              >
-                <Smartphone size={13} />
-                Mobile
-              </button>
-            </div>
-          </div>
-
-          <div className="min-h-0 flex-1 overflow-auto bg-[var(--aw-bg)] p-3 sm:p-5">
-            <article
-              className={[
-                "mx-auto overflow-hidden rounded-[1.75rem] border border-[var(--aw-border-soft)] bg-[var(--aw-surface)] shadow-sm",
-                previewMode === "mobile" ? "max-w-[min(24.375rem,100%)]" : "max-w-3xl",
-              ].join(" ")}
-            >
-              {heroImageUrl ? (
-                <img
-                  src={heroImageUrl}
-                  alt={title || "Broadcast main photo"}
-                  className="h-56 w-full object-cover sm:h-72"
-                />
-              ) : (
-                <div className="flex h-56 w-full items-center justify-center bg-[var(--aw-primary-soft)] sm:h-72">
-                  <ImagePlus size={36} className="text-[var(--aw-primary)]" />
+        <section className="aw-panel shadow-soft flex flex-col h-full overflow-hidden">
+          <header className="aw-panel-header !bg-transparent border-none pt-6 px-6">
+             <h2 className="aw-panel-title">Article Preview</h2>
+             <div className="flex bg-[var(--aw-bg)] p-1 rounded-xl border border-[var(--aw-border-soft)]">
+                <button onClick={() => setPreviewMode('desktop')} className={["p-1.5 rounded-lg", previewMode === 'desktop' ? "bg-white shadow-sm text-[var(--aw-primary)]" : "text-[var(--aw-muted)]"].join(" ")}><Monitor size={16}/></button>
+                <button onClick={() => setPreviewMode('mobile')} className={["p-1.5 rounded-lg", previewMode === 'mobile' ? "bg-white shadow-sm text-[var(--aw-primary)]" : "text-[var(--aw-muted)]"].join(" ")}><Smartphone size={16}/></button>
+             </div>
+          </header>
+          <div className="flex-1 bg-[var(--aw-surface-muted)] p-6 overflow-y-auto aw-seamless-scroll flex justify-center">
+             <div className={["aw-panel bg-white shadow-xl !rounded-2xl overflow-hidden h-fit transition-all", previewMode === 'mobile' ? "max-w-[340px]" : "max-w-[800px]"].join(" ")}>
+                {heroImageUrl ? <img src={heroImageUrl} className="aspect-video w-full object-cover" /> : <div className="aspect-video w-full bg-[var(--aw-bg)] flex items-center justify-center text-[var(--aw-muted)]"><ImagePlus size={40} strokeWidth={1}/></div>}
+                <div className="p-8">
+                   <p className="text-[10px] font-black uppercase text-[var(--aw-primary)] tracking-widest mb-2">Government Communication</p>
+                   <h1 className="text-2xl font-black mb-4 leading-tight">{title || 'Your Article Title'}</h1>
+                   <p className="text-sm font-bold text-[var(--aw-muted)] mb-8 leading-relaxed italic">{summaryText || 'Add a summary to see it here.'}</p>
+                   <div className="aw-article-preview prose prose-slate max-w-none text-base leading-loose" dangerouslySetInnerHTML={{__html: previewHtml}} />
                 </div>
-              )}
-
-              <div className="p-5 sm:p-7">
-                <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[var(--aw-primary)]">
-                  Official Broadcast
-                </p>
-
-                <h1 className="mt-2 text-[clamp(1.55rem,3vw,2.35rem)] font-black leading-tight tracking-tight text-[var(--aw-text)]">
-                  {title || "Broadcast title"}
-                </h1>
-
-                <p className="mt-3 text-base font-semibold leading-7 text-[var(--aw-muted)]">
-                  {summaryText || "Broadcast summary preview."}
-                </p>
-
-                <div
-                  className="aw-article-preview mt-6 max-w-none text-[var(--aw-text)]"
-                  dangerouslySetInnerHTML={{ __html: previewHtml }}
-                />
-              </div>
-            </article>
+             </div>
           </div>
         </section>
 
-        {isSettingsOpen ? (
-          <aside className="flex min-h-0 flex-col overflow-hidden rounded-[1.75rem] border border-[var(--aw-border-soft)] bg-[var(--aw-surface)] shadow-sm">
-            <div className="shrink-0 border-b border-[var(--aw-border-soft)] bg-[var(--aw-surface-muted)] px-4 py-3">
-              <div className="flex items-center gap-2">
-                <Paperclip size={16} className="text-[var(--aw-primary)]" />
-                <h3 className="font-black text-[var(--aw-text)]">Article Settings</h3>
-              </div>
-              <p className="mt-1 text-xs font-semibold leading-5 text-[var(--aw-muted)]">
-                Audience, main photo, body media, video links, and files.
-              </p>
+        {isSettingsOpen && (
+          <aside className="space-y-6">
+            <div className="aw-panel p-6 space-y-6">
+               <h3 className="font-black text-sm uppercase tracking-widest border-b border-[var(--aw-border-soft)] pb-3 text-[var(--aw-primary)]">Visibility</h3>
+               <div className="space-y-2">
+                 <label className="flex items-center gap-3 p-3 rounded-xl border border-[var(--aw-border-soft)] hover:bg-[var(--aw-bg)] cursor-pointer">
+                   <input type="checkbox" checked={targetRoles.includes('HIBRET_ADMIN')} onChange={e => e.target.checked ? setTargetRoles([...targetRoles, 'HIBRET_ADMIN']) : setTargetRoles(targetRoles.filter(r => r !== 'HIBRET_ADMIN'))} />
+                   <span className="text-xs font-bold">Hibret Admins</span>
+                 </label>
+                 <label className="flex items-center gap-3 p-3 rounded-xl border border-[var(--aw-border-soft)] hover:bg-[var(--aw-bg)] cursor-pointer">
+                   <input type="checkbox" checked={targetRoles.includes('MEMBER')} onChange={e => e.target.checked ? setTargetRoles([...targetRoles, 'MEMBER']) : setTargetRoles(targetRoles.filter(r => r !== 'MEMBER'))} />
+                   <span className="text-xs font-bold">Portal Members</span>
+                 </label>
+               </div>
             </div>
 
-            <div className="min-h-0 flex-1 space-y-4 overflow-auto p-4">
-              <section className="rounded-3xl border border-[var(--aw-border-soft)] bg-[var(--aw-surface-muted)] p-4">
-                <p className="text-xs font-black uppercase tracking-[0.14em] text-[var(--aw-muted)]">
-                  Target Audience
-                </p>
-
-                <div className="mt-3 space-y-2">
-                  <label className="flex items-center gap-3 rounded-2xl border border-[var(--aw-border)] bg-[var(--aw-surface)] px-3 py-2 text-sm font-black text-[var(--aw-text)]">
-                    <input
-                      type="checkbox"
-                      checked={targetRoles.includes("HIBRET_ADMIN")}
-                      onChange={(event) => toggleAudience("HIBRET_ADMIN", event.target.checked)}
-                    />
-                    Hibret Admins
+            <div className="aw-panel p-6 space-y-6">
+               <h3 className="font-black text-sm uppercase tracking-widest border-b border-[var(--aw-border-soft)] pb-3 text-[var(--aw-primary)]">Featured Media</h3>
+               <div className="space-y-4">
+                  <label className="aw-btn aw-btn-outline !bg-[var(--aw-bg)] !border-dashed !border-2 w-full !h-32 flex-col gap-3">
+                     <ImagePlus size={24}/>
+                     <span className="text-xs font-bold text-center">{isUploading ? 'Uploading...' : coverFileName || 'Upload Cover Image'}</span>
+                     <input type="file" className="hidden" accept="image/*" onChange={e => void uploadFile(e.target.files?.[0], 'cover')} />
                   </label>
+                  <div className="aw-form-field">
+                     <label className="aw-form-label">Or paste Image URL</label>
+                     <input className="aw-input !min-h-[38px] !text-xs" value={coverUrl} onChange={e => setCoverUrl(e.target.value)} placeholder="https://..." />
+                  </div>
+               </div>
+            </div>
 
-                  <label className="flex items-center gap-3 rounded-2xl border border-[var(--aw-border)] bg-[var(--aw-surface)] px-3 py-2 text-sm font-black text-[var(--aw-text)]">
-                    <input
-                      type="checkbox"
-                      checked={targetRoles.includes("MEMBER")}
-                      onChange={(event) => toggleAudience("MEMBER", event.target.checked)}
-                    />
-                    Members
-                  </label>
-                </div>
-              </section>
-
-              <section className="rounded-3xl border border-[var(--aw-border-soft)] bg-[var(--aw-surface-muted)] p-4">
-                <p className="text-xs font-black uppercase tracking-[0.14em] text-[var(--aw-muted)]">
-                  Main Photo Upload
-                </p>
-
-                <label className="mt-3 flex min-h-28 cursor-pointer flex-col items-center justify-center gap-2 rounded-3xl border border-dashed border-[var(--aw-primary)]/45 bg-[var(--aw-surface)] px-3 py-4 text-center text-sm font-black text-[var(--aw-muted)] transition hover:border-[var(--aw-primary)] hover:text-[var(--aw-primary)]">
-                  <ImagePlus size={22} />
-                  {isUploading ? "Uploading..." : coverFileName || "Upload main photo"}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="sr-only"
-                    onChange={(event) => {
-                      void uploadFile(event.currentTarget.files?.[0], "cover");
-                      event.currentTarget.value = "";
-                    }}
-                  />
-                </label>
-              </section>
-
-              <section className="space-y-2 rounded-3xl border border-[var(--aw-border-soft)] bg-[var(--aw-surface-muted)] p-4">
-                <p className="text-xs font-black uppercase tracking-[0.14em] text-[var(--aw-muted)]">
-                  Main Photo Link
-                </p>
-
-                <input
-                  value={coverUrl}
-                  onChange={(event) => {
-                    setCoverFileId(null);
-                    setCoverFileName("");
-                    setCoverUrl(event.target.value);
-                  }}
-                  placeholder="Paste direct image URL"
-                  className="min-h-10 w-full rounded-2xl border border-[var(--aw-border)] bg-[var(--aw-surface)] px-3 text-sm font-semibold text-[var(--aw-text)] outline-none focus:border-[var(--aw-primary)] focus:ring-4 focus:ring-[var(--aw-primary)]/10"
-                />
-
-                <button
-                  type="button"
-                  onClick={setMainPhotoLink}
-                  className="inline-flex min-h-9 items-center gap-2 rounded-2xl border border-[var(--aw-primary)] bg-[var(--aw-primary-soft)] px-3 py-1.5 text-xs font-black text-[var(--aw-primary)] hover:bg-[var(--aw-primary)] hover:text-white"
-                >
-                  <ImagePlus size={13} />
-                  Set Main Photo
-                </button>
-              </section>
-
-              <section className="space-y-2 rounded-3xl border border-[var(--aw-border-soft)] bg-[var(--aw-surface-muted)] p-4">
-                <p className="text-xs font-black uppercase tracking-[0.14em] text-[var(--aw-muted)]">
-                  Inline Image Link
-                </p>
-
-                <input
-                  value={inlineImageUrl}
-                  onChange={(event) => setInlineImageUrl(event.target.value)}
-                  placeholder="Paste image URL for article body"
-                  className="min-h-10 w-full rounded-2xl border border-[var(--aw-border)] bg-[var(--aw-surface)] px-3 text-sm font-semibold text-[var(--aw-text)] outline-none focus:border-[var(--aw-primary)] focus:ring-4 focus:ring-[var(--aw-primary)]/10"
-                />
-
-                <button
-                  type="button"
-                  onClick={insertInlineImageLink}
-                  className="inline-flex min-h-9 items-center gap-2 rounded-2xl border border-[var(--aw-primary)] bg-[var(--aw-primary-soft)] px-3 py-1.5 text-xs font-black text-[var(--aw-primary)] hover:bg-[var(--aw-primary)] hover:text-white"
-                >
-                  <ImagePlus size={13} />
-                  Insert Image
-                </button>
-              </section>
-
-              <section className="space-y-2 rounded-3xl border border-[var(--aw-border-soft)] bg-[var(--aw-surface-muted)] p-4">
-                <p className="text-xs font-black uppercase tracking-[0.14em] text-[var(--aw-muted)]">
-                  Video Link
-                </p>
-
-                <input
-                  value={videoUrl}
-                  onChange={(event) => setVideoUrl(event.target.value)}
-                  placeholder="Paste YouTube video link"
-                  className="min-h-10 w-full rounded-2xl border border-[var(--aw-border)] bg-[var(--aw-surface)] px-3 text-sm font-semibold text-[var(--aw-text)] outline-none focus:border-[var(--aw-primary)] focus:ring-4 focus:ring-[var(--aw-primary)]/10"
-                />
-
-                <button
-                  type="button"
-                  onClick={insertVideoLink}
-                  className="inline-flex min-h-9 items-center gap-2 rounded-2xl border border-[var(--aw-primary)] bg-[var(--aw-primary-soft)] px-3 py-1.5 text-xs font-black text-[var(--aw-primary)] hover:bg-[var(--aw-primary)] hover:text-white"
-                >
-                  <Video size={13} />
-                  Insert Video
-                </button>
-              </section>
-
-              <section className="space-y-2 rounded-3xl border border-[var(--aw-border-soft)] bg-[var(--aw-surface-muted)] p-4">
-                <p className="text-xs font-black uppercase tracking-[0.14em] text-[var(--aw-muted)]">
-                  Media / External Link
-                </p>
-
-                <input
-                  value={mediaLinkLabel}
-                  onChange={(event) => setMediaLinkLabel(event.target.value)}
-                  placeholder="Link label"
-                  className="min-h-10 w-full rounded-2xl border border-[var(--aw-border)] bg-[var(--aw-surface)] px-3 text-sm font-semibold text-[var(--aw-text)] outline-none focus:border-[var(--aw-primary)] focus:ring-4 focus:ring-[var(--aw-primary)]/10"
-                />
-
-                <input
-                  value={mediaLink}
-                  onChange={(event) => setMediaLink(event.target.value)}
-                  placeholder="Paste link"
-                  className="min-h-10 w-full rounded-2xl border border-[var(--aw-border)] bg-[var(--aw-surface)] px-3 text-sm font-semibold text-[var(--aw-text)] outline-none focus:border-[var(--aw-primary)] focus:ring-4 focus:ring-[var(--aw-primary)]/10"
-                />
-
-                <button
-                  type="button"
-                  onClick={insertMediaLink}
-                  className="inline-flex min-h-9 items-center gap-2 rounded-2xl border border-[var(--aw-primary)] bg-[var(--aw-primary-soft)] px-3 py-1.5 text-xs font-black text-[var(--aw-primary)] hover:bg-[var(--aw-primary)] hover:text-white"
-                >
-                  <LinkIcon size={13} />
-                  Insert Link
-                </button>
-              </section>
-
-              <section className="rounded-3xl border border-[var(--aw-border-soft)] bg-[var(--aw-surface-muted)] p-4">
-                <p className="text-xs font-black uppercase tracking-[0.14em] text-[var(--aw-muted)]">
-                  Attachment Upload
-                </p>
-
-                <label className="mt-3 flex min-h-24 cursor-pointer flex-col items-center justify-center gap-2 rounded-3xl border border-dashed border-[var(--aw-primary)]/45 bg-[var(--aw-surface)] px-3 py-4 text-center text-sm font-black text-[var(--aw-muted)] transition hover:border-[var(--aw-primary)] hover:text-[var(--aw-primary)]">
-                  <Upload size={22} />
-                  Upload attachment
-                  <input
-                    type="file"
-                    className="sr-only"
-                    onChange={(event) => {
-                      void uploadFile(event.currentTarget.files?.[0], "attachment");
-                      event.currentTarget.value = "";
-                    }}
-                  />
-                </label>
-              </section>
-
-              <section className="rounded-3xl border border-[var(--aw-border-soft)] bg-[var(--aw-primary-soft)] p-4">
-                <div className="flex items-center gap-2 text-sm font-black text-[var(--aw-primary)]">
-                  <CalendarClock size={15} />
-                  Publishing
-                </div>
-                <p className="mt-2 text-xs font-semibold leading-5 text-[var(--aw-muted)]">
-                  Save as draft here. Publish, archive, or delete from the Broadcasts list.
-                </p>
-              </section>
-
-              <section className="rounded-3xl border border-[var(--aw-border-soft)] bg-[var(--aw-surface-muted)] p-4">
-                <p className="text-xs font-black uppercase tracking-[0.14em] text-[var(--aw-muted)]">
-                  Uploaded Files
-                </p>
-
-                <div className="mt-3 space-y-2">
-                  {uploadedFiles.length === 0 ? (
-                    <p className="rounded-2xl border border-[var(--aw-border)] bg-[var(--aw-surface)] px-3 py-2 text-xs font-semibold text-[var(--aw-muted)]">
-                      No files uploaded yet.
-                    </p>
-                  ) : (
-                    uploadedFiles.map((file) => (
-                      <p
-                        key={file.id}
-                        className="break-all rounded-2xl border border-[var(--aw-border)] bg-[var(--aw-surface)] px-3 py-2 text-xs font-semibold text-[var(--aw-muted)]"
-                      >
-                        {file.originalName}
-                      </p>
-                    ))
-                  )}
-                </div>
-              </section>
+            <div className="aw-panel p-6 space-y-6">
+               <h3 className="font-black text-sm uppercase tracking-widest border-b border-[var(--aw-border-soft)] pb-3 text-[var(--aw-primary)]">Attachments</h3>
+               <label className="aw-btn aw-btn-outline w-full gap-3">
+                  <Plus size={16}/>
+                  <span className="text-xs font-bold">Add document</span>
+                  <input type="file" className="hidden" onChange={e => void uploadFile(e.target.files?.[0], 'attachment')} />
+               </label>
+               <div className="space-y-2 max-h-[200px] overflow-y-auto aw-seamless-scroll">
+                  {uploadedFiles.map(f => (
+                    <div key={f.id} className="p-3 rounded-lg border border-[var(--aw-border-soft)] bg-[var(--aw-bg)] flex items-center gap-3">
+                       <FileText size={16} className="text-[var(--aw-muted)]"/>
+                       <span className="text-xs font-bold truncate flex-1">{f.originalName}</span>
+                    </div>
+                  ))}
+               </div>
             </div>
           </aside>
-        ) : null}
+        )}
       </div>
-    </section>
+    </div>
   );
 }

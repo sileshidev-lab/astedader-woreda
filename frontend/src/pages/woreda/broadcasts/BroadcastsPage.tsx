@@ -8,48 +8,35 @@ export function BroadcastsPage() {
   const canCreate = hasPrivilege("broadcast.create");
 
   return (
-    <section className="aw-design-page aw-mobile-page aw-broadcasts-page flex min-h-0 flex-1 flex-col gap-4 overflow-visible md:overflow-hidden">
-      <header className="shrink-0 overflow-hidden rounded-[1.75rem] border border-[var(--aw-border-soft)] bg-[var(--aw-surface)] shadow-sm">
+    <div className="flex flex-col gap-6">
+      <header className="aw-panel !rounded-3xl shrink-0 overflow-hidden shadow-soft">
         <div className="h-1.5 bg-gradient-to-r from-[var(--aw-primary)] via-[var(--aw-yellow)] to-[var(--aw-magenta)]" />
-
-        <div className="flex flex-col gap-4 p-4 sm:p-5 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex min-w-0 gap-3 sm:gap-4">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[var(--aw-primary-soft)] text-[var(--aw-primary)] ring-1 ring-[var(--aw-primary)]/15 sm:h-14 sm:w-14">
-              <Newspaper size={24} />
+        <div className="flex flex-col gap-4 p-6 sm:p-8 lg:flex-row lg:items-center lg:justify-between bg-[var(--aw-surface)]">
+          <div className="flex min-w-0 gap-4">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[var(--aw-primary-soft)] text-[var(--aw-primary)]">
+              <Newspaper size={28} />
             </div>
-
             <div className="min-w-0">
-              <p className="text-[11px] font-black uppercase tracking-[0.2em] text-[var(--aw-primary)]">
-                Official Articles
-              </p>
-              <h1 className="mt-1 text-[clamp(1.35rem,2.2vw,2rem)] font-black tracking-tight text-[var(--aw-text)]">
-                Broadcasts
-              </h1>
-              <p className="mt-1 max-w-3xl text-sm font-semibold leading-6 text-[var(--aw-muted)]">
-                Publish and read official Woreda communication posts in a clean
-                article format for administrators and members.
-              </p>
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--aw-primary)] mb-1">Official Communication</p>
+              <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-[var(--aw-text)]">Broadcasts</h1>
+              <p className="mt-2 max-w-3xl text-sm font-bold text-[var(--aw-muted)] leading-relaxed">Publish and read official Woreda news, updates and articles.</p>
             </div>
           </div>
-
-          {canCreate ? (
-            <Link
-              to="/woreda/broadcasts/new"
-              className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl border border-[var(--aw-primary)] bg-[var(--aw-primary)] px-4 py-2.5 text-sm font-black text-white shadow-sm shadow-[var(--aw-primary)]/20 transition hover:-translate-y-0.5 hover:bg-[var(--aw-primary-strong)] focus:outline-none focus:ring-4 focus:ring-[var(--aw-primary)]/20 active:translate-y-0 sm:w-auto"
-            >
-              <Plus size={16} />
-              New Article
+          {canCreate && (
+            <Link to="/woreda/broadcasts/new" className="aw-btn aw-btn-primary !min-h-[46px] !px-6 !rounded-2xl shadow-lg">
+              <Plus size={18} />
+              <span>Create Article</span>
             </Link>
-          ) : null}
+          )}
         </div>
       </header>
 
-      <div className="min-h-0 flex-1 overflow-visible rounded-[1.75rem] border border-[var(--aw-border-soft)] bg-[var(--aw-surface)] shadow-sm md:overflow-hidden">
+      <main className="aw-panel shadow-soft overflow-hidden !border-none">
         <PublishedBroadcastsPage
-          title="Broadcasts"
-          subtitle="Read official Woreda communication posts published for administrators and members."
+          title="Archive"
+          subtitle="Explore all published communication records."
         />
-      </div>
-    </section>
+      </main>
+    </div>
   );
 }

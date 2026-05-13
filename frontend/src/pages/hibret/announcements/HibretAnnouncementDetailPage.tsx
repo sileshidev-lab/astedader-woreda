@@ -1,14 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import { Link, useParams } from "react-router-dom";
-import {ArrowLeft,
-  ExternalLink,
+import {
+  ArrowLeft,
+  Download,
+  Eye,
   FileText,
   Save,
   Send,
   UploadCloud,
-  Users,
-  Download} from "lucide-react";
+  CheckCircle2,
+  Clock
+} from "lucide-react";
 import {
   attachHibretReportFiles,
   getHibretAnnouncement,
@@ -29,137 +32,33 @@ import {
 } from "../../../services/announcementService";
 
 type ActiveTab = "report" | "attendance" | "directive";
+type FileInfo = { id: string; originalName: string; mimeType: string; sizeBytes?: number; };
+type FileAttachment = { id: string; file: FileInfo; };
+type LocalReport = { id: string; title?: string; summary?: string | null; body?: string; status?: string; submittedAt?: string | null; reviewDecision?: string | null; reviewComment?: string | null; attachments?: FileAttachment[]; };
+type AttendanceDraftRow = { memberId: string; status: AttendanceStatus | null; note: string; };
 
-type FileInfo = {
-  id: string;
-  originalName: string;
-  storedName?: string;
-  mimeType: string;
-  sizeBytes?: number;
-  category?: string | null;
-  createdAt?: string;
-};
+const typeLabels: Record<AnnouncementType, string> = { meeting: "Meeting", conference: "Conference", trend_report: "Trend Report", other: "Other" };
 
-type FileAttachment = {
-  id: string;
-  file: FileInfo;
-};
+function formatDate(v?: string | null) { return v ? new Date(v).toLocaleString() : "-"; }
 
-type LocalReport = {
-  id: string;
-  title?: string;
-  summary?: string | null;
-  body?: string;
-  status?: string;
-  submittedAt?: string | null;
-  reviewDecision?: string | null;
-  reviewComment?: string | null;
-  attachments?: FileAttachment[];
-};
-
-type AttendanceDraftRow = {
-  memberId: string;
-  status: AttendanceStatus | null;
-  note: string;
-};
-
-const typeLabels: Record<AnnouncementType, string> = {
-  meeting: "Meeting",
-  conference: "Conference",
-  trend_report: "Trend Report",
-  other: "Other"
-};
-
-function formatDate(value?: string | null) {
-  if (!value) return "-";
-  return new Date(value).toLocaleString();
-}
-
-function bytesToMb(value?: number) {
-  if (!value) return "";
-  return `${(value / 1024 / 1024).toFixed(2)} MB`;
-}
-
-function isImageFile(file?: FileInfo | null) {
-  if (!file) return false;
-
-  const mime = file.mimeType || "";
-  const name = (file.originalName || "").toLowerCase();
-
-  return (
-    mime.startsWith("image/") ||
-    name.endsWith(".png") ||
-    name.endsWith(".jpg") ||
-    name.endsWith(".jpeg") ||
-    name.endsWith(".webp") ||
-    name.endsWith(".gif")
-  );
-}
-
-function statusWord(value?: string | null) {
-  if (!value) return "-";
-  return value.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
-}
-
-function statusTextClass(value?: string | null) {
-  if (value === "approved" || value === "present" || value === "published") {
-    return "text-woreda-success";
-  }
-
-  if (value === "rejected" || value === "absent") {
-    return "text-woreda-danger";
-  }
-
-  if (value === "submitted" || value === "draft") {
-    return "text-woreda-primary";
-  }
-
-  if (value === "changes_requested" || value === "excused") {
-    return "text-woreda-yellowText";
-  }
-
-  return "text-woreda-textMuted";
-}
-
-function typeTextClass(type: AnnouncementType) {
-  if (type === "meeting") return "text-woreda-primary";
-  if (type === "conference") return "text-woreda-magenta";
-  if (type === "trend_report") return "text-woreda-yellowText";
-  return "text-woreda-textMuted";
-}
-
-function getReportStatus(report?: LocalReport) {
-  if (!report) return "Not started";
-  return report.status || "draft";
-}
-
-function getReviewStatus(report?: LocalReport) {
-  return report?.reviewDecision || "Pending";
-}
-
-function tabClass(active: boolean) {
-  return [
-    "min-h-11 border-b-2 px-4 py-3 text-sm font-black uppercase tracking-[0.1em] transition",
-    active
-      ? "border-woreda-yellow bg-woreda-surface text-woreda-primary"
-      : "border-transparent bg-woreda-surfaceLow text-woreda-textMuted hover:text-woreda-primary",
-  ].join(" ");
+function statusClass(s: string) {
+  const c = s.toLowerCase();
+  if (["approved", "submitted", "active", "present"].includes(c)) return "rounded-full border border-[var(--aw-success)]/20 bg-[var(--aw-success-bg)] px-2.5 py-0.5 text-[10px] font-black uppercase text-[var(--aw-success)]";
+  if (["rejected", "absent", "closed"].includes(c)) return "rounded-full border border-[var(--aw-danger)]/20 bg-[var(--aw-danger-bg)] px-2.5 py-0.5 text-[10px] font-black uppercase text-[var(--aw-danger)]";
+  if (["changes_requested", "excused"].includes(c)) return "rounded-full border border-[var(--aw-warning)] bg-[var(--aw-warning-bg)] px-2.5 py-0.5 text-[10px] font-black uppercase text-[var(--aw-warning)]";
+  return "rounded-full border border-[var(--aw-border)] bg-[var(--aw-surface-muted)] px-2.5 py-0.5 text-[10px] font-black uppercase text-[var(--aw-muted)]";
 }
 
 export function HibretAnnouncementDetailPage() {
   const { announcementId } = useParams();
-
   const [activeTab, setActiveTab] = useState<ActiveTab>("report");
   const [announcement, setAnnouncement] = useState<Announcement | null>(null);
   const [attendance, setAttendance] = useState<HibretAttendance | null>(null);
   const [attendanceRows, setAttendanceRows] = useState<Record<string, AttendanceDraftRow>>({});
-  const [attendanceSearch, setAttendanceSearch] = useState("");
-  const [attendanceStatusFilter, setAttendanceStatusFilter] = useState<"all" | AttendanceStatus | "unmarked">("all");
   const [title, setTitle] = useState("");
   const [summary, setSummary] = useState("");
   const [body, setBody] = useState("");
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-  const [localImageUrls, setLocalImageUrls] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isSavingAttendance, setIsSavingAttendance] = useState(false);
@@ -167,1119 +66,246 @@ export function HibretAnnouncementDetailPage() {
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
 
-  const report = useMemo(
-    () => announcement?.reports?.[0] as LocalReport | undefined,
-    [announcement]
-  );
-
-  const canEdit =
-    (!report && announcement?.status === "published") ||
-    report?.status === "draft" ||
-    report?.status === "changes_requested";
-
-  const canSubmit =
-    Boolean(report) &&
-    (report?.status === "draft" || report?.status === "changes_requested");
-
+  const report = useMemo(() => announcement?.reports?.[0] as LocalReport | undefined, [announcement]);
+  const canEdit = (!report && announcement?.status === "published") || report?.status === "draft" || report?.status === "changes_requested";
   const reportAttachments = report?.attachments ?? [];
-  const directiveAttachments = (announcement?.attachments ?? []) as FileAttachment[];
 
-  const attendanceSummary = useMemo(() => {
-    const rows = Object.values(attendanceRows);
-
-    return {
-      total: attendance?.members.length ?? 0,
-      marked: rows.filter((row) => row.status).length,
-      present: rows.filter((row) => row.status === "present").length,
-      absent: rows.filter((row) => row.status === "absent").length,
-      excused: rows.filter((row) => row.status === "excused").length
-};
-  }, [attendance?.members.length, attendanceRows]);
-
-  const attendanceComplete = useMemo(() => {
-    if (!announcement?.attendanceRequired) return true;
-    if (!attendance) return false;
-    if (attendanceSummary.total === 0) return true;
-
-    return attendanceSummary.marked >= attendanceSummary.total;
-  }, [announcement?.attendanceRequired, attendance, attendanceSummary.marked, attendanceSummary.total]);
-
-  const attendanceLocked = Boolean(
-    report?.submittedAt ||
-      report?.status === "submitted" ||
-      report?.status === "approved" ||
-      report?.status === "rejected" ||
-      report?.status === "changes_requested"
-  );
-
-  const filteredAttendanceMembers = useMemo(() => {
-    const query = attendanceSearch.trim().toLowerCase();
-    const members = attendance?.members ?? [];
-
-    return members.filter((member) => {
-      const row = attendanceRows[member.memberId];
-
-      if (attendanceStatusFilter === "unmarked" && row?.status) return false;
-      if (
-        attendanceStatusFilter !== "all" &&
-        attendanceStatusFilter !== "unmarked" &&
-        row?.status !== attendanceStatusFilter
-      ) {
-        return false;
-      }
-
-      if (!query) return true;
-
-      return [member.name, member.memberCode, member.gender, member.phone, row?.note]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase()
-        .includes(query);
-    });
-  }, [attendance?.members, attendanceRows, attendanceSearch, attendanceStatusFilter]);
-
-  async function loadAttendance(currentAnnouncementId: string) {
-    const data = await getHibretAttendance(currentAnnouncementId);
-    setAttendance(data);
-
-    const nextRows: Record<string, AttendanceDraftRow> = {};
-    data.members.forEach((member) => {
-      nextRows[member.memberId] = {
-        memberId: member.memberId,
-        status: member.status,
-        note: member.note || ""
-};
-    });
-
-    setAttendanceRows(nextRows);
-  }
-
-  async function loadAnnouncement() {
+  async function loadData() {
     if (!announcementId) return;
-
-    setIsLoading(true);
-    setError("");
-
+    setIsLoading(true); setError("");
     try {
       const data = await getHibretAnnouncement(announcementId);
       setAnnouncement(data);
-
-      const currentReport = data.reports?.[0] as LocalReport | undefined;
-      setTitle(currentReport?.title || data.title || "");
-      setSummary(currentReport?.summary || "");
-      setBody(currentReport?.body || "");
-
+      const curReport = data.reports?.[0] as LocalReport | undefined;
+      setTitle(curReport?.title || data.title || "");
+      setSummary(curReport?.summary || "");
+      setBody(curReport?.body || "");
       if (data.attendanceRequired) {
-        await loadAttendance(announcementId);
+        const att = await getHibretAttendance(announcementId);
+        setAttendance(att);
+        const rows: Record<string, AttendanceDraftRow> = {};
+        att.members.forEach(m => rows[m.memberId] = { memberId: m.memberId, status: m.status, note: m.note || "" });
+        setAttendanceRows(rows);
       }
-    } catch {
-      setError("Unable to load directive.");
-    } finally {
-      setIsLoading(false);
-    }
+    } catch { setError("Unable to load directive details."); }
+    finally { setIsLoading(false); }
   }
 
-  useEffect(() => {
-    void loadAnnouncement();
+  useEffect(() => { void loadData(); }, [announcementId]);
 
-    return () => {
-      Object.values(localImageUrls).forEach((url) => URL.revokeObjectURL(url));
-    };
-  }, [announcementId]);
-
-  function handleFileSelection(files: FileList | null) {
-    const nextFiles = Array.from(files ?? []);
-    setSelectedFiles(nextFiles);
-
-    Object.values(localImageUrls).forEach((url) => URL.revokeObjectURL(url));
-
-    const nextUrls: Record<string, string> = {};
-    nextFiles.forEach((file) => {
-      if (file.type.startsWith("image/")) {
-        nextUrls[file.name] = URL.createObjectURL(file);
+  async function handleSaveReport(e: FormEvent) {
+    e.preventDefault(); if (!announcementId) return;
+    setIsSaving(true); setError(""); setMessage("");
+    try {
+      const saved = await saveHibretReport(announcementId, { title, summary: summary || null, body });
+      if (selectedFiles.length) {
+        const up = await Promise.all(selectedFiles.map(f => uploadReportFile(f)));
+        await attachHibretReportFiles(saved.id, up.map(f => f.id));
+        setSelectedFiles([]);
       }
-    });
-
-    setLocalImageUrls(nextUrls);
+      setMessage("Report draft saved."); await loadData();
+    } catch { setError("Failed to save report."); } finally { setIsSaving(false); }
   }
 
-  function setAttendanceStatus(memberId: string, status: AttendanceStatus) {
-    setAttendanceRows((current) => ({
-      ...current,
-      [memberId]: {
-        memberId,
-        status,
-        note: current[memberId]?.note || ""
-}
-}));
-  }
-
-  function setAttendanceNote(memberId: string, note: string) {
-    setAttendanceRows((current) => ({
-      ...current,
-      [memberId]: {
-        memberId,
-        status: current[memberId]?.status ?? null,
-        note
-}
-}));
+  async function handleSubmitReport() {
+    if (!report || !announcementId) return;
+    setIsSubmitting(true); setError("");
+    try {
+      if (announcement?.attendanceRequired && attendance) {
+        const recs = Object.values(attendanceRows).filter(r => !!r.status);
+        if (recs.length < attendance.members.length) {
+           setError("Please mark attendance for all members before submitting.");
+           setActiveTab("attendance"); setIsSubmitting(false); return;
+        }
+        await saveHibretAttendance(announcementId, recs.map(r => ({ memberId: r.memberId, status: r.status!, note: r.note || null })));
+      }
+      await submitHibretReport(report.id); setMessage("Report submitted successfully."); await loadData();
+    } catch { setError("Submission failed."); } finally { setIsSubmitting(false); }
   }
 
   async function handleSaveAttendance() {
     if (!announcementId || !attendance) return;
-
-    if (attendanceLocked) {
-      setError("Attendance is locked after this report has been submitted to Woreda.");
-      return;
-    }
-
     setIsSavingAttendance(true);
-    setError("");
-    setMessage("");
-
     try {
-      const records = Object.values(attendanceRows).filter(
-        (row): row is AttendanceDraftRow & { status: AttendanceStatus } => Boolean(row.status)
-      );
-
-      const saved = await saveHibretAttendance(
-        announcementId,
-        records.map((row) => ({
-          memberId: row.memberId,
-          status: row.status,
-          note: row.note || null
-}))
-      );
-
-      setAttendance(saved);
-
-      const nextRows: Record<string, AttendanceDraftRow> = {};
-      saved.members.forEach((member) => {
-        nextRows[member.memberId] = {
-          memberId: member.memberId,
-          status: member.status,
-          note: member.note || ""
-};
-      });
-
-      setAttendanceRows(nextRows);
-      setMessage("Attendance saved successfully.");
-    } catch {
-      setError("Unable to save attendance.");
-    } finally {
-      setIsSavingAttendance(false);
-    }
+      const recs = Object.values(attendanceRows).filter((r): r is AttendanceDraftRow & { status: AttendanceStatus } => !!r.status);
+      await saveHibretAttendance(announcementId, recs.map(r => ({ memberId: r.memberId, status: r.status, note: r.note || null })));
+      setMessage("Attendance records updated."); await loadData();
+    } catch { setError("Failed to save attendance."); } finally { setIsSavingAttendance(false); }
   }
 
-  async function handleSave(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    if (!announcementId) return;
-
-    setIsSaving(true);
-    setError("");
-    setMessage("");
-
-    try {
-      const savedReport = await saveHibretReport(announcementId, {
-        title,
-        summary: summary || null,
-        body
-});
-
-      if (selectedFiles.length) {
-        const uploadedFiles = await Promise.all(
-          selectedFiles.map((file) => uploadReportFile(file))
-        );
-
-        await attachHibretReportFiles(
-          savedReport.id,
-          uploadedFiles.map((file) => file.id)
-        );
-
-        setSelectedFiles([]);
-        setLocalImageUrls({});
-      }
-
-      setMessage("Report saved successfully.");
-      await loadAnnouncement();
-    } catch {
-      setError("Unable to save report.");
-    } finally {
-      setIsSaving(false);
-    }
-  }
-
-  async function handleSubmit() {
-    if (!report || !announcementId) return;
-
-    if (announcement?.attendanceRequired && !attendanceComplete) {
-      setError("Complete attendance for all Hibret members before submitting this report.");
-      setActiveTab("attendance");
-      return;
-    }
-
-    setIsSubmitting(true);
-    setError("");
-    setMessage("");
-
-    try {
-      if (announcement?.attendanceRequired && attendance) {
-        const records = Object.values(attendanceRows).filter(
-          (row): row is AttendanceDraftRow & { status: AttendanceStatus } =>
-            Boolean(row.status)
-        );
-
-        if (records.length < attendance.summary.total) {
-          setError("Every Hibret member must be marked before submitting.");
-          setActiveTab("attendance");
-          setIsSubmitting(false);
-          return;
-        }
-
-        await saveHibretAttendance(
-          announcementId,
-          records.map((row) => ({
-            memberId: row.memberId,
-            status: row.status,
-            note: row.note || null
-}))
-        );
-      }
-
-      await submitHibretReport(report.id);
-      setMessage("Report submitted to Woreda.");
-      await loadAnnouncement();
-    } catch {
-      setError("Unable to submit report.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  }
-
-  if (isLoading) {
-    return (
-      <section className="aw-design-page border border-woreda-border/70 bg-woreda-surface p-5 shadow-none">
-        <p className="text-sm font-semibold text-woreda-textMuted">
-          Loading directive.
-        </p>
-      </section>
-    );
-  }
-
-  if (!announcement) {
-    return (
-      <section className="border border-woreda-border/70 bg-woreda-surface p-5 shadow-none">
-        <p className="text-sm font-semibold text-woreda-textMuted">
-          Directive not found.
-        </p>
-      </section>
-    );
-  }
+  if (isLoading) return <div className="aw-panel p-10 text-center font-bold text-[var(--aw-muted)]">Fetching directive...</div>;
+  if (!announcement) return <div className="aw-panel p-10 text-center font-bold text-[var(--aw-danger)]">Directive not found.</div>;
 
   return (
-    <section className="aw-design-page aw-design-directives aw-design-detail aw-stitch-page aw-stitch-detail space-y-5">
-      {error ? (
-        <div className="border border-woreda-danger bg-woreda-dangerBg px-4 py-3 text-sm font-semibold text-woreda-danger">
-          {error}
-        </div>
-      ) : null}
+    <div className="flex flex-col gap-6">
+      {error && <div className="aw-panel !bg-[var(--aw-danger-bg)] !border-[var(--aw-danger)] px-4 py-3 text-sm font-black text-[var(--aw-danger)]">{error}</div>}
+      {message && <div className="aw-panel !bg-[var(--aw-primary-soft)]/20 !border-[var(--aw-primary)] px-4 py-3 text-sm font-black text-[var(--aw-primary)]">{message}</div>}
 
-      {message ? (
-        <div className="border border-woreda-success/20 bg-woreda-successBg px-4 py-3 text-sm font-semibold text-woreda-success">
-          {message}
-        </div>
-      ) : null}
-
-      <div className="border border-woreda-border/70 bg-woreda-surface shadow-none">
-        <div className="flex flex-col gap-4 border-b border-woreda-border bg-woreda-surfaceLow px-5 py-4 lg:flex-row lg:items-start lg:justify-between">
-          <div>
-            <Link
-              to="/hibret/announcements"
-              className="mb-3 inline-flex min-h-10 items-center justify-center gap-2 border border-woreda-border bg-woreda-surface px-4 py-2 text-sm font-bold text-woreda-text hover:border-woreda-primary hover:text-woreda-primary"
-            >
-              <ArrowLeft size={16} />
-              Back
-            </Link>
-
-            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-woreda-textMuted">
-              Assigned directive
-            </p>
-            <h1 className="mt-1 max-w-5xl text-3xl font-black leading-tight text-woreda-text">
-              {announcement.title}
-            </h1>
-
-            <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs font-bold uppercase tracking-[0.08em]">
-              <span className={typeTextClass(announcement.type)}>
-                {typeLabels[announcement.type]}
-              </span>
-              <span className="text-woreda-danger">
-                Deadline: {formatDate(announcement.deadline)}
-              </span>
-              {announcement.attendanceRequired ? (
-                <span className="text-woreda-yellowText">Attendance required</span>
-              ) : null}
-              <span className={statusTextClass(report?.status)}>
-                Report: {statusWord(getReportStatus(report))}
-              </span>
-              <span className={statusTextClass(report?.reviewDecision)}>
-                Review: {statusWord(getReviewStatus(report))}
-              </span>
-            </div>
-          </div>
-
-        </div>
-
-        <div className="grid gap-0 border-b border-woreda-border md:grid-cols-4">
-          <ProgressStep label="Published" done />
-          <ProgressStep label="Attendance" done={!announcement.attendanceRequired || attendanceComplete} />
-          <ProgressStep label="Submitted" done={Boolean(report?.submittedAt || report?.status === "submitted" || report?.status === "approved")} />
-          <ProgressStep label={statusWord(getReviewStatus(report))} done={Boolean(report?.reviewDecision)} />
-        </div>
-
-        <div className="flex flex-wrap border-b border-woreda-border bg-woreda-surfaceLow">
-          <button
-            type="button"
-            onClick={() => setActiveTab("report")}
-            className={tabClass(activeTab === "report")}
-          >
-            Report
-          </button>
-
-          {announcement.attendanceRequired ? (
-            <button
-              type="button"
-              onClick={() => setActiveTab("attendance")}
-              className={tabClass(activeTab === "attendance")}
-            >
-              Attendance
-            </button>
-          ) : null}
-
-          <button
-            type="button"
-            onClick={() => setActiveTab("directive")}
-            className={tabClass(activeTab === "directive")}
-          >
-            Directive
-          </button>
-        </div>
-      </div>
-
-      {activeTab === "report" ? (
-        <ReportTab
-          title={title}
-          summary={summary}
-          body={body}
-          canEdit={canEdit}
-          canSubmit={canSubmit}
-          report={report}
-          reportAttachments={reportAttachments}
-          selectedFiles={selectedFiles}
-          localImageUrls={localImageUrls}
-          isSaving={isSaving}
-          isSubmitting={isSubmitting}
-          attendanceComplete={attendanceComplete}
-          onTitle={setTitle}
-          onSummary={setSummary}
-          onBody={setBody}
-          onFileSelection={handleFileSelection}
-          onSave={handleSave}
-          onSubmit={handleSubmit}
-        />
-      ) : null}
-
-      {activeTab === "attendance" && announcement.attendanceRequired ? (
-        <AttendanceTab
-          attendance={attendance}
-          attendanceRows={attendanceRows}
-          filteredMembers={filteredAttendanceMembers}
-          searchText={attendanceSearch}
-          statusFilter={attendanceStatusFilter}
-          summary={attendanceSummary}
-          isSaving={isSavingAttendance}
-          attendanceLocked={attendanceLocked}
-          onSearch={setAttendanceSearch}
-          onStatusFilter={setAttendanceStatusFilter}
-          onClear={() => {
-            setAttendanceSearch("");
-            setAttendanceStatusFilter("all");
-          }}
-          onStatus={setAttendanceStatus}
-          onNote={setAttendanceNote}
-          onSave={handleSaveAttendance}
-        />
-      ) : null}
-
-      {activeTab === "directive" ? (
-        <DirectiveTab
-          instructions={announcement.instructions || ""}
-          attachments={directiveAttachments}
-        />
-      ) : null}
-    </section>
-  );
-}
-
-function ProgressStep({ label, done }: { label: string; done: boolean }) {
-  return (
-    <div className="border-b border-woreda-border bg-woreda-surface px-4 py-2.5 md:border-b-0 md:border-r last:md:border-r-0">
-      <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-woreda-textMuted">
-        {label}
-      </p>
-      <p className={`mt-0.5 text-xs font-black uppercase tracking-[0.08em] ${done ? "text-woreda-success" : "text-woreda-textMuted"}`}>
-        {done ? "Complete" : "Pending"}
-      </p>
-    </div>
-  );
-}
-
-function ReportTab({
-  title,
-  summary,
-  body,
-  canEdit,
-  canSubmit,
-  report,
-  reportAttachments,
-  selectedFiles,
-  localImageUrls,
-  isSaving,
-  isSubmitting,
-  attendanceComplete,
-  onTitle,
-  onSummary,
-  onBody,
-  onFileSelection,
-  onSave,
-  onSubmit
-}: {
-  title: string;
-  summary: string;
-  body: string;
-  canEdit: boolean;
-  canSubmit: boolean;
-  report?: LocalReport;
-  reportAttachments: FileAttachment[];
-  selectedFiles: File[];
-  localImageUrls: Record<string, string>;
-  isSaving: boolean;
-  isSubmitting: boolean;
-  attendanceComplete: boolean;
-  onTitle: (value: string) => void;
-  onSummary: (value: string) => void;
-  onBody: (value: string) => void;
-  onFileSelection: (files: FileList | null) => void;
-  onSave: (event: FormEvent<HTMLFormElement>) => void;
-  onSubmit: () => void;
-}) {
-  return (
-    <div className="detail-layout">
-      <form onSubmit={onSave} className="space-y-5">
-        <section className="border border-woreda-border/70 bg-woreda-surface shadow-none">
-          <div className="flex flex-col gap-3 border-b border-woreda-border bg-woreda-surfaceLow px-5 py-4 md:flex-row md:items-center md:justify-between">
-            <div>
-              <h2 className="text-lg font-black text-woreda-text">
-                Hibret final report workspace
-              </h2>
-              <p className="mt-1 text-sm text-woreda-textMuted">
-                Prepare the official Hibret response, attach report media, then submit to Woreda.
-              </p>
-            </div>
-
-            <span className={`text-xs font-black uppercase tracking-[0.12em] ${statusTextClass(report?.status)}`}>
-              {statusWord(getReportStatus(report))}
-            </span>
-          </div>
-
-          <div className="p-5">
-            <div className="max-w-[min(60rem,100%)] space-y-4">
-              <label className="block">
-                <span className="text-xs font-bold uppercase tracking-[0.12em] text-woreda-textMuted">
-                  Report title
-                </span>
-                <input
-                  value={title}
-                  onChange={(event) => onTitle(event.target.value)}
-                  disabled={!canEdit}
-                  placeholder="Enter report title"
-                  className="mt-2 min-h-11 w-full border border-woreda-border bg-woreda-surface px-3 py-2 text-sm font-semibold outline-none focus:border-woreda-primary disabled:bg-woreda-surfaceLow"
-                />
-              </label>
-
-              <label className="block">
-                <span className="text-xs font-bold uppercase tracking-[0.12em] text-woreda-textMuted">
-                  Executive summary
-                </span>
-                <textarea
-                  value={summary}
-                  onChange={(event) => onSummary(event.target.value)}
-                  disabled={!canEdit}
-                  rows={5}
-                  placeholder="Enter the short executive summary."
-                  className="mt-2 w-full border border-woreda-border bg-woreda-surface px-3 py-2 text-sm leading-6 outline-none focus:border-woreda-primary disabled:bg-woreda-surfaceLow"
-                />
-              </label>
-
-              <label className="block">
-                <span className="text-xs font-bold uppercase tracking-[0.12em] text-woreda-textMuted">
-                  Full report body
-                </span>
-                <textarea
-                  value={body}
-                  onChange={(event) => onBody(event.target.value)}
-                  disabled={!canEdit}
-                  rows={12}
-                  placeholder="Enter the full official Hibret report."
-                  className="mt-2 w-full border border-woreda-border bg-woreda-surface px-3 py-2 text-sm leading-6 outline-none focus:border-woreda-primary disabled:bg-woreda-surfaceLow"
-                />
-              </label>
-
-              {canEdit ? (
-                <label className="flex cursor-pointer flex-col items-center justify-center border border-dashed border-woreda-border bg-woreda-surfaceLow px-4 py-8 text-center hover:border-woreda-primary">
-                  <UploadCloud size={28} className="text-woreda-primary" />
-                  <span className="mt-2 text-sm font-black text-woreda-text">
-                    Upload report media or files
-                  </span>
-                  <span className="mt-1 text-xs font-semibold text-woreda-textMuted">
-                    Images, PDF, Word, Excel, PowerPoint, text, and other files are allowed.
-                  </span>
-                  <input
-                    type="file"
-                    multiple
-                    className="hidden"
-                    onChange={(event) => onFileSelection(event.target.files)}
-                  />
-                </label>
-              ) : null}
-
-              {selectedFiles.length > 0 ? (
-                <div className="border border-woreda-border bg-woreda-surfaceLow p-4">
-                  <p className="text-xs font-bold uppercase tracking-[0.12em] text-woreda-textMuted">
-                    Selected files
-                  </p>
-                  <div className="form-grid mt-3">
-                    {selectedFiles.map((file) => (
-                      <div key={file.name} className="border border-woreda-border bg-woreda-surface p-3">
-                        {file.type.startsWith("image/") && localImageUrls[file.name] ? (
-                          <img
-                            src={localImageUrls[file.name]}
-                            alt={file.name}
-                            className="mb-3 h-36 w-full object-contain"
-                          />
-                        ) : (
-                          <FileText className="mb-3 text-woreda-primary" size={28} />
-                        )}
-                        <p className="break-all text-sm font-bold text-woreda-text">{file.name}</p>
-                        <p className="mt-1 text-xs font-semibold text-woreda-textMuted">
-                          {file.type || "Unknown file"} {bytesToMb(file.size)}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ) : null}
-
-              <div className="flex flex-wrap justify-end gap-2 border-t border-woreda-border pt-4">
-                {canEdit ? (
-                  <button
-                    type="submit"
-                    disabled={isSaving}
-                    className="inline-flex min-h-10 items-center gap-2 border border-woreda-primary bg-woreda-primary px-4 py-2 text-sm font-bold text-white hover:bg-woreda-sidebar disabled:opacity-60"
-                  >
-                    <Save size={16} />
-                    {isSaving ? "Saving..." : "Save Draft"}
-                  </button>
-                ) : null}
-
-                {canSubmit ? (
-                  <button
-                    type="button"
-                    onClick={onSubmit}
-                    disabled={isSubmitting || !attendanceComplete}
-                    className="inline-flex min-h-10 items-center gap-2 border border-woreda-success bg-woreda-success px-4 py-2 text-sm font-bold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    <Send size={16} />
-                    {isSubmitting ? "Submitting..." : "Submit to Woreda"}
-                  </button>
-                ) : null}
+      <header className="aw-panel !rounded-3xl shrink-0 overflow-hidden shadow-soft">
+        <div className="border-b border-[var(--aw-border-soft)] bg-[var(--aw-surface)] p-5 sm:p-7">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-3 mb-4">
+                <Link to="/hibret/announcements" className="aw-btn aw-btn-outline !min-h-[34px] !px-3 !rounded-xl !text-xs"><ArrowLeft size={14}/>Back</Link>
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--aw-primary)]">Directive workspace</span>
               </div>
-
-              {!canEdit ? (
-                <p className="border border-woreda-border bg-woreda-surfaceLow px-4 py-3 text-sm font-semibold text-woreda-textMuted">
-                  This report has been submitted to Woreda. Editing is locked unless Woreda requests changes.
-                </p>
-              ) : null}
+              <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-[var(--aw-text)]">{announcement.title}</h1>
+              <div className="flex flex-wrap items-center gap-4 mt-4">
+                 <span className="text-[10px] font-black uppercase tracking-wider text-[var(--aw-muted)] bg-[var(--aw-bg)] px-2 py-1 rounded-lg border border-[var(--aw-border-soft)]">{typeLabels[announcement.type]}</span>
+                 <span className="text-[10px] font-black uppercase tracking-wider text-[var(--aw-danger)] bg-[var(--aw-danger-bg)] px-2 py-1 rounded-lg border border-[var(--aw-danger)]/20">Deadline: {formatDate(announcement.deadline)}</span>
+                 {announcement.attendanceRequired && <span className="text-[10px] font-black uppercase tracking-wider text-[var(--aw-primary)] bg-[var(--aw-primary-soft)]/30 px-2 py-1 rounded-lg border border-[var(--aw-primary)]/20">Mandatory Attendance</span>}
+              </div>
+            </div>
+            <div className="flex flex-col gap-3">
+               <div className="flex items-center gap-3">
+                  <div className="text-right">
+                    <p className="text-[10px] font-black uppercase text-[var(--aw-muted)]">Report Status</p>
+                    <p className="text-sm font-black">{report?.status || 'Not Started'}</p>
+                  </div>
+                  <span className={statusClass(report?.status || 'pending')}> {report?.status || 'pending'} </span>
+               </div>
             </div>
           </div>
-        </section>
-
-        <MediaSection
-          title="Report downloads"
-          description="Download the submitted report and all attached report media as an official package."
-          attachments={reportAttachments}
-          report={report}
-        />
-      </form>
-
-      <section className="h-fit border border-woreda-border/70 bg-woreda-surface p-5 shadow-none xl:sticky xl:top-6">
-        <h2 className="text-lg font-black text-woreda-text">Report status</h2>
-        <div className="mt-4 space-y-3">
-          <InfoLine label="Report" value={statusWord(getReportStatus(report))} />
-          <InfoLine label="Woreda review" value={statusWord(getReviewStatus(report))} />
-          <InfoLine label="Submitted" value={formatDate(report?.submittedAt)} />
         </div>
-      </section>
-    </div>
-  );
-}
+        <nav className="flex bg-[var(--aw-surface-muted)]">
+          <button onClick={() => setActiveTab('report')} className={["flex-1 min-h-[52px] text-xs font-black uppercase tracking-widest border-r border-[var(--aw-border-soft)] transition-colors", activeTab === 'report' ? "bg-[var(--aw-primary)] text-white" : "text-[var(--aw-muted)] hover:bg-[var(--aw-bg)]"].join(" ")}>Submission</button>
+          {announcement.attendanceRequired && <button onClick={() => setActiveTab('attendance')} className={["flex-1 min-h-[52px] text-xs font-black uppercase tracking-widest border-r border-[var(--aw-border-soft)] transition-colors", activeTab === 'attendance' ? "bg-[var(--aw-primary)] text-white" : "text-[var(--aw-muted)] hover:bg-[var(--aw-bg)]"].join(" ")}>Attendance</button>}
+          <button onClick={() => setActiveTab('directive')} className={["flex-1 min-h-[52px] text-xs font-black uppercase tracking-widest transition-colors", activeTab === 'directive' ? "bg-[var(--aw-primary)] text-white" : "text-[var(--aw-muted)] hover:bg-[var(--aw-bg)]"].join(" ")}>Instructions</button>
+        </nav>
+      </header>
 
-function AttendanceTab({
-  attendance,
-  attendanceRows,
-  filteredMembers,
-  searchText,
-  statusFilter,
-  summary,
-  isSaving,
-  attendanceLocked,
-  onSearch,
-  onStatusFilter,
-  onClear,
-  onStatus,
-  onNote,
-  onSave
-}: {
-  attendance: HibretAttendance | null;
-  attendanceRows: Record<string, AttendanceDraftRow>;
-  filteredMembers: HibretAttendance["members"];
-  searchText: string;
-  statusFilter: "all" | AttendanceStatus | "unmarked";
-  summary: { total: number; marked: number; present: number; absent: number; excused: number };
-  isSaving: boolean;
-  attendanceLocked: boolean;
-  onSearch: (value: string) => void;
-  onStatusFilter: (value: "all" | AttendanceStatus | "unmarked") => void;
-  onClear: () => void;
-  onStatus: (memberId: string, status: AttendanceStatus) => void;
-  onNote: (memberId: string, note: string) => void;
-  onSave: () => void;
-}) {
-  return (
-    <section className="flex min-h-0 flex-col overflow-hidden border border-woreda-border/70 bg-woreda-surface shadow-none md:max-h-[calc(var(--aw-viewport-block)-190px)]">
-      <div className="flex flex-col gap-3 border-b border-woreda-border bg-woreda-surfaceLow px-5 py-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h2 className="text-lg font-black text-woreda-text">Hibret member attendance</h2>
-          <p className="mt-1 text-sm text-woreda-textMuted">
-            Mark member attendance before submitting the final Hibret report.
-          </p>
-        </div>
+      <main className="min-h-0 flex-1">
+        {activeTab === 'report' && (
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6 items-start">
+             <section className="aw-panel shadow-soft">
+                <header className="aw-panel-header !bg-transparent !border-none pt-6 px-6">
+                   <h2 className="aw-panel-title">Write Report</h2>
+                </header>
+                <form onSubmit={handleSaveReport} className="p-6 space-y-6">
+                   <div className="aw-form-field"><label className="aw-form-label">Report Title</label><input disabled={!canEdit} className="aw-input" value={title} onChange={e => setTitle(e.target.value)} /></div>
+                   <div className="aw-form-field"><label className="aw-form-label">Executive Summary</label><textarea disabled={!canEdit} className="aw-input !min-h-[100px] !py-3" value={summary} onChange={e => setSummary(e.target.value)} /></div>
+                   <div className="aw-form-field"><label className="aw-form-label">Detailed Content</label><textarea disabled={!canEdit} className="aw-input !min-h-[300px] !py-3" value={body} onChange={e => setBody(e.target.value)} /></div>
 
-        <button
-          type="button"
-          onClick={onSave}
-          disabled={isSaving || attendanceLocked}
-          className="inline-flex min-h-10 items-center gap-2 border border-woreda-primary bg-woreda-primary px-4 py-2 text-sm font-bold text-white hover:bg-woreda-sidebar disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          <Save size={16} />
-          {attendanceLocked ? "Attendance Locked" : isSaving ? "Saving..." : "Save Attendance"}
-        </button>
-      </div>
+                   {canEdit && (
+                     <div className="aw-panel !bg-[var(--aw-bg)] p-8 border-dashed border-2 flex flex-col items-center gap-4">
+                        <UploadCloud size={40} className="text-[var(--aw-primary)]" />
+                        <div className="text-center">
+                           <p className="font-black text-sm">Drop media files or click to browse</p>
+                           <p className="text-xs font-bold text-[var(--aw-muted)] mt-1">Photos and documents supporting your report</p>
+                        </div>
+                        <input type="file" multiple className="hidden" id="report-files" onChange={e => setSelectedFiles(Array.from(e.target.files || []))} />
+                        <button type="button" onClick={() => document.getElementById('report-files')?.click()} className="aw-btn aw-btn-outline !bg-white">Choose Files</button>
+                        {selectedFiles.length > 0 && <p className="text-xs font-black text-[var(--aw-primary)]">{selectedFiles.length} files staged for upload</p>}
+                     </div>
+                   )}
 
-      {attendanceLocked ? (
-        <div className="border-b border-woreda-border bg-woreda-surfaceLow px-5 py-3 text-sm font-bold text-woreda-textMuted">
-          Attendance has been submitted to Woreda and is now read-only.
-        </div>
-      ) : null}
+                   {canEdit && (
+                     <div className="flex justify-end gap-3 pt-6 border-t border-[var(--aw-border-soft)]">
+                        <button type="submit" disabled={isSaving} className="aw-btn aw-btn-outline !min-h-[44px] !px-6"><Save size={18}/>{isSaving ? 'Saving...' : 'Save Draft'}</button>
+                        <button type="button" onClick={handleSubmitReport} disabled={isSubmitting} className="aw-btn aw-btn-primary !min-h-[44px] !px-8 shadow-lg shadow-[var(--aw-success)]/10"><Send size={18}/>{isSubmitting ? 'Submitting...' : 'Submit to Woreda'}</button>
+                     </div>
+                   )}
+                </form>
+             </section>
 
-      <div className="grid gap-0 border-b border-woreda-border md:grid-cols-5">
-        <AttendanceMetric label="Members" value={summary.total} />
-        <AttendanceMetric label="Marked" value={summary.marked} />
-        <AttendanceMetric label="Present" value={summary.present} />
-        <AttendanceMetric label="Absent" value={summary.absent} />
-        <AttendanceMetric label="Excused" value={summary.excused} />
-      </div>
+             <aside className="space-y-6">
+                <section className="aw-panel p-6 shadow-soft">
+                   <h3 className="font-black text-sm uppercase tracking-widest border-b border-[var(--aw-border-soft)] pb-3 text-[var(--aw-primary)] mb-6">Status Tracker</h3>
+                   <div className="space-y-6">
+                      <div className="flex gap-4"><div className="h-8 w-8 rounded-full bg-[var(--aw-success-bg)] flex items-center justify-center text-[var(--aw-success)] flex-shrink-0"><CheckCircle2 size={18}/></div><div><p className="text-xs font-black uppercase text-[var(--aw-muted)]">Published</p><p className="text-sm font-bold">Directive Received</p></div></div>
+                      <div className="flex gap-4"><div className={["h-8 w-8 rounded-full flex items-center justify-center flex-shrink-0", report?.submittedAt ? "bg-[var(--aw-success-bg)] text-[var(--aw-success)]" : "bg-[var(--aw-bg)] text-[var(--aw-muted)]"].join(" ")}>{report?.submittedAt ? <CheckCircle2 size={18}/> : <Clock size={18}/>}</div><div><p className="text-xs font-black uppercase text-[var(--aw-muted)]">Submission</p><p className="text-sm font-bold">{report?.submittedAt ? 'Sent to Woreda' : 'Awaiting Report'}</p></div></div>
+                      <div className="flex gap-4"><div className={["h-8 w-8 rounded-full flex items-center justify-center flex-shrink-0", report?.reviewDecision ? "bg-[var(--aw-success-bg)] text-[var(--aw-success)]" : "bg-[var(--aw-bg)] text-[var(--aw-muted)]"].join(" ")}>{report?.reviewDecision ? <CheckCircle2 size={18}/> : <Clock size={18}/>}</div><div><p className="text-xs font-black uppercase text-[var(--aw-muted)]">Review</p><p className="text-sm font-bold">{report?.reviewDecision || 'Pending Decision'}</p></div></div>
+                   </div>
+                </section>
 
-      <div className="grid gap-3 border-b border-woreda-border bg-woreda-surfaceLow px-5 py-4 xl:grid-cols-[minmax(0,1fr)_minmax(10rem,14rem)_auto]">
-        <input
-          value={searchText}
-          onChange={(event) => onSearch(event.target.value)}
-          placeholder="Search member, code, phone, or note"
-          className="min-h-10 border border-woreda-border bg-woreda-surface px-3 py-2 text-sm outline-none focus:border-woreda-primary"
-        />
-
-        <select
-          value={statusFilter}
-          onChange={(event) => onStatusFilter(event.target.value as "all" | AttendanceStatus | "unmarked")}
-          className="min-h-10 border border-woreda-border bg-woreda-surface px-3 py-2 text-sm outline-none focus:border-woreda-primary"
-        >
-          <option value="all">All statuses</option>
-          <option value="present">Present</option>
-          <option value="absent">Absent</option>
-          <option value="excused">Excused</option>
-          <option value="unmarked">Unmarked</option>
-        </select>
-
-        <button
-          type="button"
-          onClick={onClear}
-          className="min-h-10 border border-woreda-border bg-woreda-surface px-4 py-2 text-sm font-bold text-woreda-text hover:border-woreda-primary hover:text-woreda-primary"
-        >
-          Clear
-        </button>
-      </div>
-
-      <div className="min-h-0 flex-1 overflow-auto">
-        {!attendance || filteredMembers.length === 0 ? (
-          <div className="px-5 py-12 text-center">
-            <Users size={32} className="mx-auto text-woreda-textMuted" />
-            <p className="mt-3 text-sm font-semibold text-woreda-textMuted">No members found.</p>
-          </div>
-        ) : (
-          <table className="min-w-full text-left text-sm">
-            <thead className="sticky top-0 z-10 bg-woreda-surfaceLow text-[11px] uppercase tracking-[0.16em] text-woreda-textMuted">
-              <tr>
-                <th className="border-b border-woreda-border px-4 py-3">Member</th>
-                <th className="border-b border-woreda-border px-4 py-3">Code</th>
-                <th className="border-b border-woreda-border px-4 py-3">Status</th>
-                <th className="border-b border-woreda-border px-4 py-3">Note</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {filteredMembers.map((member) => {
-                const row = attendanceRows[member.memberId] ?? {
-                  memberId: member.memberId,
-                  status: member.status,
-                  note: member.note || ""
-};
-
-                return (
-                  <tr key={member.memberId} className="hover:bg-woreda-surfaceLow">
-                    <td className="border-b border-woreda-borderLight/50 px-4 py-3">
-                      <p className="font-black text-woreda-text">{member.name}</p>
-                      <p className="mt-1 text-xs font-semibold text-woreda-textMuted">
-                        {member.gender || "-"} · {member.phone || "-"}
-                      </p>
-                    </td>
-
-                    <td className="border-b border-woreda-borderLight/50 px-4 py-3 text-woreda-textMuted">
-                      {member.memberCode || "-"}
-                    </td>
-
-                    <td className="border-b border-woreda-borderLight/50 px-4 py-3">
-                      <div className="flex flex-wrap gap-2">
-                        {(["present", "absent", "excused"] as AttendanceStatus[]).map((status) => (
-                          <button
-                            key={status}
-                            type="button"
-                            onClick={() => onStatus(member.memberId, status)}
-                            disabled={attendanceLocked}
-                            className={[
-                              "border px-3 py-1.5 text-xs font-black uppercase tracking-[0.08em] disabled:cursor-not-allowed disabled:opacity-60",
-                              statusButtonClass(row.status, status),
-                            ].join(" ")}
-                          >
-                            {status}
-                          </button>
+                <section className="aw-panel p-6 shadow-soft">
+                   <h3 className="font-black text-sm uppercase tracking-widest border-b border-[var(--aw-border-soft)] pb-3 text-[var(--aw-primary)] mb-4">Report Files</h3>
+                   {reportAttachments.length === 0 ? <p className="text-xs font-bold text-[var(--aw-muted)] text-center py-4">No attachments uploaded.</p> : (
+                     <div className="space-y-2">
+                        {reportAttachments.map(a => (
+                          <div key={a.id} className="p-3 rounded-xl border border-[var(--aw-border-soft)] bg-[var(--aw-bg)] flex items-center justify-between gap-3">
+                             <div className="min-w-0 flex-1"><p className="text-xs font-black truncate">{a.file.originalName}</p></div>
+                             <div className="flex gap-1"><button onClick={() => window.open(getFileViewUrl(a.file.id), '_blank')} className="p-1.5 text-[var(--aw-primary)] hover:bg-white rounded-lg transition-colors"><Eye size={14}/></button><a href={getFileDownloadUrl(a.file.id)} className="p-1.5 text-[var(--aw-muted)] hover:bg-white rounded-lg transition-colors"><Download size={14}/></a></div>
+                          </div>
                         ))}
-                      </div>
-                    </td>
-
-                    <td className="border-b border-woreda-borderLight/50 px-4 py-3">
-                      <input
-                        value={row.note}
-                        onChange={(event) => onNote(member.memberId, event.target.value)}
-                        disabled={attendanceLocked}
-                        placeholder="Optional note"
-                        className="min-h-9 w-full border border-woreda-border bg-woreda-surface px-3 py-2 text-sm outline-none focus:border-woreda-primary disabled:bg-woreda-surfaceLow disabled:text-woreda-textMuted"
-                      />
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        )}
-      </div>
-    </section>
-  );
-}
-
-function DirectiveTab({
-  instructions,
-  attachments
-}: {
-  instructions: string;
-  attachments: FileAttachment[];
-}) {
-  return (
-    <section className="detail-layout">
-      <div className="border border-woreda-border/70 bg-woreda-surface shadow-none">
-        <div className="border-b border-woreda-border bg-woreda-surfaceLow px-5 py-4">
-          <h2 className="text-lg font-black text-woreda-text">Woreda directive</h2>
-          <p className="mt-1 text-sm text-woreda-textMuted">
-            Review the directive instructions and original files from Woreda.
-          </p>
-        </div>
-
-        <div className="p-5">
-          <p className="text-xs font-bold uppercase tracking-[0.12em] text-woreda-textMuted">
-            Instructions
-          </p>
-          <div className="mt-3 max-w-[min(51.25rem,100%)] whitespace-pre-wrap border border-woreda-border bg-woreda-surfaceLow p-4 text-sm leading-7 text-woreda-text">
-            {instructions || "No instructions"}
+                     </div>
+                   )}
+                </section>
+             </aside>
           </div>
-        </div>
-      </div>
+        )}
 
-      <div className="border border-woreda-border/70 bg-woreda-surface shadow-none">
-        <div className="border-b border-woreda-border bg-woreda-surfaceLow px-5 py-4">
-          <h2 className="text-lg font-black text-woreda-text">Directive attachments</h2>
-          <p className="mt-1 text-sm text-woreda-textMuted">
-            {attachments.length} files attached by Woreda.
-          </p>
-        </div>
+        {activeTab === 'attendance' && attendance && (
+          <div className="flex flex-col gap-6">
+             <div className="aw-stat-grid !grid-cols-2 md:!grid-cols-5">
+               <div className="aw-stat-card"><p className="aw-stat-label">Total Members</p><p className="aw-stat-value">{attendance.members.length}</p></div>
+               <div className="aw-stat-card"><p className="aw-stat-label">Marked</p><p className="aw-stat-value text-[var(--aw-primary)]">{Object.values(attendanceRows).filter(r => !!r.status).length}</p></div>
+               <div className="aw-stat-card"><p className="aw-stat-label">Present</p><p className="aw-stat-value text-[var(--aw-success)]">{Object.values(attendanceRows).filter(r => r.status === 'present').length}</p></div>
+               <div className="aw-stat-card"><p className="aw-stat-label">Absent</p><p className="aw-stat-value text-[var(--aw-danger)]">{Object.values(attendanceRows).filter(r => r.status === 'absent').length}</p></div>
+               <div className="aw-stat-card"><p className="aw-stat-label">Excused</p><p className="aw-stat-value text-[var(--aw-warning)]">{Object.values(attendanceRows).filter(r => r.status === 'excused').length}</p></div>
+             </div>
 
-        <div className="space-y-3 p-5">
-          {attachments.length === 0 ? (
-            <p className="border border-dashed border-woreda-border bg-woreda-surfaceLow px-3 py-8 text-center text-sm font-semibold text-woreda-textMuted">
-              No directive attachments.
-            </p>
-          ) : (
-            attachments.map((attachment) => (
-              <CompactFileCard key={attachment.id} attachment={attachment} />
-            ))
-          )}
-        </div>
-      </div>
-    </section>
-  );
-}
+             <section className="aw-panel shadow-soft">
+                <header className="aw-panel-header !bg-[var(--aw-surface)] !py-6">
+                   <div><h2 className="aw-panel-title">Mandatory Participation Registry</h2><p className="text-xs font-bold text-[var(--aw-muted)] mt-1">Mark attendance for all unit members before final submission.</p></div>
+                   {!report?.submittedAt && <button disabled={isSavingAttendance} onClick={handleSaveAttendance} className="aw-btn aw-btn-primary !min-h-[38px] !px-5 shadow-lg"><Save size={16}/>{isSavingAttendance ? 'Saving...' : 'Save Registry'}</button>}
+                </header>
+                <div className="aw-table-wrapper !border-none !rounded-none">
+                  <table className="aw-table aw-table-to-cards">
+                    <thead><tr><th>Member name</th><th>Gender</th><th>Status Selection</th><th>Internal Note</th></tr></thead>
+                    <tbody>
+                       {attendance.members.map(m => {
+                         const r = attendanceRows[m.memberId] || { status: null, note: "" };
+                         return (
+                           <tr key={m.memberId}>
+                             <td data-label="Member"><p className="font-black">{m.name}</p><p className="text-[10px] font-bold text-[var(--aw-muted)] uppercase mt-1">{m.memberCode || 'No Code'}</p></td>
+                             <td data-label="Gender" className="font-bold text-[var(--aw-muted)]">{m.gender}</td>
+                             <td data-label="Attendance">
+                               <div className="flex gap-1">
+                                  {(['present', 'absent', 'excused'] as AttendanceStatus[]).map(s => (
+                                    <button key={s} disabled={!!report?.submittedAt} onClick={() => setAttendanceRows({...attendanceRows, [m.memberId]: { ...r, status: r.status === s ? null : s }})} className={["px-3 py-1.5 rounded-lg border text-[10px] font-black uppercase tracking-wider transition-all", r.status === s ? (s === 'present' ? 'bg-[var(--aw-success)] border-[var(--aw-success)] text-white' : s === 'absent' ? 'bg-[var(--aw-danger)] border-[var(--aw-danger)] text-white' : 'bg-[var(--aw-warning)] border-[var(--aw-warning)] text-white') : "bg-white border-[var(--aw-border-soft)] text-[var(--aw-muted)] hover:border-[var(--aw-primary)]"].join(" ")}>{s}</button>
+                                  ))}
+                               </div>
+                             </td>
+                             <td data-label="Note"><input disabled={!!report?.submittedAt} className="aw-input !min-h-[36px] !text-xs !bg-[var(--aw-bg)]" placeholder="Add note..." value={r.note} onChange={e => setAttendanceRows({...attendanceRows, [m.memberId]: {...r, note: e.target.value}})} /></td>
+                           </tr>
+                         );
+                       })}
+                    </tbody>
+                  </table>
+                </div>
+             </section>
+          </div>
+        )}
 
-function statusButtonClass(current: AttendanceStatus | null, status: AttendanceStatus) {
-  if (current === status) {
-    if (status === "present") return "border-woreda-success bg-woreda-success text-white";
-    if (status === "absent") return "border-woreda-danger bg-woreda-danger text-white";
-    return "border-woreda-yellow bg-woreda-yellow text-white";
-  }
-
-  return "border-woreda-border bg-woreda-surface text-woreda-textMuted hover:border-woreda-primary hover:text-woreda-primary";
-}
-
-function metricTone(label: string) {
-  if (label === "Present") return "text-woreda-success";
-  if (label === "Absent") return "text-woreda-danger";
-  if (label === "Excused") return "text-woreda-yellowText";
-  if (label === "Marked") return "text-woreda-primary";
-  return "text-woreda-text";
-}
-
-function AttendanceMetric({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="border-b border-woreda-border bg-woreda-surface px-4 py-3 md:border-b-0 md:border-r last:md:border-r-0">
-      <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-woreda-textMuted">
-        {label}
-      </p>
-      <p className={`mt-1 text-2xl font-black ${metricTone(label)}`}>{value}</p>
-    </div>
-  );
-}
-
-function MediaSection({
-  title,
-  description,
-  attachments,
-  report
-}: {
-  title: string;
-  description: string;
-  attachments: FileAttachment[];
-  report?: LocalReport;
-}) {
-  const images = attachments.filter((attachment) => isImageFile(attachment.file));
-  const docs = attachments.filter((attachment) => !isImageFile(attachment.file));
-
-  return (
-    <section className="border border-woreda-border/70 bg-woreda-surface shadow-none">
-      <div className="flex flex-col gap-3 border-b border-woreda-border bg-woreda-surfaceLow px-5 py-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h2 className="text-lg font-black text-woreda-text">{title}</h2>
-          <p className="mt-1 text-sm text-woreda-textMuted">{description}</p>
-        </div>
-
-        <div className="flex flex-wrap gap-2 text-xs font-bold text-woreda-textMuted">
-          <span className="border border-woreda-border bg-woreda-surface px-2.5 py-1">
-            {attachments.length} files
-          </span>
-          <span className="border border-woreda-border bg-woreda-surface px-2.5 py-1">
-            {images.length} media
-          </span>
-          <span className="border border-woreda-border bg-woreda-surface px-2.5 py-1">
-            {docs.length} documents
-          </span>
-        </div>
-      </div>
-
-      <div className="p-5">
-        <div className="form-grid">
-          {report ? (
-            <>
-            </>
-          ) : (
-            <p className="border border-dashed border-woreda-border bg-woreda-surfaceLow px-4 py-8 text-center text-sm font-semibold text-woreda-textMuted md:col-span-2">
-              Save the report first before exporting.
-            </p>
-          )}
-        </div>
-
-        <p className="mt-3 text-xs font-semibold leading-5 text-woreda-textMuted">
-          The package includes the report, attendance CSV, media files, and document attachments in separate folders.
-        </p>
-
-        <div className="hidden">
-          {images.map((attachment) => (
-            <ImageFileCard key={attachment.id} attachment={attachment} />
-          ))}
-          {docs.map((attachment) => (
-            <DocumentFileCard key={attachment.id} attachment={attachment} />
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function ImageFileCard({ attachment }: { attachment: FileAttachment }) {
-  const file = attachment.file;
-
-  return (
-    <article className="group overflow-hidden border border-woreda-border bg-woreda-surfaceLow">
-      <div className="relative h-48 bg-[color-mix(in_srgb,var(--text)_5%,transparent)]">
-        <img
-          src={getFileViewUrl(file.id)}
-          alt={file.originalName}
-          className="h-full w-full object-contain"
-        />
-
-        <div className="absolute inset-0 flex items-end justify-between gap-2 bg-transparent p-3 opacity-0 transition group-hover:bg-[var(--overlay-scrim)] group-hover:opacity-100">
-          <a
-            href={getFileViewUrl(file.id)}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex min-h-9 items-center gap-2 border border-white/40 bg-white px-3 py-2 text-xs font-black text-woreda-primary"
-          >
-            <ExternalLink size={14} />
-            View
-          </a>
-          <a
-            href={getFileDownloadUrl(file.id)}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex min-h-9 items-center gap-2 border border-white/40 bg-white px-3 py-2 text-xs font-black text-woreda-text"
-          >
-            <Download size={14} />
-            Download
-          </a>
-        </div>
-      </div>
-
-      <div className="p-3">
-        <p className="line-clamp-2 break-all text-sm font-bold text-woreda-text">
-          {file.originalName}
-        </p>
-        <p className="mt-1 text-xs font-semibold text-woreda-textMuted">
-          {file.mimeType} {bytesToMb(file.sizeBytes)}
-        </p>
-      </div>
-    </article>
-  );
-}
-
-function DocumentFileCard({ attachment }: { attachment: FileAttachment }) {
-  const file = attachment.file;
-
-  return (
-    <article className="flex gap-3 border border-woreda-border bg-woreda-surfaceLow p-4">
-      <div className="flex h-12 w-12 shrink-0 items-center justify-center border border-woreda-primary/20 bg-woreda-primarySoft text-woreda-primary">
-        <FileText size={24} />
-      </div>
-
-      <div className="min-w-0 flex-1">
-        <p className="break-all text-sm font-black text-woreda-text">
-          {file.originalName}
-        </p>
-        <p className="mt-1 text-xs font-semibold text-woreda-textMuted">
-          {file.mimeType} {bytesToMb(file.sizeBytes)}
-        </p>
-
-        <div className="mt-3 flex flex-wrap gap-2">
-          <FileActions file={file} />
-        </div>
-      </div>
-    </article>
-  );
-}
-
-function CompactFileCard({ attachment }: { attachment: FileAttachment }) {
-  const file = attachment.file;
-
-  return (
-    <div className="border border-woreda-border bg-woreda-surfaceLow p-2.5">
-      {isImageFile(file) ? (
-        <img
-          src={getFileViewUrl(file.id)}
-          alt={file.originalName}
-          className="mb-2 h-24 w-full object-contain"
-        />
-      ) : (
-        <FileText className="mb-2 text-woreda-primary" size={24} />
-      )}
-
-      <p className="break-all text-sm font-bold text-woreda-text">{file.originalName}</p>
-      <p className="mt-1 text-xs font-semibold text-woreda-textMuted">
-        {file.mimeType} {bytesToMb(file.sizeBytes)}
-      </p>
-
-      <div className="mt-3 flex flex-wrap gap-2">
-        <FileActions file={file} />
-      </div>
-    </div>
-  );
-}
-
-function FileActions({ file }: { file: FileInfo }) {
-  return (
-    <>
-      <a
-        href={getFileViewUrl(file.id)}
-        target="_blank"
-        rel="noreferrer"
-        className="inline-flex min-h-8 items-center gap-1.5 border border-woreda-primary/30 bg-transparent px-2.5 py-1.5 text-xs font-bold text-woreda-primary hover:bg-woreda-primarySoft"
-      >
-        <ExternalLink size={13} />
-        View
-      </a>
-      <a
-        href={getFileDownloadUrl(file.id)}
-        target="_blank"
-        rel="noreferrer"
-        className="inline-flex min-h-8 items-center gap-1.5 border border-woreda-border bg-transparent px-2.5 py-1.5 text-xs font-bold text-woreda-text hover:border-woreda-primary hover:text-woreda-primary"
-      >
-        <Download size={13} />
-        Download
-      </a>
-    </>
-  );
-}
-
-function InfoLine({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="border border-woreda-border bg-woreda-surfaceLow p-3">
-      <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-woreda-textMuted">
-        {label}
-      </p>
-      <p className="mt-1 text-sm font-black text-woreda-text">{value}</p>
+        {activeTab === 'directive' && (
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6 items-start">
+             <section className="aw-panel p-8 shadow-soft">
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--aw-primary)] mb-4">Official Instructions</p>
+                <div className="prose prose-slate max-w-none text-base font-medium leading-loose text-[var(--aw-text)] whitespace-pre-wrap">{announcement.instructions || 'No specific instructions provided.'}</div>
+             </section>
+             <section className="aw-panel p-6 shadow-soft">
+                <h3 className="font-black text-sm uppercase tracking-widest border-b border-[var(--aw-border-soft)] pb-3 text-[var(--aw-primary)] mb-4">Mandate Attachments</h3>
+                {announcement.attachments.length === 0 ? <p className="text-xs font-bold text-[var(--aw-muted)] text-center py-4">No files attached.</p> : (
+                  <div className="space-y-3">
+                     {announcement.attachments.map(a => (
+                       <div key={a.id} className="p-4 rounded-xl border border-[var(--aw-border-soft)] bg-[var(--aw-bg)] flex items-center gap-4">
+                          <FileText size={24} className="text-[var(--aw-primary)] flex-shrink-0" />
+                          <div className="min-w-0 flex-1">
+                             <p className="text-sm font-black truncate">{a.file.originalName}</p>
+                             <div className="flex gap-3 mt-2">
+                                <button onClick={() => window.open(getFileViewUrl(a.file.id), '_blank')} className="text-[10px] font-black uppercase text-[var(--aw-primary)] hover:underline">View</button>
+                                <a href={getFileDownloadUrl(a.file.id)} className="text-[10px] font-black uppercase text-[var(--aw-muted)] hover:underline">Download</a>
+                             </div>
+                          </div>
+                       </div>
+                     ))}
+                  </div>
+                )}
+             </section>
+          </div>
+        )}
+      </main>
     </div>
   );
 }

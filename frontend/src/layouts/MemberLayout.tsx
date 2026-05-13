@@ -5,38 +5,44 @@ import {
   FolderOpen,
   LogOut,
   Menu,
+  MessageSquare,
   Moon,
   Settings,
   Sun,
   UserCircle,
+  X,
 } from "lucide-react";
 import { useAuthStore } from "../store/authStore";
 import { useThemeStore } from "../store/themeStore";
 import { NotificationsBell } from "../components/notifications/NotificationsBell";
 import { FourKGuard } from "../components/layout/FourKGuard";
+import { useTranslation } from "react-i18next";
 
 const navItems = [
-  { label: "Broadcasts", path: "/member/broadcasts", icon: BookOpen, privileges: ["broadcast.read"] },
-  { label: "Resources", path: "/member/resources", icon: FolderOpen, privileges: ["resource.read"] },
-  { label: "Profile", path: "/member/profile", icon: UserCircle, privileges: ["profile.read"] },
-  { label: "Settings", path: "/member/settings", icon: Settings, privileges: ["profile.read"] },
+  { labelKey: "sidebar.broadcasts", path: "/member/broadcasts", icon: BookOpen, privileges: ["broadcast.read"] },
+  { labelKey: "sidebar.resources", path: "/member/resources", icon: FolderOpen, privileges: ["resource.read"] },
+  { labelKey: "sidebar.chat", path: "/member/chat", icon: MessageSquare, privileges: ["chat.read"] },
+  { labelKey: "sidebar.profile", path: "/member/profile", icon: UserCircle, privileges: ["profile.read"] },
+  { labelKey: "sidebar.settings", path: "/member/settings", icon: Settings, privileges: ["profile.read"] },
 ];
 
-function getPageHeader(pathname: string) {
-  if (pathname.startsWith("/member/broadcasts")) return { section: "Communication", title: "Broadcasts" };
-  if (pathname.startsWith("/member/resources")) return { section: "Resource library", title: "Resources" };
-  if (pathname.startsWith("/member/profile")) return { section: "Member profile", title: "Profile" };
-  if (pathname.startsWith("/member/settings")) return { section: "Account", title: "Settings" };
-  return { section: "Member", title: "Member Portal" };
+function getPageHeader(pathname: string, t: (key: string) => string) {
+  if (pathname.startsWith("/member/broadcasts")) return { section: t("layout.member.sections.communication"), title: t("sidebar.broadcasts") };
+  if (pathname.startsWith("/member/resources")) return { section: t("layout.member.sections.resources"), title: t("sidebar.resources") };
+  if (pathname.startsWith("/member/chat")) return { section: t("layout.member.sections.communication"), title: t("sidebar.chat") };
+  if (pathname.startsWith("/member/profile")) return { section: t("layout.member.sections.account"), title: t("sidebar.profile") };
+  if (pathname.startsWith("/member/settings")) return { section: t("layout.member.sections.account"), title: t("sidebar.settings") };
+  return { section: t("layout.member.roleLabel"), title: t("layout.member.consoleTitle") };
 }
 
 export function MemberLayout() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const { user, logout } = useAuthStore();
   const { theme, toggleTheme } = useThemeStore();
-  const pageHeader = getPageHeader(location.pathname);
+  const pageHeader = getPageHeader(location.pathname, t);
 
   useEffect(() => {
     setMobileNavOpen(false);
@@ -61,119 +67,137 @@ export function MemberLayout() {
   }
 
   return (
-    <div className="aw-admin-shell grid min-h-[100dvh] grid-cols-1 bg-[var(--aw-bg)] text-[var(--aw-text)] md:h-[100dvh] md:min-h-0 md:overflow-hidden lg:grid-cols-[var(--aw-sidebar-w)_1fr]">
+    <div className="aw-responsive-shell grid min-h-[100dvh] grid-cols-1 bg-[var(--aw-bg)] text-[var(--aw-text)] md:h-[100dvh] md:min-h-0 md:overflow-hidden lg:grid-cols-[var(--aw-sidebar-w)_minmax(0,1fr)]">
       {mobileNavOpen ? (
-        <div
-          role="presentation"
-          className="fixed inset-0 z-[300] bg-[var(--overlay-scrim)] lg:hidden"
+        <button
+          type="button"
+          aria-label="Close sidebar overlay"
+          className="fixed inset-0 z-[300] bg-[var(--aw-primary-dark)]/70 backdrop-blur-[2px] lg:hidden"
           onClick={() => setMobileNavOpen(false)}
         />
       ) : null}
+
       <aside
         className={[
-          "aw-admin-sidebar fixed inset-y-0 left-0 z-[400] flex h-[100dvh] w-[var(--aw-sidebar-w)] max-w-[86vw] flex-col overflow-hidden border-r border-white/10 bg-[var(--aw-sidebar)] text-white shadow-2xl transition-transform duration-200 ease-out lg:static lg:z-auto lg:max-w-none lg:translate-x-0 lg:shadow-none",
-          mobileNavOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
+          "aw-woreda-sidebar fixed inset-y-0 left-0 z-[400] flex h-[100dvh] w-[var(--aw-sidebar-w)] max-w-[86vw] -translate-x-full flex-col overflow-hidden bg-[var(--aw-primary-dark)] text-white shadow-2xl transition-transform duration-200 ease-out lg:static lg:z-auto lg:max-w-none lg:translate-x-0 lg:shadow-none",
+          mobileNavOpen ? "translate-x-0" : "",
         ].join(" ")}
       >
-        <div className="border-b border-white/10 px-6 py-5">
-          <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center border border-white/20 bg-white">
-              <img
-                src="/Prosperity_Party_logo.png"
-                alt=""
-                className="h-10 w-10 object-contain"
-              />
+        <div className="flex h-full min-h-0 flex-col">
+          <div className="flex shrink-0 items-center justify-between border-b border-white/10 px-5 py-5">
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white p-1.5 shadow-sm">
+                <img src="/Prosperity_Party_logo.png" alt="Prosperity Party" className="max-h-full max-w-full object-contain" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-black uppercase tracking-[0.2em] text-[var(--aw-yellow)]">
+                  {t("app.name")}
+                </p>
+                <h1 className="mt-1 truncate text-lg font-black text-white">
+                  {t("layout.member.roleLabel")}
+                </h1>
+              </div>
             </div>
-            <div className="min-w-0">
-              <h1 className="text-xl font-black leading-tight text-white">Astedader</h1>
-              <p className="text-xl font-black leading-tight text-white">Member</p>
-              <p className="mt-1 text-xs font-semibold text-white/68">Member Portal</p>
+            <button
+              type="button"
+              onClick={() => setMobileNavOpen(false)}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-2xl text-white/80 transition hover:bg-white/10 hover:text-white lg:hidden"
+              aria-label="Close navigation"
+            >
+              <X size={20} />
+            </button>
+          </div>
+
+          <nav id="member-admin-nav" className="min-h-0 flex-1 overflow-y-auto px-3 py-4" aria-label="Member navigation">
+            {visibleNavItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <NavLink
+                  key={item.path}
+                  to={item.path}
+                  className={({ isActive }) =>
+                    [
+                      "group mt-1 flex min-h-12 items-center gap-3 rounded-2xl border-l-4 px-4 py-3 text-sm transition-colors",
+                      isActive
+                        ? "border-[var(--aw-yellow)] bg-white/12 font-black text-white shadow-sm"
+                        : "border-transparent font-bold text-white/75 hover:bg-white/10 hover:text-white",
+                    ].join(" ")
+                  }
+                >
+                  <Icon size={19} className="shrink-0" />
+                  <span className="truncate">{t(item.labelKey)}</span>
+                </NavLink>
+              );
+            })}
+          </nav>
+
+          <div className="shrink-0 border-t border-white/10 p-4">
+            <div className="rounded-2xl bg-white/10 p-4 shadow-sm ring-1 ring-white/10">
+              <p className="text-xs font-black uppercase tracking-[0.16em] text-white/55">
+                {t("layout.signedIn")}
+              </p>
+              <p className="mt-2 truncate text-sm font-black text-white">{user?.email ?? "—"}</p>
+              <p className="mt-1 truncate text-xs font-bold text-white/80">{user?.role ?? "—"}</p>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="mt-3 flex min-h-10 w-full items-center justify-center gap-2 rounded-xl bg-[var(--aw-secondary)] px-3 py-2 text-sm font-black text-white transition hover:opacity-90"
+              >
+                <LogOut size={16} />
+                {t("common.logout")}
+              </button>
             </div>
           </div>
         </div>
-        <nav id="member-admin-nav" className="min-h-0 flex-1 space-y-1 overflow-y-auto px-3 py-5">
-          {visibleNavItems.map((item) => {
-            const Icon = item.icon;
-
-            return (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                className={({ isActive }) =>
-                  [
-                    "group flex min-h-11 items-center gap-3 border-l-[3px] px-4 py-3 text-sm font-bold transition",
-                    isActive
-                      ? "border-woreda-yellow bg-woreda-primary text-woreda-onPrimary"
-                      : "border-transparent text-white/82 hover:bg-white/8 hover:text-white",
-                  ].join(" ")
-                }
-              >
-                <Icon size={19} strokeWidth={2.1} />
-                <span>{item.label}</span>
-              </NavLink>
-            );
-          })}
-        </nav>
-        <div className="border-t border-white/10 p-4">
-          <p className="text-[11px] font-semibold text-woreda-outlineVariant">Signed in as</p>
-          <p className="mt-1 truncate text-sm font-black text-white">{user?.email}</p>
-          <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-white/55">
-            {user?.role}
-          </p>
-          <button
-            onClick={handleLogout}
-            className="mt-4 flex w-full min-h-10 items-center justify-center gap-2 border border-white/20 bg-transparent px-3 py-2 text-sm font-black text-white hover:bg-white/10"
-          >
-            <LogOut size={16} />
-            Logout
-          </button>
-        </div>
       </aside>
-      <section className="flex min-h-[100dvh] min-w-0 flex-col md:h-[100dvh] md:min-h-0 md:overflow-hidden">
-        <header className="aw-admin-topbar sticky top-0 z-[200] shrink-0 border-b border-[var(--aw-border-soft)] bg-[var(--aw-surface)] px-4 py-3 sm:px-5">
-          <div className="flex min-h-12 items-center justify-between gap-3 sm:gap-5">
-            <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+
+      <div className="aw-responsive-main flex min-h-[100dvh] min-w-0 flex-col md:h-[100dvh] md:min-h-0 md:overflow-hidden">
+        <header className="aw-responsive-topbar sticky top-0 z-[200] shrink-0 border-b border-[var(--aw-border-soft)] bg-[var(--aw-surface)]/90 backdrop-blur">
+          <div className="flex h-full w-full items-center justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-3">
               <button
                 type="button"
-                className="flex h-10 w-10 shrink-0 items-center justify-center border border-woreda-border bg-woreda-surface text-woreda-text hover:border-woreda-primary hover:text-woreda-primary lg:hidden"
-                aria-expanded={mobileNavOpen}
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-[var(--aw-border-soft)] bg-[var(--aw-surface)] text-[var(--aw-primary-dark)] shadow-sm transition hover:border-[var(--aw-primary)] hover:text-[var(--aw-primary)] lg:hidden"
+                onClick={() => setMobileNavOpen(true)}
                 aria-controls="member-admin-nav"
-                aria-label={mobileNavOpen ? "Close navigation" : "Open navigation"}
-                onClick={() => setMobileNavOpen((open) => !open)}
+                aria-expanded={mobileNavOpen}
               >
-                <Menu size={22} strokeWidth={2.25} />
+                <Menu size={20} />
               </button>
               <div className="min-w-0">
-                <p className="aw-admin-page-eyebrow">{pageHeader.section}</p>
-                <h2 className="aw-admin-page-title mt-0.5 truncate text-lg sm:text-xl">{pageHeader.title}</h2>
+                <p className="hidden text-xs font-black uppercase tracking-[0.18em] text-[var(--aw-muted)] sm:block">
+                  {pageHeader.section}
+                </p>
+                <h2 className="truncate text-xl font-black leading-tight text-[var(--aw-text)]">
+                  {pageHeader.title}
+                </h2>
               </div>
             </div>
-            <div className="flex min-w-0 shrink-0 flex-wrap items-center justify-end gap-2 sm:gap-3">
+
+            <div className="flex shrink-0 items-center justify-end gap-2">
               <NotificationsBell />
               <button
+                type="button"
                 onClick={toggleTheme}
-                className="inline-flex min-h-10 items-center gap-2 border border-woreda-border bg-woreda-surface px-3 py-2 text-sm font-black text-woreda-text hover:border-woreda-primary hover:text-woreda-primary"
+                className="inline-flex min-h-10 items-center gap-2 rounded-2xl border border-[color:color-mix(in_srgb,var(--aw-border-soft)_70%,transparent)] bg-[var(--aw-surface-muted)] px-3 py-2 text-sm font-black text-[var(--aw-text)] shadow-sm transition hover:border-[var(--aw-primary)] hover:text-[var(--aw-primary)]"
               >
                 {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
-                <span className="hidden sm:inline">{theme === "dark" ? "Light" : "Dark"}</span>
-              </button>
-              <button
-                onClick={handleLogout}
-                className="border border-woreda-border bg-woreda-surface px-3 py-2 text-sm font-semibold text-woreda-text lg:hidden"
-              >
-                Logout
+                <span className="hidden sm:inline">
+                  {theme === "dark" ? t("common.light") : t("common.dark")}
+                </span>
               </button>
             </div>
           </div>
         </header>
-        <main className="aw-admin-content min-h-0 flex-1 bg-[var(--aw-bg)] px-[var(--aw-shell-x)] py-[var(--aw-shell-y)] md:overflow-y-auto max-md:overflow-visible">
-          <FourKGuard>
-            <div className="aw-admin-page aw-kpi-compact-scope text-fluid-body max-md:overflow-visible">
+
+        <main className="aw-responsive-content flex min-h-0 flex-1 flex-col bg-[var(--aw-bg)] md:overflow-y-auto max-md:overflow-visible">
+          <FourKGuard className="aw-guard flex w-full flex-1 flex-col md:min-h-0">
+            <div className="flex min-h-0 flex-1 flex-col text-[var(--aw-text)] max-md:overflow-visible overflow-visible">
               <Outlet />
             </div>
           </FourKGuard>
         </main>
-      </section>
+      </div>
     </div>
   );
 }

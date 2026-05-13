@@ -287,14 +287,14 @@ export function WoredaLayout() {
         <button
           type="button"
           aria-label="Close sidebar overlay"
-          className="fixed inset-0 z-[300] bg-[#004C6B]/70 backdrop-blur-[2px] lg:hidden"
+          className="fixed inset-0 z-[300] bg-[var(--aw-primary-dark)]/70 backdrop-blur-[2px] lg:hidden"
           onClick={() => setMobileNavOpen(false)}
         />
       ) : null}
 
       <aside
         className={[
-          "aw-woreda-sidebar fixed inset-y-0 left-0 z-[400] flex h-[100dvh] w-[var(--aw-sidebar-w)] max-w-[86vw] -translate-x-full flex-col overflow-hidden bg-[#004C6B] text-white shadow-2xl transition-transform duration-200 ease-out lg:static lg:z-auto lg:max-w-none lg:translate-x-0 lg:shadow-none",
+          "aw-woreda-sidebar fixed inset-y-0 left-0 z-[400] flex h-[100dvh] w-[var(--aw-sidebar-w)] max-w-[86vw] -translate-x-full flex-col overflow-hidden bg-[var(--aw-primary-dark)] text-white shadow-2xl transition-transform duration-200 ease-out lg:static lg:z-auto lg:max-w-none lg:translate-x-0 lg:shadow-none",
           mobileNavOpen ? "translate-x-0" : "",
         ].join(" ")}
       >
@@ -374,7 +374,7 @@ export function WoredaLayout() {
               <button
                 type="button"
                 onClick={handleLogout}
-                className="mt-3 flex min-h-10 w-full items-center justify-center gap-2 rounded-xl bg-[#A00061] px-3 py-2 text-sm font-black text-white transition hover:opacity-90"
+                className="mt-3 flex min-h-10 w-full items-center justify-center gap-2 rounded-xl bg-[var(--aw-secondary)] px-3 py-2 text-sm font-black text-white transition hover:opacity-90"
               >
                 <LogOut size={16} />
                 {t("common.logout")}
